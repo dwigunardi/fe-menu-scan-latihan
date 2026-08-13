@@ -2,6 +2,7 @@
 
 > **Document Status**: Complete Architecture Specification  
 > **Scope**: Next.js (Frontend Client Application)  
+> **Backend Base URL**: `http://localhost:5000/api/v1` (NestJS 11)  
 > **Security Standard**: Application Layer Zero-Trust Encryption via Web Crypto API (P-256 ECDH + AES-256-GCM) + Native `fetch`  
 > **Document Location**: `docs/fe/security/client-crypto-strategy.md`  
 
@@ -21,7 +22,8 @@ Seluruh request HTTP dieksekusi menggunakan **Native `fetch` Wrapper (`customFet
 
 | Komponen | Spesifikasi Browser Native | Keterangan |
 | :--- | :--- | :--- |
-| **Crypto Engine** | `window.crypto.subtle` | Native browser API (sangat cepat & aman). |
+| **Backend Target** | `http://localhost:5000/api/v1` | Server Backend NestJS. |
+| **Crypto Engine** | `window.crypto.subtle` | Native browser WebCrypto API (sangat cepat & aman). |
 | **Key Exchange Protocol** | **ECDH (`P-256` / `prime256v1`)** | Menghasilkan Public/Private Keypair 256-bit di browser. |
 | **Key Derivation Function** | **HKDF (SHA-256)** | Derivasi Shared Secret + Client Nonce menjadi 256-bit AES-GCM Key. |
 | **Symmetric Cipher** | **AES-256-GCM** | Ciphertext terotentikasi dengan IV 12-byte & Tag 16-byte. |
@@ -37,7 +39,7 @@ sequenceDiagram
     autonumber
     participant App as Next.js Client App
     participant Crypto as WebCrypto API (SubtleCrypto)
-    participant Server as NestJS Backend API
+    participant Server as NestJS Backend API (Port 5000)
 
     Note over App,Server: Step 1: Client Key Pair & Nonce Generation
     App->>Crypto: generateKey({ name: "ECDH", namedCurve: "P-256" })
@@ -46,7 +48,7 @@ sequenceDiagram
     App->>Crypto: getRandomValues(16 bytes) -> Client Nonce (Base64)
 
     Note over App,Server: Step 2: Handshake Request to Backend
-    App->>Server: POST /api/v1/auth/handshake { clientPublicKey, nonce }
+    App->>Server: POST http://localhost:5000/api/v1/auth/handshake { clientPublicKey, nonce }
     Server-->>App: 200 OK { serverPublicKey, handshakeToken, expiresIn }
 
     Note over App,Server: Step 3: Derivasi Session Key di Browser
@@ -107,8 +109,9 @@ export async function customFetch<T = any>(
     });
   }
 
-  // 3. Eksekusi Native fetch()
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}${endpoint}`, {
+  // 3. Eksekusi Native fetch() ke Backend Port 5000
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
+  const response = await fetch(`${baseUrl}${endpoint}`, {
     ...restOptions,
     headers: reqHeaders,
     body: reqBody,
@@ -150,7 +153,7 @@ export async function customFetch<T = any>(
 
 ## 🔒 5. Keamanan Session Key di Client Side
 
-1. **Memory-Only Storage**: `SessionKey` (CryptoKey object) disimpan dalam **RAM / Closures State** (via Zustand store `useHandshakeStore`), **bukan** di `localStorage` atau `sessionStorage` dalam bentuk plaintext string agar tidak mudah diintip skrip XSS.
+1. **Memory-Only Storage**: `SessionKey` (CryptoKey object) disimpan dalam **RAM / Closures State** (via Zustand store `useHandshakeStore`), **bukan** di `localStorage` atau `sessionStorage` dalam bentuk plaintext string agar aman dari XSS.
 2. **Strict Expiry**: Jika aplikasi ditinggalkan selama > 2 jam, sesi dianggap kadaluarsa dan otomatis memicu handshake baru saat user berinteraksi kembali.
 
 ---

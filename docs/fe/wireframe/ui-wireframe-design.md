@@ -1,138 +1,243 @@
 # Kumpul Cafe UI & UX Wireframe Design Specification
 
-> **Project**: Kumpul Cafe – Digital QR Code Menu System & PWA  
+> **Project**: Kumpul Cafe – Digital QR Code Menu System & Progressive Web App (PWA)  
 > **Brand Name**: Kumpul Cafe  
-> **Target Interface**: Public QR Menu (Mobile-First & PWA) & Admin Dashboard (Responsive Desktop/Tablet)  
+> **Backend Integration**: NestJS 11 (`http://localhost:5000/api/v1`) + WebSocket (`http://localhost:5000/events`)  
+> **Target Interface**: Public QR Ordering (Mobile-First PWA) & Staff / Admin CMS (Responsive Desktop/Tablet)  
 > **Styling**: Tailwind CSS v4  
 > **Document Location**: `docs/fe/wireframe/ui-wireframe-design.md`  
 
 ---
 
-## 📱 1. Tampilan Publik Kumpul Cafe (Pelanggan via Scan QR & PWA)
+## 📱 1. Tampilan Publik Kumpul Cafe (Pelanggan via Scan QR Meja & PWA)
 
-Tampilan ini diakses oleh pelanggan **Kumpul Cafe** di meja cafe via smartphone. Berfokus pada **tampilan estetik warm-cafe, performa tinggi, dan dukungan PWA installable**.
+Tampilan mobile-first yang diakses pelanggan saat men-scan QR Meja (contoh: `https://kumpulcafe.com/menu?table=01`).
 
-### Wireframe Layout: `/menu` (Mobile-First & PWA)
+---
+
+### A. Screen 1: Scan Meja & Konfirmasi Sesi (`/menu?table=01`)
 
 ```text
 +--------------------------------------------------+
-| ☕ KUMPUL CAFE                      [🔍 Search]   | -> Header Branding Kumpul Cafe
+| ☕ KUMPUL CAFE                     [ 🪑 Meja 01 ] |
 +--------------------------------------------------+
-| 📲 Install Aplikasi Kumpul Cafe      [ Install ] | -> Banner Prompt PWA (Installable)
+|               Selamat Datang di                  |
+|                  KUMPUL CAFE                     |
+|                                                  |
+|  [ KONDISI A: Meja Kosong / VACANT ]             |
+|  Silakan masukkan nama Anda untuk memesan:       |
+|  Nama Pemesan: [ Dewi                          ] |
+|  [           BUKA MENU & PESAN SEKARANG        ] |
+|                                                  |
+|  [ KONDISI B: Meja Terisi / OCCUPIED ]           |
+|  ⚠️ Meja 01 saat ini terdaftar atas nama [Budi]  |
+|  Apakah Anda ingin bergabung ke meja ini?        |
+|  [ GABUNG PESANAN MEJA ]   [ BUKAN SAYA (PILIH) ]|
 +--------------------------------------------------+
-| [ ALL ] [ ☕ Coffee ] [ 🍰 Cake ] [ 🧋 Beverages] | -> Category Tabs (Horizontal Scroll)
-| [ 🍔 Fast Food ] [ 🇮🇩 Local Food ]               |
+```
+
+---
+
+### B. Screen 2: Halaman Utama Menu & Carousel Promo (`/menu`)
+
+```text
++--------------------------------------------------+
+| ☕ KUMPUL CAFE | 🪑 Meja 01 (Dewi)    [🔍 Search] |
++--------------------------------------------------+
+| 📲 Install Kumpul Cafe App            [ Install ]| -> Banner Prompt PWA
++--------------------------------------------------+
+| 🏷️ PROMO CAROUSEL                                 |
+| [ Banner: Buy 1 Get 1 Kopi Kumpul Santuy - Diskon] | -> Promo Banners Carousel
++--------------------------------------------------+
+| [ ALL ] [ ☕ Signature ] [ 🇮🇩 Local ] [ 🍰 Cake ] | -> Category Tabs (Horizontal Scroll)
+| [ 🧋 Non-Coffee ] [ 🍟 Snacks ]                   |
 +--------------------------------------------------+
 |                                                  |
-| ☕ Palm Sugar Coffee               [ Rp 28.000 ] |
-|    Kopi susu gula aren khas Kumpul Cafe          |
-|    [ Foto Menu ]                   [ + Tambah ]  |
+| ⭐ REKOMENDASI & PALING LARIS                     |
+| ☕ Kopi Kumpul Santuy           [ ⭐ 4.9 (340) ]   |
+|    Kopi blend signature + susu creamy + madu     |
+|    Rp 24.000 (Coret: Rp 28.000)   [ + Kustomisasi ]|
+|                                                  |
+| ☕ Kopi Genyal                  [ ⭐ 4.8 (215) ]   |
+|    Kopi signature + susu + kopi jelly kenyal     |
+|    Rp 30.000                      [ + Kustomisasi ]|
+|                                                  |
+| 🇮🇩 Nasi Goreng Rempah Kumpul    [ ⭐ 4.9 (410) ]   |
+|    Nasi goreng bumbu rempah + telur + kerupuk    |
+|    Rp 32.000                      [ + Kustomisasi ]|
+|                                                  |
+| 💧 Air Mineral 600ml            [ Rp 8.000 ]     |
+|    Air mineral dingin             [ + Tambah ]   | -> Tanpa Pop-up Variasi
+|                                                  |
++--------------------------------------------------+
+| 🛒 2 Items | Total: Rp 56.000    [ Lihat Pesanan ]| -> Sticky Bottom Cart Bar
++--------------------------------------------------+
+```
+
+---
+
+### C. Screen 3: Modal Kustomisasi Variasi & Topping Menu
+
+```text
++--------------------------------------------------+
+| [X] Kopi Kumpul Santuy                           |
+| Campuran kopi khas blend signature + susu + madu |
+| Harga Dasar: Rp 24.000                           |
++--------------------------------------------------+
+| 🌡️ PILIH SUHU (Wajib 1) - Radio Button           |
+| (•) Ice (Dingin Segar)               [ +Rp 0 ]   |
+| ( ) Hot (Hangat)                     [ +Rp 0 ]   |
++--------------------------------------------------+
+| 📏 PILIH UKURAN (Wajib 1) - Radio Button         |
+| (•) Regular                          [ +Rp 0 ]   |
+| ( ) Large                            [ +Rp 5.000]|
++--------------------------------------------------+
+| ➕ EXTRA ADD-ONS (Opsional, Pilih Max 3)         |
+| [✓] Extra Espresso Shot (1 Shot)     [ +Rp 5.000]|
+| [✓] Kopi Jelly Kenyal                [ +Rp 4.000]|
+| [ ] Extra Madu Murni                 [ +Rp 3.000]|
+| [ ] Extra Krimer Creamy              [ +Rp 3.000]|
++--------------------------------------------------+
+| 📝 CATATAN KHUSUS UNTUK BARISTA                  |
+| [ Sedikit es & less sugar ya mas               ] |
++--------------------------------------------------+
+| [   TAMBAH KE KERANJANG - Rp 33.000 (1 Item)   ] |
++--------------------------------------------------+
+```
+
+---
+
+### D. Screen 4: Checkout & Dynamic QRIS Pre-Paid Payment
+
+```text
++--------------------------------------------------+
+| 🧾 RINCIAN PESANAN - MEJA 01 (DEWI)              |
++--------------------------------------------------+
+| • 1x Kopi Kumpul Santuy (Ice, Large, Extra Shot) |
+|   Catatan: Sedikit es & less sugar   Rp 33.000   |
+| • 1x Nasi Goreng Rempah (Pedas Sedang, Telur)    |
+|   Catatan: Acar dipisah              Rp 37.000   |
 | ------------------------------------------------ |
-| 🍰 Red Velvet Cheesecake           [ Rp 32.000 ] |
-|    Cake lembut dengan keju melimpah              |
-|    [ Foto Menu ]                   [ + Tambah ]  |
-| ------------------------------------------------ |
-| 🍔 Kumpul Burger Special           [ Rp 45.000 ] |
-|    Daging sapi patty tebal + fries               |
-|    [ Foto Menu ]                   [ + Tambah ]  |
-| ------------------------------------------------ |
-| 🇮🇩 Nasi Goreng Spesial Kumpul       [ Rp 38.000 ] |
-|    Nasi goreng rempah + telur mata sapi          |
-|    [ Status: HABIS ]               [ Disabled ]  | -> Badging Status Out of Stock
-|                                                  |
+| Subtotal:                            Rp 70.000   |
+| Pajak Resto (10%):                   Rp  7.000   |
+| TOTAL PEMBAYARAN:                    Rp 77.000   |
 +--------------------------------------------------+
-| 🛒 2 Items Dipilih | Total: Rp 60.000  [ Lihat ] | -> Sticky Bottom Cart Bar
+| METODE PEMBAYARAN:                               |
+| (•) 💳 QRIS Dinamis (BCA, GoPay, OVO, ShopeePay) |
+| ( ) 💵 Bayar di Kasir (Tunai / Debit EDC)        |
++--------------------------------------------------+
+| [        LANJUTKAN PEMBAYARAN QRIS             ] |
 +--------------------------------------------------+
 ```
 
-### Fitur Utama Public View Kumpul Cafe:
-1. **Horizontal Category Navigation (`CategoryTabs`)**:
-   - Menampilkan list kategori Kumpul Cafe: **Coffee**, **Cake & Bakery**, **Beverages**, **Fast Food**, dan **Local Food**.
-   - Mengubah tab kategori memfilter daftar menu secara instan via TanStack React Query.
-2. **PWA Install Banner (`PwaInstallerBanner`)**:
-   - Banner elegan yang menyapa pelanggan untuk menambahkan PWA "Kumpul Cafe" ke layar utama HP mereka.
-3. **Offline Indicator (`OfflineBanner`)**:
-   - Jika koneksi WiFi/seluler cafe terputus, muncul indikator *Offline Mode* tanpa menghentikan pengalaman memilih menu.
-4. **Availability State Rendering**:
-   - Menu yang sedang stoknya kosong (misal: *Nasi Goreng Spesial Kumpul*) diberi efek grayscale, badge "HABIS", dan tombol tambah dinonaktifkan.
-
 ---
 
-## 🖥️ 2. Tampilan Admin Kumpul Cafe (Protected Admin Dashboard)
-
-Tampilan ini digunakan oleh owner/barista Kumpul Cafe untuk mengelola kategori menu, stok item menu, dan mencetak QR Code Meja.
-
-### A. Admin Login: `/admin/login`
+### E. Screen 5: Dynamic QRIS Popup & Real-Time Tracking
 
 ```text
 +--------------------------------------------------+
-|               ☕ Kumpul Cafe Admin               |
+| 📱 BAYAR SEKARANG VIA QRIS                       |
+| Order ID: #ORD-20260811-001                      |
+| Sisa Waktu Pembayaran: ⏱️ 14:45                   |
++--------------------------------------------------+
+|               +------------------+               |
+|               |  [ QRIS IMAGE ]  |               |
+|               |   NMID: 102938   |               |
+|               +------------------+               |
+|            Scan dengan Semua E-Wallet            |
++--------------------------------------------------+
+| 💡 Setelah bayar, status pesanan otomatis update!|
++--------------------------------------------------+
+
+   ⬇️ (Pemicu WebSocket instan saat Webhook Paid diterima)
+
++--------------------------------------------------+
+| 🎉 PEMBAYARAN BERHASIL (Rp 77.000)               |
+| Status Pesanan Meja 01:                          |
 |                                                  |
-|   Email Address:                                 |
-|   [ admin@kumpulcafe.com                       ] |
+| [✓] 1. Pembayaran Terkonfirmasi (PAID)           |
+| [🔄] 2. Sedang Dimasak di Dapur (PREPARING)      |
+| [ ] 3. Makanan Diantar ke Meja (SERVED)          |
 |                                                  |
-|   Password:                                      |
-|   [ **********                                 ] |
-|                                                  |
-|   [             LOG IN TO DASHBOARD            ] |
+| ⏱️ Estimasi Penyajian: 10 - 15 Menit             |
+| [          PESAN MENU TAMBAHAN LAINNYA         ] |
 +--------------------------------------------------+
 ```
 
 ---
 
-### B. Admin Categories Management: `/admin/categories`
+## 🖥️ 2. Tampilan Admin & Staff CMS Kumpul Cafe
+
+Staff CMS mendukung 4 Role RBAC: **ADMIN**, **CASHIER**, **KITCHEN**, dan **WAITER**.
+
+---
+
+### A. Staff Login: `/admin/login`
 
 ```text
-+-----------------------------------------------------------------------+
-| ☕ Kumpul Cafe Admin | Categories | Menus | QR Code | [ Logout ]       |
-+-----------------------------------------------------------------------+
-| 📁 Pengelolaan Kategori Menu Kumpul Cafe       [ + Tambah Kategori ]  |
-+-----------------------------------------------------------------------+
-| Urutan | Nama Kategori   | Total Menu | Aksi                          |
-| ------ | --------------- | ---------- | ----------------------------- |
-| 1      | Coffee          | 10 Items   | [ Edit ]  [ Hapus ]           |
-| 2      | Cake & Bakery   | 6 Items    | [ Edit ]  [ Hapus ]           |
-| 3      | Beverages       | 8 Items    | [ Edit ]  [ Hapus ]           |
-| 4      | Fast Food       | 5 Items    | [ Edit ]  [ Hapus ]           |
-| 5      | Local Food      | 7 Items    | [ Edit ]  [ Hapus ]           |
-+-----------------------------------------------------------------------+
++--------------------------------------------------+
+|               ☕ Kumpul Cafe Portal              |
+|                                                  |
+|   Email: [ cashier@menuscan.com                ] |
+|   Password: [ **********                       ] |
+|                                                  |
+|   [                  SIGN IN                   ] |
++--------------------------------------------------+
 ```
 
 ---
 
-### C. Admin Menu Items Management: `/admin/menus`
+### B. Kitchen Display System (KDS): `/admin/orders` (Role: `KITCHEN`, `ADMIN`)
+
+Menerima push WebSocket suara lonceng & kartu pesanan baru saat `PAID`.
 
 ```text
-+-----------------------------------------------------------------------+
-| ☕ Kumpul Cafe Admin | Categories | Menus | QR Code | [ Logout ]       |
-+-----------------------------------------------------------------------+
-| 🍲 Daftar Menu Kumpul Cafe              [ 🔍 Search... ] [ + Menu Baru ]|
-+-----------------------------------------------------------------------+
-| Foto | Nama Menu          | Kategori      | Harga     | Status  | Aksi |
-| ---- | ------------------ | ------------- | --------- | ------- | ---- |
-| [🖼️] | Palm Sugar Coffee  | Coffee        | Rp 28.000 | [ ON ]  | ✏️ 🗑️ |
-| [🖼️] | Red Velvet Cake    | Cake & Bakery | Rp 32.000 | [ ON ]  | ✏️ 🗑️ |
-| [🖼️] | Kumpul Burger      | Fast Food     | Rp 45.000 | [ ON ]  | ✏️ 🗑️ |
-| [🖼️] | Nasi Goreng Kumpul | Local Food    | Rp 38.000 | [ OFF ] | ✏️ 🗑️ | -> Fast Toggle Switch
-+-----------------------------------------------------------------------+
-|  << Halaman 1 dari 2 >>                                              |
-+-----------------------------------------------------------------------+
++-------------------------------------------------------------------------+
+| ☕ Kumpul Cafe KDS | 🔔 Live Orders Active: 3 Meja | [ Logout Barista ] |
++-------------------------------------------------------------------------+
+| MEJA 01 (#ORD-001) - 16:20 | MEJA 05 (#ORD-002) - 16:22 | MEJA 03 (#003)|
+| Pemesan: Dewi              | Pemesan: Rian              | Pemesan: Andi |
+| Status: [ 🍳 PREPARING ]   | Status: [ ⏳ PAID ]        | [ 🍳 PREPARING]|
+| -------------------------- | -------------------------- | ------------- |
+| • 1x Kopi Kumpul (Ice/Lrg) | • 2x Palm Sugar Coffee     | • 1x Burger   |
+|   [Notes: Sedikit es]      | • 1x French Fries          | • 1x Fries    |
+| • 1x Nasi Goreng (Pedas)   |                            |               |
+| -------------------------- | -------------------------- | ------------- |
+| [ SIAP DISAJIKAN (SERVED)] | [ MULAI MASAK (PREPARE) ]  | [ SERVED ]    |
++-------------------------------------------------------------------------+
 ```
 
 ---
 
-## 🎨 3. Design System & Theme Principles (Kumpul Cafe Aesthetics)
+### C. Cashier & Floor Plan Management: `/admin/tables` (Role: `CASHIER`, `WAITER`, `ADMIN`)
 
-1. **Color Palette**:
-   - **Primary Brand**: Warm Amber & Coffee Brown (`amber-500`, `amber-600`, `amber-900`) - Memberikan nuansa hangat, ramah, dan profesional khas kafe kopi modern.
-   - **Background Light**: Cream / Warm Zinc (`zinc-50`, `stone-50`).
-   - **Dark Mode / Accent**: Dark Espresso (`zinc-900`, `stone-900`).
-2. **Typography**: Inter / Outfit (Clean, modern, sans-serif legibel di smartphone).
-3. **PWA Visual Identity**: Standalone display mode dengan `theme_color: #f59e0b`.
+```text
++-------------------------------------------------------------------------+
+| ☕ Kumpul Cafe Kasir | Tables | Orders | Reports | [ Logout ]           |
++-------------------------------------------------------------------------+
+| 🪑 DENAH MEJA CAFE                                                      |
+|                                                                         |
+| [ MEJA 01 - OCCUPIED ]   [ MEJA 02 - VACANT ]    [ MEJA 03 - OCCUPIED ] |
+| Pemesan: Dewi            | Status: Kosong        | Pemesan: Andi        |
+| Bill: Rp 77.000 (PAID)   | [ Cetak QR Code ]     | Bill: Rp 50.000      |
+| [ 🔄 RESET MEJA KOSONG ] |                       | [ RESET MEJA ]       |
++-------------------------------------------------------------------------+
+```
 
 ---
 
-## 🔗 4. Terhubung ke Dokumen Terkait
+### D. Owner / Admin Analytics & Reports: `/admin/reports` (Role: `ADMIN`)
 
-- 📄 Arsitektur Utama Frontend: [architecture-design.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/architecture/architecture-design.md)
-- 📄 Strategi Kriptografi Client: [client-crypto-strategy.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/security/client-crypto-strategy.md)
+```text
++-------------------------------------------------------------------------+
+| 📊 DASHBOARD OVERVIEW & LAPORAN PENDAPATAN                              |
++-------------------------------------------------------------------------+
+| 💰 Total Omset Hari Ini: Rp 3.450.000 | 📦 Total Transaksi: 48 Orders   |
+| 👥 Rata-rata Nilai Order: Rp 71.875   | 🪑 Tingkat Keterisian: 80%      |
++-------------------------------------------------------------------------+
+| 🏆 TOP 5 MENU PALING LARIS                                              |
+| 1. ☕ Kopi Kumpul Santuy (78 porsi)   - Rp 1.872.000                    |
+| 2. 🇮🇩 Nasi Goreng Rempah (42 porsi)   - Rp 1.344.000                    |
+| 3. ☕ Kopi Genyal (35 porsi)          - Rp 1.050.000                    |
++-------------------------------------------------------------------------+
+```
