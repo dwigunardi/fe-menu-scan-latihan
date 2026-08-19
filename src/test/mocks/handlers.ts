@@ -7,7 +7,8 @@ import {
   decryptPayload,
 } from '../../lib/crypto/ecdh';
 
-const API_BASE = 'http://localhost:5000/api/v1';
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
 export const mockCategories = [
   { id: 'cat-1', name: 'Makanan Utama', slug: 'makanan-utama', sortOrder: 1, createdAt: '2026-01-01', updatedAt: '2026-01-01' },
@@ -18,33 +19,33 @@ export const mockMenus = [
   {
     id: 'menu-1',
     name: 'Nasi Goreng Spesial',
-    description: 'Nasi goreng dengan telur dan ayam',
-    price: 35000,
-    promoPrice: null,
-    imageUrl: 'https://example.com/nasgor.jpg',
+    description: 'Nasi goreng dengan telur dan ayam suwir',
+    price: 28000,
+    promoPrice: 25000,
+    imageUrl: 'https://images.unsplash.com/photo-1512058564366-18510be2db19',
     rating: 4.8,
-    reviewCount: 24,
+    reviewCount: 42,
     isAvailable: true,
     isBestSeller: true,
-    isRecommended: true,
+    isRecommended: false,
     categoryId: 'cat-1',
-    category: { id: 'cat-1', name: 'Makanan Utama' },
+    category: mockCategories[0],
     variantGroups: [],
   },
   {
     id: 'menu-2',
-    name: 'Es Teh Manis',
-    description: 'Teh melati manis segar',
-    price: 8000,
+    name: 'Es Kopi Gula Aren',
+    description: 'Kopi espresso dengan gula aren murni',
+    price: 18000,
     promoPrice: null,
-    imageUrl: 'https://example.com/esteh.jpg',
+    imageUrl: 'https://images.unsplash.com/photo-1541167760496-1628856ab772',
     rating: 4.9,
-    reviewCount: 50,
+    reviewCount: 88,
     isAvailable: true,
-    isBestSeller: false,
-    isRecommended: false,
+    isBestSeller: true,
+    isRecommended: true,
     categoryId: 'cat-2',
-    category: { id: 'cat-2', name: 'Minuman Segar' },
+    category: mockCategories[1],
     variantGroups: [],
   },
 ];
@@ -71,6 +72,9 @@ async function extractRequestBody(request: Request): Promise<any> {
   }
 }
 
+/**
+ * MSW Network Interceptors
+ */
 export const handlers = [
   // Auth Handshake
   http.post(`${API_BASE}/auth/handshake`, async ({ request }) => {
@@ -113,8 +117,8 @@ export const handlers = [
           accessToken: 'fake-jwt-token-123',
           user: {
             id: 'user-1',
+            username: 'admin',
             name: 'Admin Cafe',
-            email: 'admin@menuscan.com',
             role: 'ADMIN',
           },
         },
@@ -134,7 +138,17 @@ export const handlers = [
   http.get(`${API_BASE}/public/categories`, () => {
     return HttpResponse.json({
       statusCode: 200,
-      data: mockCategories,
+      data: {
+        items: mockCategories,
+        meta: {
+          page: 1,
+          limit: -1,
+          totalItems: mockCategories.length,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      },
     });
   }),
 
@@ -184,15 +198,34 @@ export const handlers = [
   http.get(`${API_BASE}/public/menus`, ({ request }) => {
     const url = new URL(request.url);
     const categoryId = url.searchParams.get('categoryId');
-    if (categoryId) {
-      return HttpResponse.json({
-        statusCode: 200,
-        data: mockMenus.filter((m) => m.categoryId === categoryId),
-      });
+    const filtered = categoryId && categoryId !== 'ALL'
+      ? mockMenus.filter((m) => m.categoryId === categoryId)
+      : mockMenus;
+    return HttpResponse.json({
+      statusCode: 200,
+      data: {
+        items: filtered,
+        meta: {
+          page: 1,
+          limit: -1,
+          totalItems: filtered.length,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
+      },
+    });
+  }),
+
+  http.get(`${API_BASE}/public/menus/:id`, ({ params }) => {
+    const { id } = params;
+    const menu = mockMenus.find((m) => m.id === id);
+    if (!menu) {
+      return HttpResponse.json({ statusCode: 404, message: 'Menu tidak ditemukan' }, { status: 404 });
     }
     return HttpResponse.json({
       statusCode: 200,
-      data: mockMenus,
+      data: menu,
     });
   }),
 

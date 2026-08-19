@@ -1,7 +1,8 @@
 import { customFetch } from './custom-fetch';
-import { Either } from './either';
+import { Either, right } from './either';
 import { ApiError } from './api-error';
 import { CategoryData, MenuFormInput } from '../validations/admin-menu.schema';
+import { PaginatedResult } from '@/types/pagination';
 
 export interface AdminMenuItem {
   id: string;
@@ -35,11 +36,25 @@ export interface AdminMenuItem {
   }>;
 }
 
+export interface QueryMenuParams {
+  page?: number;
+  limit?: number;
+  categoryId?: string;
+  search?: string;
+  isAvailable?: boolean;
+  sortBy?: 'name' | 'price' | 'rating' | 'createdAt' | 'isAvailable';
+  sortOrder?: 'asc' | 'desc';
+}
+
 /**
- * Fetches all categories.
+ * Fetches all categories (unbounded via limit: -1).
  */
 export async function getAdminCategories(): Promise<Either<ApiError, CategoryData[]>> {
-  return customFetch<CategoryData[]>('/public/categories');
+  const res = await customFetch<{ items?: CategoryData[] } | CategoryData[]>('/public/categories?limit=-1');
+  if (res.isLeft()) return res as Either<ApiError, CategoryData[]>;
+  const data = res.value;
+  const items = Array.isArray(data) ? data : (data?.items || []);
+  return right(items);
 }
 
 /**
@@ -81,11 +96,41 @@ export async function deleteAdminCategory(id: string): Promise<Either<ApiError, 
 }
 
 /**
- * Fetches all menu items with optional category filtering.
+ * Fetches public menu list (unpaginated via limit: -1).
  */
 export async function getAdminMenus(categoryId?: string): Promise<Either<ApiError, AdminMenuItem[]>> {
-  const query = categoryId ? `?categoryId=${categoryId}` : '';
-  return customFetch<AdminMenuItem[]>(`/public/menus${query}`);
+  const catQuery = categoryId && categoryId !== 'ALL' ? `&categoryId=${categoryId}` : '';
+  const res = await customFetch<{ items?: AdminMenuItem[] } | AdminMenuItem[]>(`/public/menus?limit=-1${catQuery}`);
+  if (res.isLeft()) return res as Either<ApiError, AdminMenuItem[]>;
+  const data = res.value;
+  const items = Array.isArray(data) ? data : (data?.items || []);
+  return right(items);
+}
+
+/**
+ * Fetches paginated admin menu catalog with search and sorting.
+ */
+export async function getAdminMenusPaginated(
+  params: QueryMenuParams = {}
+): Promise<Either<ApiError, PaginatedResult<AdminMenuItem>>> {
+  const query = new URLSearchParams();
+  if (params.page) query.set('page', String(params.page));
+  if (params.limit !== undefined) query.set('limit', String(params.limit));
+  if (params.categoryId && params.categoryId !== 'ALL') query.set('categoryId', params.categoryId);
+  if (params.search) query.set('search', params.search);
+  if (params.isAvailable !== undefined) query.set('isAvailable', String(params.isAvailable));
+  if (params.sortBy) query.set('sortBy', params.sortBy);
+  if (params.sortOrder) query.set('sortOrder', params.sortOrder);
+
+  const qs = query.toString();
+  return customFetch<PaginatedResult<AdminMenuItem>>(`/admin/menus${qs ? `?${qs}` : ''}`);
+}
+
+/**
+ * Fetches single menu item detail by ID.
+ */
+export async function getAdminMenuDetail(id: string): Promise<Either<ApiError, AdminMenuItem>> {
+  return customFetch<AdminMenuItem>(`/public/menus/${id}`);
 }
 
 /**

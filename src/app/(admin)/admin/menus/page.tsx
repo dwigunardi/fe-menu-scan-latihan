@@ -1,7 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, Search, Tags, Edit, Trash2, SlidersHorizontal, ImageOff, CheckCircle2, XCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import {
+  Plus,
+  Search,
+  Tags,
+  Edit,
+  Trash2,
+  SlidersHorizontal,
+  ImageOff,
+  Eye,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -18,19 +28,17 @@ import {
   AdminMenuItem,
 } from '@/lib/api/admin-menus-api';
 import { CategoryData } from '@/lib/validations/admin-menu.schema';
-import { MenuFormModal } from '@/components/admin/menu-form-modal';
 import { CategoryManagerModal } from '@/components/admin/category-manager-modal';
 
 export default function AdminMenusPage() {
+  const router = useRouter();
   const [menus, setMenus] = useState<AdminMenuItem[]>([]);
   const [categories, setCategories] = useState<CategoryData[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Modals state
-  const [isMenuModalOpen, setIsMenuModalOpen] = useState(false);
-  const [editingMenu, setEditingMenu] = useState<AdminMenuItem | null>(null);
+  // Category Modal state (kept lightweight)
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -126,10 +134,7 @@ export default function AdminMenusPage() {
 
           <Button
             size="sm"
-            onClick={() => {
-              setEditingMenu(null);
-              setIsMenuModalOpen(true);
-            }}
+            onClick={() => router.push('/admin/menus/create')}
             className="hidden sm:inline-flex text-xs"
           >
             <Plus className="h-3.5 w-3.5 mr-1.5" />
@@ -150,59 +155,65 @@ export default function AdminMenusPage() {
           />
         </div>
 
-        {/* Horizontal Category Pills with momentum scrolling */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-none">
+        {/* Categories Pill Scroller */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1.5 no-scrollbar">
           <button
+            type="button"
             onClick={() => setSelectedCategory('ALL')}
-            className={`px-3 py-1.5 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
               selectedCategory === 'ALL'
-                ? 'bg-amber-600 text-white shadow-xs'
-                : 'bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 text-stone-600 dark:text-zinc-400 hover:bg-stone-50'
+                ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/20'
+                : 'bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 hover:bg-stone-200 dark:hover:bg-zinc-700'
             }`}
           >
-            Semua ({menus.length})
+            Semua Menu
           </button>
-          {categories.map((c) => (
+          {categories.map((cat) => (
             <button
-              key={c.id}
-              onClick={() => setSelectedCategory(c.id)}
-              className={`px-3 py-1.5 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all shrink-0 cursor-pointer ${
-                selectedCategory === c.id
-                  ? 'bg-amber-600 text-white shadow-xs'
-                  : 'bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 text-stone-600 dark:text-zinc-400 hover:bg-stone-50'
+              key={cat.id}
+              type="button"
+              onClick={() => setSelectedCategory(cat.id)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+                selectedCategory === cat.id
+                  ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/20'
+                  : 'bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 hover:bg-stone-200 dark:hover:bg-zinc-700'
               }`}
             >
-              {c.name}
+              {cat.name}
             </button>
           ))}
         </div>
       </div>
 
       {/* ========================================================= */}
-      {/* ?? MOBILE VIEW: Compact Mobile Action Cards (Layar < 768px) */}
+      {/* MOBILE CARDS VIEW (Layar < 768px) */}
       {/* ========================================================= */}
-      <div className="md:hidden space-y-3">
+      <div className="grid grid-cols-1 gap-3 md:hidden">
         {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="p-4 rounded-3xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 flex gap-3 items-center">
+          Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="p-3.5 rounded-3xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-xs flex items-center gap-3"
+            >
               <Skeleton className="h-16 w-16 rounded-2xl shrink-0" />
               <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+                <Skeleton className="h-4 w-1/3" />
               </div>
             </div>
           ))
         ) : filteredMenus.length === 0 ? (
-          <div className="p-10 text-center bg-white dark:bg-zinc-900 rounded-3xl border border-stone-200 text-stone-400">
+          <div className="py-12 text-center text-stone-400 bg-white dark:bg-zinc-900 rounded-3xl border border-stone-200/80">
             <SlidersHorizontal className="h-8 w-8 mx-auto mb-2 opacity-40" />
-            <p className="text-sm font-semibold">Tidak ada menu yang sesuai</p>
+            <p className="text-xs font-semibold">Tidak ada menu yang ditemukan</p>
           </div>
         ) : (
           filteredMenus.map((menu) => (
             <div
               key={menu.id}
-              className="p-3.5 rounded-3xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-xs flex items-center gap-3 transition-all"
+              onClick={() => router.push(`/admin/menus/detail/${menu.id}`)}
+              className="p-3.5 rounded-3xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-xs flex items-center gap-3 transition-all cursor-pointer hover:border-amber-400 dark:hover:border-amber-600/50"
             >
               {/* Thumbnail */}
               <div className="h-16 w-16 rounded-2xl overflow-hidden bg-stone-100 dark:bg-zinc-800 shrink-0 border border-stone-100 flex items-center justify-center">
@@ -234,7 +245,7 @@ export default function AdminMenusPage() {
                     {menu.category?.name || 'Uncategorized'}
                   </span>
                   <span className="text-[10px] text-stone-400">
-                    � {menu.variantGroups?.length || 0} Variasi
+                    • {menu.variantGroups?.length || 0} Variasi
                   </span>
                 </div>
                 <div className="font-mono font-bold text-sm text-stone-900 dark:text-zinc-100 mt-1">
@@ -243,8 +254,10 @@ export default function AdminMenusPage() {
               </div>
 
               {/* Mobile Right Controls: Stock Switch & Actions */}
-              <div className="flex flex-col items-end gap-2 shrink-0">
-                {/* 44px Touch Target Stock Switch */}
+              <div
+                className="flex flex-col items-end gap-2 shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] font-semibold text-stone-400">
                     {menu.isAvailable ? 'Ada' : 'Habis'}
@@ -255,14 +268,10 @@ export default function AdminMenusPage() {
                   />
                 </div>
 
-                {/* Edit & Delete Mini Buttons */}
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    onClick={() => {
-                      setEditingMenu(menu);
-                      setIsMenuModalOpen(true);
-                    }}
+                    onClick={() => router.push(`/admin/menus/edit/${menu.id}`)}
                     className="h-7 w-7 rounded-xl border border-stone-200 dark:border-zinc-800 flex items-center justify-center text-stone-600 hover:text-amber-600"
                     title="Edit Menu"
                   >
@@ -284,7 +293,7 @@ export default function AdminMenusPage() {
       </div>
 
       {/* ========================================================= */}
-      {/* ?? DESKTOP & TABLET VIEW: Full Data Table (Layar = 768px) */}
+      {/* DESKTOP & TABLET VIEW: Full Data Table (Layar >= 768px) */}
       {/* ========================================================= */}
       <div className="hidden md:block bg-white dark:bg-zinc-900 rounded-3xl border border-stone-200/80 dark:border-zinc-800 overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
@@ -330,7 +339,8 @@ export default function AdminMenusPage() {
                 filteredMenus.map((menu) => (
                   <tr
                     key={menu.id}
-                    className="hover:bg-stone-50/60 dark:hover:bg-zinc-800/30 transition-colors"
+                    onClick={() => router.push(`/admin/menus/detail/${menu.id}`)}
+                    className="hover:bg-stone-50/60 dark:hover:bg-zinc-800/30 transition-colors cursor-pointer"
                   >
                     {/* Item Name & Thumb */}
                     <td className="py-3.5 px-4">
@@ -384,7 +394,10 @@ export default function AdminMenusPage() {
                     </td>
 
                     {/* Availability Switch */}
-                    <td className="py-3.5 px-4 text-center">
+                    <td
+                      className="py-3.5 px-4 text-center"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Switch
                         checked={menu.isAvailable}
                         onCheckedChange={() => handleToggleStock(menu)}
@@ -392,14 +405,22 @@ export default function AdminMenusPage() {
                     </td>
 
                     {/* Action buttons */}
-                    <td className="py-3.5 px-4 text-right">
+                    <td
+                      className="py-3.5 px-4 text-right"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
-                          onClick={() => {
-                            setEditingMenu(menu);
-                            setIsMenuModalOpen(true);
-                          }}
+                          onClick={() => router.push(`/admin/menus/detail/${menu.id}`)}
+                          className="h-8 w-8 rounded-xl border border-stone-200 dark:border-zinc-800 flex items-center justify-center text-stone-600 hover:text-amber-600 hover:border-amber-500 transition-colors"
+                          title="Lihat Detail"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/admin/menus/edit/${menu.id}`)}
                           className="h-8 w-8 rounded-xl border border-stone-200 dark:border-zinc-800 flex items-center justify-center text-stone-600 hover:text-amber-600 hover:border-amber-500 transition-colors"
                           title="Edit Menu"
                         >
@@ -423,30 +444,17 @@ export default function AdminMenusPage() {
         </div>
       </div>
 
-      {/* ========================================================= */}
-      {/* ?? MOBILE FLOATING ACTION BUTTON (FAB: + Tambah Menu) */}
-      {/* ========================================================= */}
+      {/* Floating Action Button for Mobile (+ Tambah Menu) */}
       <button
         type="button"
-        onClick={() => {
-          setEditingMenu(null);
-          setIsMenuModalOpen(true);
-        }}
+        onClick={() => router.push('/admin/menus/create')}
         className="fixed bottom-20 right-5 z-40 md:hidden h-14 w-14 rounded-full bg-amber-600 text-white shadow-xl shadow-amber-600/40 flex items-center justify-center active:scale-95 transition-transform"
         aria-label="Tambah Menu Baru"
       >
         <Plus className="h-6 w-6" />
       </button>
 
-      {/* Modals */}
-      <MenuFormModal
-        isOpen={isMenuModalOpen}
-        onClose={() => setIsMenuModalOpen(false)}
-        onSuccess={loadData}
-        initialData={editingMenu}
-        categories={categories}
-      />
-
+      {/* Category Manager Modal (Lightweight) */}
       <CategoryManagerModal
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}

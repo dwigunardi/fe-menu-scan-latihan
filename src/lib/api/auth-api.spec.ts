@@ -24,7 +24,7 @@ describe('auth-api', () => {
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
         expect(result.value.accessToken).toBe('fake-jwt-token-123');
-        expect(result.value.user.email).toBe('admin@menuscan.com');
+        expect(result.value.user.username).toBe('admin');
         expect(result.value.user.role).toBe('ADMIN');
       }
     });
