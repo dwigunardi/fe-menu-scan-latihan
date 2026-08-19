@@ -5,6 +5,7 @@ import {
   updateAdminCategory,
   deleteAdminCategory,
   getAdminMenus,
+  getAdminMenusPaginated,
   getAdminMenuDetail,
   createAdminMenu,
   updateAdminMenu,
@@ -63,6 +64,28 @@ describe('admin-menus-api', () => {
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
         expect(result.value.every((m) => m.categoryId === 'cat-1')).toBe(true);
+      }
+
+      const allRes = await getAdminMenus('ALL');
+      expect(allRes.isRight()).toBe(true);
+    });
+
+    it('fetches paginated menus with all query parameters (page, limit, search, isAvailable, sortBy, sortOrder)', async () => {
+      const result = await getAdminMenusPaginated({
+        page: 1,
+        limit: 10,
+        search: 'Goreng',
+        categoryId: 'cat-1',
+        isAvailable: true,
+        sortBy: 'price',
+        sortOrder: 'asc',
+      });
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.items.length).toBe(1);
+        expect(result.value.items[0].name).toContain('Nasi Goreng');
+        expect(result.value.meta.page).toBe(1);
+        expect(result.value.meta.totalItems).toBe(1);
       }
     });
 

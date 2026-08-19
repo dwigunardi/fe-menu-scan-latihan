@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Plus,
@@ -11,6 +11,9 @@ import {
   SlidersHorizontal,
   ImageOff,
   Eye,
+  ChevronLeft,
+  ChevronRight,
+  ArrowUpDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,98 +21,93 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatRupiah } from '@/lib/utils/format-currency';
-import { notifyApiError } from '@/lib/api/notify-error';
-import { toast } from 'sonner';
+import { AdminMenuItem } from '@/lib/api/admin-menus-api';
 import {
-  getAdminMenus,
-  getAdminCategories,
-  toggleMenuAvailability,
-  deleteAdminMenu,
-  AdminMenuItem,
-} from '@/lib/api/admin-menus-api';
-import { CategoryData } from '@/lib/validations/admin-menu.schema';
+  useAdminMenusPaginatedQuery,
+  useToggleMenuAvailabilityMutation,
+  useDeleteMenuMutation,
+} from '@/hooks/queries/use-admin-menus';
+import { useAdminCategoriesQuery } from '@/hooks/queries/use-admin-categories';
 import { CategoryManagerModal } from '@/components/admin/category-manager-modal';
 
 export default function AdminMenusPage() {
   const router = useRouter();
-  const [menus, setMenus] = useState<AdminMenuItem[]>([]);
-  const [categories, setCategories] = useState<CategoryData[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Category Modal state (kept lightweight)
+  // Pagination & Filtering state
+  const [page, setPage] = useState<number>(1);
+  const [limit, setLimit] = useState<number>(10);
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [searchInput, setSearchInput] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
+  const [sortBy, setSortBy] = useState<'name' | 'price' | 'rating' | 'createdAt' | 'isAvailable'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Lightweight Category Modal state
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    const [menusRes, catRes] = await Promise.all([
-      getAdminMenus(selectedCategory === 'ALL' ? undefined : selectedCategory),
-      getAdminCategories(),
-    ]);
-
-    if (menusRes.isRight()) {
-      setMenus(menusRes.value);
-    } else {
-      notifyApiError(menusRes.value);
-    }
-
-    if (catRes.isRight()) {
-      setCategories(catRes.value);
-    }
-
-    setIsLoading(false);
-  }, [selectedCategory]);
-
+  // Debounce search input by 300ms
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    const handler = setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+      setPage(1); // Reset to page 1 on new search
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
+
+  // Reset to page 1 when category filter changes
+  const handleSelectCategory = (catId: string) => {
+    setSelectedCategory(catId);
+    setPage(1);
+  };
+
+  // Queries & Mutations
+  const { data: categories = [], isLoading: isCatLoading } = useAdminCategoriesQuery();
+  const {
+    data: paginatedData,
+    isLoading: isMenusLoading,
+    isPlaceholderData,
+  } = useAdminMenusPaginatedQuery({
+    page,
+    limit,
+    categoryId: selectedCategory === 'ALL' ? undefined : selectedCategory,
+    search: debouncedSearch || undefined,
+    sortBy,
+    sortOrder,
+  });
+
+  const toggleMutation = useToggleMenuAvailabilityMutation();
+  const deleteMutation = useDeleteMenuMutation();
+
+  const menus = paginatedData?.items || [];
+  const meta = paginatedData?.meta || {
+    page: 1,
+    limit: 10,
+    totalItems: 0,
+    totalPages: 1,
+    hasNextPage: false,
+    hasPrevPage: false,
+  };
 
   // Instant Availability Toggle
   const handleToggleStock = async (menu: AdminMenuItem) => {
-    const updatedStatus = !menu.isAvailable;
-
-    // Optimistic UI update
-    setMenus((prev) =>
-      prev.map((m) => (m.id === menu.id ? { ...m, isAvailable: updatedStatus } : m))
-    );
-
-    const result = await toggleMenuAvailability(menu.id, updatedStatus);
-    if (result.isLeft()) {
-      // Rollback on error
-      setMenus((prev) =>
-        prev.map((m) => (m.id === menu.id ? { ...m, isAvailable: menu.isAvailable } : m))
-      );
-      notifyApiError(result.value);
-    } else {
-      toast.success(
-        updatedStatus
-          ? `Stok "${menu.name}" sekarang Tersedia!`
-          : `Stok "${menu.name}" ditandai Habis!`
-      );
-    }
+    await toggleMutation.mutateAsync({
+      id: menu.id,
+      isAvailable: !menu.isAvailable,
+      menuName: menu.name,
+    });
   };
 
-  // Delete Menu
+  // Delete Menu with confirmation
   const handleDeleteMenu = async (id: string, name: string) => {
     if (!confirm(`Apakah Anda yakin ingin menghapus menu "${name}"?`)) return;
-
-    const result = await deleteAdminMenu(id);
-    if (result.isLeft()) {
-      notifyApiError(result.value);
-    } else {
-      toast.success(`Menu "${name}" berhasil dihapus!`);
-      setMenus((prev) => prev.filter((m) => m.id !== id));
-    }
+    await deleteMutation.mutateAsync(id);
   };
 
-  // Filtered menus by search
-  const filteredMenus = menus.filter((m) =>
-    m.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const startItem = meta.totalItems === 0 ? 0 : (meta.page - 1) * (meta.limit === -1 ? meta.totalItems : meta.limit) + 1;
+  const endItem = meta.limit === -1 ? meta.totalItems : Math.min(meta.page * meta.limit, meta.totalItems);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pb-16">
       {/* Page Title & Top Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -117,7 +115,7 @@ export default function AdminMenusPage() {
             Katalog Menu & Variasi
           </h1>
           <p className="text-xs text-stone-500 dark:text-zinc-400 mt-0.5">
-            Kelola menu, harga, opsi variasi, dan ketersediaan stok secara live.
+            Kelola menu, harga, opsi variasi, dan ketersediaan stok secara terpaginasi.
           </p>
         </div>
 
@@ -143,23 +141,55 @@ export default function AdminMenusPage() {
         </div>
       </div>
 
-      {/* Search & Horizontal Touch-Scroll Category Filter */}
+      {/* Search Bar & Sorting Controls */}
       <div className="space-y-3">
-        <div className="relative">
-          <Search className="h-4 w-4 absolute left-3.5 top-3.5 text-stone-400" />
-          <Input
-            placeholder="Cari menu (misal: Aren, Espresso, Croissant)..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-10 text-xs sm:text-sm"
-          />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          <div className="relative flex-1">
+            <Search className="h-4 w-4 absolute left-3.5 top-3.5 text-stone-400" />
+            <Input
+              placeholder="Cari menu (misal: Aren, Espresso, Croissant)..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-10 h-10 text-xs sm:text-sm"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <select
+              value={sortBy}
+              onChange={(e) => {
+                setSortBy(e.target.value as any);
+                setPage(1);
+              }}
+              className="h-10 px-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs text-stone-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
+              <option value="createdAt">Terbaru Dibuat</option>
+              <option value="name">Nama Menu (A-Z)</option>
+              <option value="price">Harga</option>
+              <option value="rating">Rating Tertinggi</option>
+              <option value="isAvailable">Ketersediaan Stok</option>
+            </select>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+                setPage(1);
+              }}
+              className="h-10 px-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex items-center gap-1.5 text-xs font-semibold text-stone-700 dark:text-zinc-300 hover:bg-stone-50 dark:hover:bg-zinc-800"
+              title="Ubah Urutan Sort"
+            >
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              <span>{sortOrder === 'asc' ? 'Naik' : 'Turun'}</span>
+            </button>
+          </div>
         </div>
 
-        {/* Categories Pill Scroller */}
+        {/* Categories Pill Scroller (Limit: -1 Full List) */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1.5 no-scrollbar">
           <button
             type="button"
-            onClick={() => setSelectedCategory('ALL')}
+            onClick={() => handleSelectCategory('ALL')}
             className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
               selectedCategory === 'ALL'
                 ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/20'
@@ -172,7 +202,7 @@ export default function AdminMenusPage() {
             <button
               key={cat.id}
               type="button"
-              onClick={() => setSelectedCategory(cat.id)}
+              onClick={() => handleSelectCategory(cat.id)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0 transition-all cursor-pointer ${
                 selectedCategory === cat.id
                   ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/20'
@@ -189,7 +219,7 @@ export default function AdminMenusPage() {
       {/* MOBILE CARDS VIEW (Layar < 768px) */}
       {/* ========================================================= */}
       <div className="grid grid-cols-1 gap-3 md:hidden">
-        {isLoading ? (
+        {isMenusLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
@@ -203,13 +233,13 @@ export default function AdminMenusPage() {
               </div>
             </div>
           ))
-        ) : filteredMenus.length === 0 ? (
+        ) : menus.length === 0 ? (
           <div className="py-12 text-center text-stone-400 bg-white dark:bg-zinc-900 rounded-3xl border border-stone-200/80">
             <SlidersHorizontal className="h-8 w-8 mx-auto mb-2 opacity-40" />
-            <p className="text-xs font-semibold">Tidak ada menu yang ditemukan</p>
+            <p className="text-xs font-semibold">Tidak ada menu yang sesuai</p>
           </div>
         ) : (
-          filteredMenus.map((menu) => (
+          menus.map((menu) => (
             <div
               key={menu.id}
               onClick={() => router.push(`/admin/menus/detail/${menu.id}`)}
@@ -265,6 +295,7 @@ export default function AdminMenusPage() {
                   <Switch
                     checked={menu.isAvailable}
                     onCheckedChange={() => handleToggleStock(menu)}
+                    disabled={toggleMutation.isPending}
                   />
                 </div>
 
@@ -280,6 +311,7 @@ export default function AdminMenusPage() {
                   <button
                     type="button"
                     onClick={() => handleDeleteMenu(menu.id, menu.name)}
+                    disabled={deleteMutation.isPending}
                     className="h-7 w-7 rounded-xl border border-stone-200 dark:border-zinc-800 flex items-center justify-center text-stone-400 hover:text-red-600"
                     title="Hapus Menu"
                   >
@@ -309,7 +341,7 @@ export default function AdminMenusPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100 dark:divide-zinc-800/80">
-              {isLoading ? (
+              {isMenusLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i}>
                     <td className="py-4 px-4">
@@ -328,7 +360,7 @@ export default function AdminMenusPage() {
                     <td className="py-4 px-4 text-right"><Skeleton className="h-8 w-16 ml-auto" /></td>
                   </tr>
                 ))
-              ) : filteredMenus.length === 0 ? (
+              ) : menus.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-stone-400">
                     <SlidersHorizontal className="h-8 w-8 mx-auto mb-2 opacity-40" />
@@ -336,7 +368,7 @@ export default function AdminMenusPage() {
                   </td>
                 </tr>
               ) : (
-                filteredMenus.map((menu) => (
+                menus.map((menu) => (
                   <tr
                     key={menu.id}
                     onClick={() => router.push(`/admin/menus/detail/${menu.id}`)}
@@ -401,6 +433,7 @@ export default function AdminMenusPage() {
                       <Switch
                         checked={menu.isAvailable}
                         onCheckedChange={() => handleToggleStock(menu)}
+                        disabled={toggleMutation.isPending}
                       />
                     </td>
 
@@ -429,6 +462,7 @@ export default function AdminMenusPage() {
                         <button
                           type="button"
                           onClick={() => handleDeleteMenu(menu.id, menu.name)}
+                          disabled={deleteMutation.isPending}
                           className="h-8 w-8 rounded-xl border border-stone-200 dark:border-zinc-800 flex items-center justify-center text-stone-400 hover:text-red-600 hover:border-red-500 transition-colors"
                           title="Hapus Menu"
                         >
@@ -442,6 +476,92 @@ export default function AdminMenusPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* ========================================================= */}
+      {/* PAGINATION CONTROLS BAR */}
+      {/* ========================================================= */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+        <div className="flex items-center gap-3 text-xs text-stone-500 dark:text-zinc-400">
+          <span>
+            Menampilkan <strong className="font-semibold text-stone-800 dark:text-zinc-200">{startItem}-{endItem}</strong> dari{' '}
+            <strong className="font-semibold text-stone-800 dark:text-zinc-200">{meta.totalItems}</strong> menu
+          </span>
+
+          <div className="flex items-center gap-1.5 ml-2">
+            <span>Per hal:</span>
+            <select
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value));
+                setPage(1);
+              }}
+              className="h-8 px-2 rounded-lg border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={-1}>Semua</option>
+            </select>
+          </div>
+        </div>
+
+        {meta.limit !== -1 && meta.totalPages > 1 && (
+          <div className="flex items-center gap-1 self-end sm:self-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+              disabled={!meta.hasPrevPage || isMenusLoading || isPlaceholderData}
+              className="h-8 px-2.5 text-xs"
+            >
+              <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+              Sebelumnya
+            </Button>
+
+            <div className="flex items-center gap-1 px-1">
+              {Array.from({ length: meta.totalPages }).map((_, idx) => {
+                const pageNum = idx + 1;
+                // Only display nearby pages for clean pagination
+                if (
+                  pageNum === 1 ||
+                  pageNum === meta.totalPages ||
+                  (pageNum >= page - 1 && pageNum <= page + 1)
+                ) {
+                  return (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setPage(pageNum)}
+                      className={`h-8 w-8 rounded-lg text-xs font-semibold transition-all ${
+                        pageNum === page
+                          ? 'bg-amber-600 text-white shadow-xs'
+                          : 'bg-stone-100 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 hover:bg-stone-200'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                }
+                if (pageNum === page - 2 || pageNum === page + 2) {
+                  return <span key={pageNum} className="text-xs text-stone-400">...</span>;
+                }
+                return null;
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((prev) => Math.min(prev + 1, meta.totalPages))}
+              disabled={!meta.hasNextPage || isMenusLoading || isPlaceholderData}
+              className="h-8 px-2.5 text-xs"
+            >
+              Selanjutnya
+              <ChevronRight className="h-3.5 w-3.5 ml-1" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Floating Action Button for Mobile (+ Tambah Menu) */}
@@ -459,7 +579,7 @@ export default function AdminMenusPage() {
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}
         categories={categories}
-        onRefresh={loadData}
+        onRefresh={() => {}}
       />
     </div>
   );
