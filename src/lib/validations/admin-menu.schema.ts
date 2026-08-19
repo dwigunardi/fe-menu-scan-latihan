@@ -30,6 +30,7 @@ export const CategorySchema = z.object({
     })
     .optional(),
   createdAt: z.string().optional(),
+  updatedAt: z.string().optional(),
 });
 
 export const MenuFormSchema = z.object({

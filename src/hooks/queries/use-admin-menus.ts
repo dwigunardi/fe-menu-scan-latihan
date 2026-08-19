@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getAdminMenus,
+  getAdminMenusPaginated,
+  getAdminMenuDetail,
   createAdminMenu,
   updateAdminMenu,
   toggleMenuAvailability,
   deleteAdminMenu,
   AdminMenuItem,
+  QueryMenuParams,
 } from '@/lib/api/admin-menus-api';
 import { MenuFormInput } from '@/lib/validations/admin-menu.schema';
 import { adminQueryKeys } from '@/lib/query-keys';
@@ -23,6 +26,37 @@ export function useAdminMenusQuery(categoryId?: string) {
       }
       return result.value;
     },
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function useAdminMenusPaginatedQuery(params: QueryMenuParams = {}) {
+  return useQuery({
+    queryKey: ['admin', 'menus', 'paginated', params],
+    queryFn: async () => {
+      const result = await getAdminMenusPaginated(params);
+      if (result.isLeft()) {
+        notifyApiError(result.value);
+        throw result.value;
+      }
+      return result.value;
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function useAdminMenuDetailQuery(id: string) {
+  return useQuery({
+    queryKey: adminQueryKeys.menuDetail(id),
+    queryFn: async () => {
+      const result = await getAdminMenuDetail(id);
+      if (result.isLeft()) {
+        notifyApiError(result.value);
+        throw result.value;
+      }
+      return result.value;
+    },
+    enabled: Boolean(id),
     staleTime: 1000 * 60 * 2,
   });
 }

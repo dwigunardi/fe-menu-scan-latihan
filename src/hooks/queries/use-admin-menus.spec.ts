@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import {
   useAdminMenusQuery,
+  useAdminMenuDetailQuery,
   useCreateMenuMutation,
   useUpdateMenuMutation,
   useToggleMenuAvailabilityMutation,
@@ -63,6 +64,31 @@ describe('use-admin-menus hooks', () => {
     });
   });
 
+  describe('useAdminMenuDetailQuery', () => {
+    it('fetches single menu item detail successfully', async () => {
+      const wrapper = createQueryWrapper();
+      const { result } = renderHook(() => useAdminMenuDetailQuery('menu-1'), { wrapper });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data).toBeDefined();
+      expect(result.current.data?.id).toBe('menu-1');
+      expect(result.current.data?.name).toBe('Nasi Goreng Spesial');
+    });
+
+    it('handles error when menu detail fails', async () => {
+      server.use(
+        http.get(`${API_BASE}/public/menus/unknown`, () => {
+          return HttpResponse.json({ message: 'Not found' }, { status: 404 });
+        })
+      );
+
+      const wrapper = createQueryWrapper();
+      const { result } = renderHook(() => useAdminMenuDetailQuery('unknown'), { wrapper });
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
+    });
+  });
+
   describe('useCreateMenuMutation', () => {
     it('creates a new menu item and shows success toast', async () => {
       const wrapper = createQueryWrapper();
@@ -73,7 +99,7 @@ describe('use-admin-menus hooks', () => {
         description: 'Mie dengan udang dan cumi',
         price: 32000,
         promoPrice: null,
-        imageUrl: null,
+        imageUrl: '',
         isAvailable: true,
         isBestSeller: false,
         isRecommended: true,
@@ -99,7 +125,10 @@ describe('use-admin-menus hooks', () => {
       await expect(
         result.current.mutateAsync({
           name: 'Fail',
+          description: '',
           price: 10000,
+          promoPrice: null,
+          imageUrl: '',
           isAvailable: true,
           isBestSeller: false,
           isRecommended: false,

@@ -5,6 +5,7 @@ import {
   updateAdminCategory,
   deleteAdminCategory,
   getAdminMenus,
+  getAdminMenuDetail,
   createAdminMenu,
   updateAdminMenu,
   toggleMenuAvailability,
@@ -65,13 +66,22 @@ describe('admin-menus-api', () => {
       }
     });
 
+    it('fetches single menu detail by ID successfully', async () => {
+      const result = await getAdminMenuDetail('menu-1');
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.id).toBe('menu-1');
+        expect(result.value.name).toBe('Nasi Goreng Spesial');
+      }
+    });
+
     it('creates a menu item successfully', async () => {
       const result = await createAdminMenu({
         name: 'Kopi Susu Gula Aren',
         description: 'Espresso dengan susu dan aren',
         price: 22000,
         promoPrice: null,
-        imageUrl: null,
+        imageUrl: '',
         isAvailable: true,
         isBestSeller: false,
         isRecommended: false,
