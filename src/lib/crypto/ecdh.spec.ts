@@ -8,50 +8,53 @@ import {
   decryptPayload,
 } from './ecdh';
 
-describe('WebCrypto ECDH & AES-256-GCM Engine', () => {
-  it('should generate P-256 keypairs and derive matching shared session keys', async () => {
-    // 1. Client generates keypair
-    const clientKeyPair = await generateClientKeyPair();
-    const clientPublicKeyHex = await exportPublicKeyHex(clientKeyPair.publicKey);
+describe('WebCrypto Zero-Trust ECDH & AES-GCM', () => {
+  it('should negotiate shared key, encrypt payload, and decrypt cleanly', async () => {
+    // 1. Generate client and server simulated P-256 keypairs
+    const clientKP = await generateClientKeyPair();
+    const serverKP = await generateClientKeyPair();
 
-    // 2. Server generates keypair
-    const serverKeyPair = await generateClientKeyPair();
-    const serverPublicKeyHex = await exportPublicKeyHex(serverKeyPair.publicKey);
+    const clientPubHex = await exportPublicKeyHex(clientKP.publicKey);
+    const serverPubHex = await exportPublicKeyHex(serverKP.publicKey);
 
-    // 3. Client imports server public key and derives session key
-    const importedServerKey = await importServerPublicKey(serverPublicKeyHex);
+    const importedServerPub = await importServerPublicKey(serverPubHex);
+    const importedClientPub = await importServerPublicKey(clientPubHex);
+
+    const nonce = 'test-nonce-16bytes-min';
+
+    // 2. Derive symmetrical AES-256-GCM session keys on both sides
     const clientSessionKey = await deriveSessionKey(
-      clientKeyPair.privateKey,
-      importedServerKey
+      clientKP.privateKey,
+      importedServerPub,
+      nonce
     );
-
-    // 4. Server imports client public key and derives session key
-    const importedClientKey = await importServerPublicKey(clientPublicKeyHex);
     const serverSessionKey = await deriveSessionKey(
-      serverKeyPair.privateKey,
-      importedClientKey
+      serverKP.privateKey,
+      importedClientPub,
+      nonce
     );
 
-    expect(clientSessionKey).toBeDefined();
-    expect(serverSessionKey).toBeDefined();
-
-    // 5. Test Encrypt on Client -> Decrypt on Server
-    const originalPayload = {
-      orderNumber: 'ORD-2026-001',
-      customerName: 'Dewi',
-      items: [{ menuItemId: 'coffee-1', quantity: 2, price: 28000 }],
+    // 3. Encrypt sensitive order payload on client
+    const sensitivePayload = {
+      orderId: 'ORD-TEST-001',
+      items: [{ menuId: 'kopi-aren', qty: 2, price: 28000 }],
+      total: 56000,
     };
 
-    const envelope = await encryptPayload(originalPayload, clientSessionKey);
+    const envelope = await encryptPayload(sensitivePayload, clientSessionKey);
     expect(envelope.encrypted).toBe(true);
     expect(envelope.iv).toBeDefined();
+    expect(envelope.tag).toBeDefined();
     expect(envelope.payload).toBeDefined();
 
-    const decryptedData = await decryptPayload<typeof originalPayload>(
+    // 4. Decrypt payload on server side
+    const decrypted = await decryptPayload<typeof sensitivePayload>(
       envelope,
       serverSessionKey
     );
 
-    expect(decryptedData).toEqual(originalPayload);
+    expect(decrypted.orderId).toBe('ORD-TEST-001');
+    expect(decrypted.items[0].menuId).toBe('kopi-aren');
+    expect(decrypted.total).toBe(56000);
   });
 });

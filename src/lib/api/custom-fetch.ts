@@ -8,8 +8,10 @@ import {
   deriveSessionKey,
   encryptPayload,
   decryptPayload,
+  bufToHex,
 } from '../crypto/ecdh';
 import { useHandshakeStore } from '../../store/use-handshake-store';
+import { useAuthStore } from '../../store/use-auth-store';
 
 export interface CustomFetchOptions extends Omit<RequestInit, 'body'> {
   body?: unknown;
@@ -22,7 +24,7 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
 /**
- * Performs ECDH Handshake with NestJS backend to negotiate sessionKey and handshakeToken.
+ * Performs ECDH Handshake with NestJS backend.
  */
 export async function performHandshake(): Promise<
   Either<ApiError, { sessionKey: CryptoKey; handshakeToken: string }>
@@ -36,7 +38,11 @@ export async function performHandshake(): Promise<
     const clientKeyPair = await generateClientKeyPair();
     const clientPublicKeyHex = await exportPublicKeyHex(clientKeyPair.publicKey);
 
-    // 2. Send public key to backend
+    // 2. Generate random 16-byte hex nonce
+    const randomNonceBytes = window.crypto.getRandomValues(new Uint8Array(16));
+    const nonce = bufToHex(randomNonceBytes);
+
+    // 3. Send clientPublicKey + nonce to backend
     const response = await fetch(`${API_BASE_URL}/auth/handshake`, {
       method: 'POST',
       headers: {
@@ -44,6 +50,7 @@ export async function performHandshake(): Promise<
       },
       body: JSON.stringify({
         clientPublicKey: clientPublicKeyHex,
+        nonce: nonce,
       }),
     });
 
@@ -61,7 +68,8 @@ export async function performHandshake(): Promise<
     }
 
     const resJson = await response.json();
-    const { serverPublicKey, handshakeToken, expiresIn = 3600 } = resJson.data || resJson;
+    const { serverPublicKey, handshakeToken, expiresIn = 7200 } =
+      resJson.data || resJson;
 
     if (!serverPublicKey || !handshakeToken) {
       handshakeStore.clearHandshake();
@@ -70,14 +78,15 @@ export async function performHandshake(): Promise<
       );
     }
 
-    // 3. Import server public key & derive shared session key via HKDF
+    // 4. Derive shared session key via HKDF with nonce and appSecret
     const importedServerKey = await importServerPublicKey(serverPublicKey);
     const sessionKey = await deriveSessionKey(
       clientKeyPair.privateKey,
-      importedServerKey
+      importedServerKey,
+      nonce
     );
 
-    // 4. Save in RAM-only store
+    // 5. Store in RAM-only memory
     handshakeStore.setHandshakeSession(sessionKey, handshakeToken, expiresIn);
 
     return right({ sessionKey, handshakeToken });
@@ -91,9 +100,6 @@ export async function performHandshake(): Promise<
   }
 }
 
-/**
- * Ensures an active, valid Handshake Session exists in RAM memory.
- */
 export async function ensureHandshakeSession(): Promise<
   Either<ApiError, { sessionKey: CryptoKey; handshakeToken: string }>
 > {
@@ -110,8 +116,11 @@ export async function ensureHandshakeSession(): Promise<
 }
 
 /**
- * Native fetch wrapper with automatic WebCrypto AES-256-GCM payload encryption,
- * header injection, payload decryption, and silent auto-retry on 401 HANDSHAKE_EXPIRED.
+ * Universal Secure Fetch wrapper with:
+ * - Automatic JWT Bearer token injection from useAuthStore
+ * - Handshake Session Key management
+ * - Zero-Trust payload encryption / decryption
+ * - Auto-retry on token expiration
  */
 export async function customFetch<T = unknown>(
   endpoint: string,
@@ -127,7 +136,6 @@ export async function customFetch<T = unknown>(
   } = options;
 
   try {
-    // 1. Ensure security session unless explicitly skipped
     let sessionKey: CryptoKey | null = null;
     let handshakeToken: string | null = null;
 
@@ -140,17 +148,22 @@ export async function customFetch<T = unknown>(
       handshakeToken = sessionResult.value.handshakeToken;
     }
 
-    // 2. Prepare headers
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(customHeaders as Record<string, string>),
     };
 
+    // Inject JWT Bearer Token for authenticated requests
+    const authStore = useAuthStore.getState();
+    if (authStore.accessToken && !headers['Authorization'] && !headers['authorization']) {
+      headers['Authorization'] = `Bearer ${authStore.accessToken}`;
+    }
+
+    // Inject Handshake Token if available
     if (handshakeToken && !skipHandshakeToken) {
       headers['x-handshake-token'] = handshakeToken;
     }
 
-    // 3. Encrypt body if required
     let finalBody: string | undefined = undefined;
     if (body !== undefined && body !== null) {
       if (!skipEncryption && sessionKey) {
@@ -161,7 +174,6 @@ export async function customFetch<T = unknown>(
       }
     }
 
-    // 4. Execute HTTP Request
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
     const response = await fetch(url, {
       ...fetchInit,
@@ -171,7 +183,6 @@ export async function customFetch<T = unknown>(
 
     const json = await response.json().catch(() => null);
 
-    // 5. Handle HTTP 401 Handshake Expiration with Silent Auto-Retry
     if (
       response.status === 401 &&
       retryOnHandshakeExpired &&
@@ -179,15 +190,13 @@ export async function customFetch<T = unknown>(
     ) {
       const handshakeResult = await performHandshake();
       if (handshakeResult.isRight()) {
-        // Retry request once with new session
         return customFetch<T>(endpoint, {
           ...options,
-          retryOnHandshakeExpired: false, // Prevent infinite retry loops
+          retryOnHandshakeExpired: false,
         });
       }
     }
 
-    // 6. Handle HTTP Error Statuses
     if (!response.ok) {
       const statusCode = json?.statusCode || response.status;
       const errorTitle = json?.error || response.statusText || 'API Error';
@@ -203,8 +212,7 @@ export async function customFetch<T = unknown>(
       );
     }
 
-    // 7. Decrypt Payload if server returned Encrypted Envelope
-    if (json?.encrypted && json?.payload && sessionKey) {
+    if (json?.encrypted && json?.payload && json?.iv && json?.tag && sessionKey) {
       try {
         const decrypted = await decryptPayload<T>(json, sessionKey);
         return right(decrypted);
@@ -217,7 +225,6 @@ export async function customFetch<T = unknown>(
       }
     }
 
-    // If server wraps response in standard format { statusCode, message, data }
     const responseData = json?.data !== undefined ? json.data : json;
     return right(responseData as T);
   } catch (err: any) {

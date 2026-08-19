@@ -1,10 +1,10 @@
 'use client';
 
-import * as React from 'react';
+import { ReactNode, useEffect } from 'react';
 import { ensureHandshakeSession } from '@/lib/api/custom-fetch';
 
-export function HandshakeProvider({ children }: { children: React.ReactNode }) {
-  React.useEffect(() => {
+export function HandshakeProvider({ children }: { children: ReactNode }) {
+  useEffect(() => {
     // Eager auto-handshake on application mount in background
     ensureHandshakeSession().catch((err) => {
       console.warn('⚠️ [Handshake] Background initial handshake warning:', err);
