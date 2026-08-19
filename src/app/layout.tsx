@@ -1,25 +1,20 @@
+import { ReactNode } from 'react';
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 import { QueryProvider } from '@/providers/query-provider';
 import { HandshakeProvider } from '@/providers/handshake-provider';
 import { ToasterProvider } from '@/providers/toaster-provider';
 import { PwaProvider } from '@/providers/pwa-provider';
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-sans',
-});
+import { ThemeProvider } from '@/providers/theme-provider';
 
 export const metadata: Metadata = {
   title: 'Kumpul Cafe - Digital QR Menu & Ordering',
-  description: 'Pesan menu favorit Anda langsung dari meja dengan mudah dan cepat.',
+  description:
+    'Sistem pemesanan digital mandiri dan portal operasional kafe modern dengan enkripsi Zero-Trust.',
   manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'Kumpul Cafe',
+  icons: {
+    icon: '/icons/icon-192x192.png',
+    apple: '/icons/icon-192x192.png',
   },
 };
 
@@ -28,25 +23,33 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#D97706',
+  viewportFit: 'cover',
+  themeColor: '#FAF7F2',
 };
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode;
-}) {
+}: Readonly<{
+  children: ReactNode;
+}>) {
   return (
-    <html lang="id" className={plusJakartaSans.variable}>
-      <body className="font-sans antialiased min-h-[100dvh] flex flex-col selection:bg-amber-100 selection:text-amber-900">
-        <QueryProvider>
-          <HandshakeProvider>
-            <PwaProvider>
-              {children}
-              <ToasterProvider />
-            </PwaProvider>
-          </HandshakeProvider>
-        </QueryProvider>
+    <html lang="id" suppressHydrationWarning>
+      <body className="antialiased font-sans transition-colors duration-200">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange={false}
+        >
+          <QueryProvider>
+            <HandshakeProvider>
+              <PwaProvider>
+                {children}
+                <ToasterProvider />
+              </PwaProvider>
+            </HandshakeProvider>
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

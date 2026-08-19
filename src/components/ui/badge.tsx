@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { HTMLAttributes } from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils/cn';
 
@@ -25,7 +25,7 @@ export const badgeVariants = cva(
 );
 
 export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof badgeVariants> {}
 
 export function Badge({ className, variant, ...props }: BadgeProps) {

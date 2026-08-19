@@ -1,24 +1,21 @@
 'use client';
 
-import * as React from 'react';
+import { ReactNode, useEffect } from 'react';
 import { usePwaStore } from '@/store/use-pwa-store';
 import { registerServiceWorker } from '@/lib/pwa/register-sw';
 
-export function PwaProvider({ children }: { children: React.ReactNode }) {
+export function PwaProvider({ children }: { children?: ReactNode }) {
   const { setIsOnline, setInstallPrompt } = usePwaStore();
 
-  React.useEffect(() => {
-    // 1. Register Service Worker in production
+  useEffect(() => {
     registerServiceWorker();
 
-    // 2. Online / Offline event listeners
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // 3. BeforeInstallPrompt event listener for custom PWA install banner
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setInstallPrompt(e as any);
