@@ -7,6 +7,17 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'json'],
+      exclude: [
+        'node_modules/**',
+        'src/components/ui/**', // primitive shadcn
+        '**/*.d.ts',
+        '**/*.config.*',
+        '.next/**',
+      ],
+    },
   },
   resolve: {
     alias: {
