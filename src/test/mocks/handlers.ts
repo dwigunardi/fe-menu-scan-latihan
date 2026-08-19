@@ -217,6 +217,41 @@ export const handlers = [
     });
   }),
 
+  http.get(`${API_BASE}/admin/menus`, ({ request }) => {
+    const url = new URL(request.url);
+    const categoryId = url.searchParams.get('categoryId');
+    const search = url.searchParams.get('search')?.toLowerCase();
+    const page = Number(url.searchParams.get('page')) || 1;
+    const limit = Number(url.searchParams.get('limit')) || 10;
+
+    let filtered = [...mockMenus];
+    if (categoryId && categoryId !== 'ALL') {
+      filtered = filtered.filter((m) => m.categoryId === categoryId);
+    }
+    if (search) {
+      filtered = filtered.filter((m) => m.name.toLowerCase().includes(search));
+    }
+
+    const totalItems = filtered.length;
+    const totalPages = limit === -1 ? 1 : Math.ceil(totalItems / limit) || 1;
+    const items = limit === -1 ? filtered : filtered.slice((page - 1) * limit, page * limit);
+
+    return HttpResponse.json({
+      statusCode: 200,
+      data: {
+        items,
+        meta: {
+          page,
+          limit,
+          totalItems,
+          totalPages,
+          hasNextPage: limit === -1 ? false : page < totalPages,
+          hasPrevPage: limit === -1 ? false : page > 1,
+        },
+      },
+    });
+  }),
+
   http.get(`${API_BASE}/public/menus/:id`, ({ params }) => {
     const { id } = params;
     const menu = mockMenus.find((m) => m.id === id);

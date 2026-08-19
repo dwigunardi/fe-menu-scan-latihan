@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import {
   useAdminMenusQuery,
+  useAdminMenusPaginatedQuery,
   useAdminMenuDetailQuery,
   useCreateMenuMutation,
   useUpdateMenuMutation,
@@ -59,6 +60,34 @@ describe('use-admin-menus hooks', () => {
 
       const wrapper = createQueryWrapper();
       const { result } = renderHook(() => useAdminMenusQuery(), { wrapper });
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
+    });
+  });
+
+  describe('useAdminMenusPaginatedQuery', () => {
+    it('fetches paginated menus and metadata successfully', async () => {
+      const wrapper = createQueryWrapper();
+      const { result } = renderHook(
+        () => useAdminMenusPaginatedQuery({ page: 1, limit: 10, search: 'Goreng' }),
+        { wrapper }
+      );
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data).toBeDefined();
+      expect(result.current.data?.items.length).toBe(1);
+      expect(result.current.data?.meta.totalItems).toBe(1);
+    });
+
+    it('handles error when paginated fetch fails', async () => {
+      server.use(
+        http.get(`${API_BASE}/admin/menus`, () => {
+          return HttpResponse.json({ message: 'Failed to fetch admin menus' }, { status: 500 });
+        })
+      );
+
+      const wrapper = createQueryWrapper();
+      const { result } = renderHook(() => useAdminMenusPaginatedQuery({ page: 1 }), { wrapper });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });

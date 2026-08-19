@@ -32,7 +32,7 @@ export function useAdminMenusQuery(categoryId?: string) {
 
 export function useAdminMenusPaginatedQuery(params: QueryMenuParams = {}) {
   return useQuery({
-    queryKey: ['admin', 'menus', 'paginated', params],
+    queryKey: adminQueryKeys.menusPaginated(params as Record<string, unknown>),
     queryFn: async () => {
       const result = await getAdminMenusPaginated(params);
       if (result.isLeft()) {
@@ -127,17 +127,24 @@ export function useToggleMenuAvailabilityMutation() {
     onMutate: async ({ id, isAvailable }) => {
       await queryClient.cancelQueries({ queryKey: adminQueryKeys.all });
 
-      const previousMenus = queryClient.getQueriesData<AdminMenuItem[]>({
+      const previousMenus = queryClient.getQueriesData({
         queryKey: ['admin', 'menus'],
       });
 
-      queryClient.setQueriesData<AdminMenuItem[]>(
+      queryClient.setQueriesData<any>(
         { queryKey: ['admin', 'menus'] },
-        (old) => {
-          if (!old) return [];
-          return old.map((m) =>
-            m.id === id ? { ...m, isAvailable } : m
-          );
+        (old: any) => {
+          if (!old) return old;
+          if (Array.isArray(old)) {
+            return old.map((m: any) => (m.id === id ? { ...m, isAvailable } : m));
+          }
+          if (old.items && Array.isArray(old.items)) {
+            return {
+              ...old,
+              items: old.items.map((m: any) => (m.id === id ? { ...m, isAvailable } : m)),
+            };
+          }
+          return old;
         }
       );
 

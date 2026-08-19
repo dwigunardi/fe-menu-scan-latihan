@@ -32,7 +32,7 @@ export default function AdminLoginPage() {
         break;
       case 'ADMIN':
       default:
-        router.replace('/admin/menus');
+        router.replace('/admin/dashboard');
         break;
     }
   };
