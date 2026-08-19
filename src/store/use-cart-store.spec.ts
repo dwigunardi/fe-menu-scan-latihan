@@ -35,11 +35,30 @@ describe('useCartStore', () => {
 
     const state = useCartStore.getState();
     expect(state.items.length).toBe(1);
-    // Unit price = 20000 + 5000 + 4000 = 29000
     expect(state.items[0].unitPrice).toBe(29000);
     expect(getTotalItems()).toBe(2);
-    // Subtotal = 29000 * 2 = 58000
     expect(getSubtotal()).toBe(58000);
+  });
+
+  it('should increase quantity when adding identical item with same variants and notes', () => {
+    const { addItem } = useCartStore.getState();
+
+    const itemData = {
+      menuItemId: 'kopi-1',
+      name: 'Kopi Susu',
+      basePrice: 18000,
+      quantity: 1,
+      selectedVariants: [],
+      notes: 'Normal sugar',
+    };
+
+    addItem(itemData);
+    expect(useCartStore.getState().items[0].quantity).toBe(1);
+
+    // Add again with identical options
+    addItem({ ...itemData, quantity: 2 });
+    expect(useCartStore.getState().items.length).toBe(1);
+    expect(useCartStore.getState().items[0].quantity).toBe(3);
   });
 
   it('should update quantity and remove item if quantity drops to zero', () => {
@@ -65,6 +84,23 @@ describe('useCartStore', () => {
 
     // Decrease to zero -> item removed
     updateQuantity(item.id, -1);
+    expect(useCartStore.getState().items.length).toBe(0);
+  });
+
+  it('should explicitly remove item via removeItem', () => {
+    const { addItem, removeItem } = useCartStore.getState();
+
+    addItem({
+      menuItemId: 'snack-1',
+      name: 'Kentang Goreng',
+      basePrice: 15000,
+      quantity: 1,
+      selectedVariants: [],
+    });
+
+    const item = useCartStore.getState().items[0];
+    removeItem(item.id);
+
     expect(useCartStore.getState().items.length).toBe(0);
   });
 });
