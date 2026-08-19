@@ -7,12 +7,14 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
+    setupFiles: ['./src/test/setup.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'json'],
       exclude: [
         'node_modules/**',
         'src/components/ui/**', // primitive shadcn
+        'src/test/**',
         '**/*.d.ts',
         '**/*.config.*',
         '.next/**',

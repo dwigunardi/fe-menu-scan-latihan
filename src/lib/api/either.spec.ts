@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { left, right } from './either';
 
 describe('Either Monad', () => {
@@ -44,5 +44,27 @@ describe('Either Monad', () => {
     if (mappedFail.isLeft()) {
       expect(mappedFail.value).toBe('Wrapped: error');
     }
+
+    const successResult = right<number, string>(100);
+    const mappedSuccess = successResult.mapLeft((err) => `Ignored: ${err}`);
+    expect(mappedSuccess.isRight()).toBe(true);
+  });
+
+  it('executes tapLeft and tapRight side effects correctly on appropriate branches', () => {
+    const leftEffect = vi.fn();
+    const rightEffect = vi.fn();
+
+    const leftVal = left('boom');
+    leftVal.tapLeft(leftEffect);
+    leftVal.tapRight(rightEffect);
+
+    expect(leftEffect).toHaveBeenCalledWith('boom');
+    expect(rightEffect).not.toHaveBeenCalled();
+
+    const rightVal = right('yay');
+    rightVal.tapLeft(leftEffect);
+    rightVal.tapRight(rightEffect);
+
+    expect(rightEffect).toHaveBeenCalledWith('yay');
   });
 });
