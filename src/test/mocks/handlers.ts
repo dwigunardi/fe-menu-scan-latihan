@@ -134,15 +134,20 @@ export const handlers = [
   // Auth Login
   http.post(`${API_BASE}/auth/login`, async ({ request }) => {
     const body = await extractRequestBody(request);
-    if (body.email === 'admin@menuscan.com' && body.password === 'password123') {
+    if (
+      (body.email === 'admin@menuscan.com' || body.email === 'admin') &&
+      (body.password === 'password123' || body.password === 'admin123')
+    ) {
       return HttpResponse.json({
         statusCode: 200,
         message: 'Login successful',
         data: {
           accessToken: 'fake-jwt-token-123',
+          refreshToken: 'fake-refresh-token-456',
           user: {
             id: 'user-1',
             username: 'admin',
+            email: 'admin@menuscan.com',
             name: 'Admin Cafe',
             role: 'ADMIN',
           },
@@ -157,6 +162,33 @@ export const handlers = [
       },
       { status: 401 }
     );
+  }),
+
+  // Auth Refresh Token
+  http.post(`${API_BASE}/auth/refresh`, async ({ request }) => {
+    const body = await extractRequestBody(request);
+    const authHeader = request.headers.get('Authorization');
+    const token = body.refreshToken || authHeader?.replace('Bearer ', '');
+
+    if (token === 'expired-refresh-token') {
+      return HttpResponse.json(
+        {
+          statusCode: 401,
+          error: 'Unauthorized',
+          message: 'Invalid or revoked refresh token',
+        },
+        { status: 401 }
+      );
+    }
+
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Tokens renewed',
+      data: {
+        accessToken: 'renewed-access-token-789',
+        refreshToken: 'renewed-refresh-token-789',
+      },
+    });
   }),
 
   // Categories API
