@@ -283,20 +283,34 @@ export const handlers = [
   http.patch(`${API_BASE}/admin/menus/:id`, async ({ params, request }) => {
     const { id } = params;
     const body = await extractRequestBody(request);
+    const existing = mockMenus.find((m) => m.id === id) || mockMenus[0];
+    const updated = {
+      ...existing,
+      ...body,
+      id,
+      updatedAt: new Date().toISOString(),
+    };
     return HttpResponse.json({
       statusCode: 200,
       message: 'Menu updated',
-      data: { id, ...body },
+      data: updated,
     });
   }),
 
   http.patch(`${API_BASE}/admin/menus/:id/status`, async ({ params, request }) => {
     const { id } = params;
     const body = await extractRequestBody(request);
+    const existing = mockMenus.find((m) => m.id === id) || mockMenus[0];
+    const updated = {
+      ...existing,
+      id,
+      isAvailable: body.isAvailable,
+      updatedAt: new Date().toISOString(),
+    };
     return HttpResponse.json({
       statusCode: 200,
       message: 'Status updated',
-      data: { id, isAvailable: body.isAvailable },
+      data: updated,
     });
   }),
 

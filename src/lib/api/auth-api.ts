@@ -1,12 +1,9 @@
-import { customFetch } from './custom-fetch';
+import { hardenedFetch } from './hardened-fetch';
 import { Either } from './either';
 import { ApiError } from './api-error';
-import { StaffUser } from '@/store/use-auth-store';
+import { LoginResponseSchema, LoginResponseType } from '../validations/auth.schema';
 
-export interface LoginResponse {
-  accessToken: string;
-  user: StaffUser;
-}
+export type LoginResponse = LoginResponseType;
 
 /**
  * Normalizes username (e.g. 'admin') to email (e.g. 'admin@menuscan.com')
@@ -22,6 +19,7 @@ export function normalizeStaffEmail(input: string): string {
 /**
  * Logs in a staff member via POST /auth/login.
  * Uses skipEncryption: true & skipHandshakeToken: true for instant, direct login.
+ * Validated by LoginResponseSchema at runtime.
  */
 export async function loginStaff(credentials: {
   usernameOrEmail: string;
@@ -29,7 +27,7 @@ export async function loginStaff(credentials: {
 }): Promise<Either<ApiError, LoginResponse>> {
   const email = normalizeStaffEmail(credentials.usernameOrEmail);
 
-  return customFetch<LoginResponse>('/auth/login', {
+  return hardenedFetch('/auth/login', LoginResponseSchema, {
     method: 'POST',
     body: {
       email,

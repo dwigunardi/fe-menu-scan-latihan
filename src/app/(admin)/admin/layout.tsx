@@ -7,6 +7,8 @@ import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { AdminBottomNav } from '@/components/admin/admin-bottom-nav';
 
+import { ErrorBoundary } from '@/components/common/error-boundary';
+
 export default function AdminRootLayout({
   children,
 }: {
@@ -16,7 +18,7 @@ export default function AdminRootLayout({
   const isLoginPage = pathname === '/admin/login';
 
   if (isLoginPage) {
-    return <>{children}</>;
+    return <ErrorBoundary moduleName="AdminLogin">{children}</ErrorBoundary>;
   }
 
   return (
@@ -30,7 +32,9 @@ export default function AdminRootLayout({
           <AdminHeader />
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 md:p-8 pb-24 md:pb-8">
             <div className="max-w-7xl w-full mx-auto">
-              {children}
+              <ErrorBoundary moduleName="AdminContent">
+                {children}
+              </ErrorBoundary>
             </div>
           </main>
           {/* Mobile Bottom Navigation */}
