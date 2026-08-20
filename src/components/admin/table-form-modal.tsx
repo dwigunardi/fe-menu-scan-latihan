@@ -29,7 +29,7 @@ export function TableFormModal({
   tableToEdit,
 }: TableFormModalProps) {
   const [tableNumber, setTableNumber] = useState('');
-  const [capacity, setCapacity] = useState(4);
+  const [capacity, setCapacity] = useState('4');
 
   const createMutation = useCreateTableMutation();
   const updateMutation = useUpdateTableMutation();
@@ -40,10 +40,10 @@ export function TableFormModal({
   useEffect(() => {
     if (tableToEdit) {
       setTableNumber(tableToEdit.tableNumber);
-      setCapacity(tableToEdit.capacity);
+      setCapacity(String(tableToEdit.capacity || 4));
     } else {
       setTableNumber('');
-      setCapacity(4);
+      setCapacity('4');
     }
   }, [tableToEdit, isOpen]);
 
@@ -51,18 +51,20 @@ export function TableFormModal({
     e.preventDefault();
     if (!tableNumber.trim()) return;
 
+    const parsedCapacity = Math.max(1, Number(capacity) || 1);
+
     if (isEditing && tableToEdit) {
       await updateMutation.mutateAsync({
         id: tableToEdit.id,
         payload: {
           tableNumber: tableNumber.trim(),
-          capacity: Number(capacity),
+          capacity: parsedCapacity,
         },
       });
     } else {
       await createMutation.mutateAsync({
         tableNumber: tableNumber.trim(),
-        capacity: Number(capacity),
+        capacity: parsedCapacity,
       });
     }
 
@@ -89,6 +91,7 @@ export function TableFormModal({
               Nomor Meja
             </label>
             <Input
+              type="text"
               placeholder="Contoh: T-01, 01, VIP-1"
               value={tableNumber}
               onChange={(e) => setTableNumber(e.target.value)}
@@ -105,11 +108,15 @@ export function TableFormModal({
               Kapasitas Kursi (Orang)
             </label>
             <Input
-              type="number"
-              min={1}
-              max={50}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="Contoh: 4"
               value={capacity}
-              onChange={(e) => setCapacity(Number(e.target.value))}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '');
+                setCapacity(digits);
+              }}
               className="h-10 text-sm rounded-xl"
               required
             />

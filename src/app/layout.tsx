@@ -38,6 +38,7 @@ export default function RootLayout({
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
+          storageKey="kumpul-cafe-theme"
           enableSystem
           disableTransitionOnChange={false}
         >

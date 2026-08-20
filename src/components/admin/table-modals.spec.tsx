@@ -31,7 +31,7 @@ describe('Table Modals', () => {
   });
 
   describe('TableFormModal', () => {
-    it('renders in Create mode with empty initial fields', () => {
+    it('renders in Create mode with empty initial fields and default capacity 4', () => {
       const wrapper = createQueryWrapper();
       render(
         <TableFormModal
@@ -44,6 +44,29 @@ describe('Table Modals', () => {
 
       expect(screen.getByText('Tambah Meja Baru')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Contoh: T-01, 01, VIP-1')).toHaveValue('');
+      expect(screen.getByPlaceholderText('Contoh: 4')).toHaveValue('4');
+    });
+
+    it('allows clearing capacity input and typing new number without leading zero bug', () => {
+      const wrapper = createQueryWrapper();
+      render(
+        <TableFormModal
+          isOpen={true}
+          onClose={vi.fn()}
+          tableToEdit={null}
+        />,
+        { wrapper }
+      );
+
+      const capacityInput = screen.getByPlaceholderText('Contoh: 4');
+      
+      // User deletes the 4
+      fireEvent.change(capacityInput, { target: { value: '' } });
+      expect(capacityInput).toHaveValue('');
+
+      // User types 2
+      fireEvent.change(capacityInput, { target: { value: '2' } });
+      expect(capacityInput).toHaveValue('2');
     });
 
     it('renders in Edit mode with pre-filled table data', () => {
@@ -59,6 +82,7 @@ describe('Table Modals', () => {
 
       expect(screen.getByText('Edit Meja T-01')).toBeInTheDocument();
       expect(screen.getByPlaceholderText('Contoh: T-01, 01, VIP-1')).toHaveValue('T-01');
+      expect(screen.getByPlaceholderText('Contoh: 4')).toHaveValue('4');
     });
 
     it('submits form successfully and closes modal', async () => {
@@ -75,6 +99,9 @@ describe('Table Modals', () => {
 
       const tableNumberInput = screen.getByPlaceholderText('Contoh: T-01, 01, VIP-1');
       fireEvent.change(tableNumberInput, { target: { value: 'T-05' } });
+
+      const capacityInput = screen.getByPlaceholderText('Contoh: 4');
+      fireEvent.change(capacityInput, { target: { value: '6' } });
 
       const submitBtn = screen.getByRole('button', { name: /Tambah Meja/i });
       fireEvent.click(submitBtn);
