@@ -22,6 +22,8 @@ interface AuthState {
   user: StaffUser | null;
   accessToken: string | null;
   isAuthenticated: boolean;
+  _hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
   setAuth: (user: StaffUser, accessToken: string) => void;
   logout: () => void;
   hasRole: (allowedRoles: UserRole[]) => boolean;
@@ -33,13 +35,18 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       accessToken: null,
       isAuthenticated: false,
+      _hasHydrated: false,
+
+      setHasHydrated: (state: boolean) => {
+        set({ _hasHydrated: state });
+      },
 
       setAuth: (user, accessToken) => {
-        set({ user, accessToken, isAuthenticated: true });
+        set({ user, accessToken, isAuthenticated: true, _hasHydrated: true });
       },
 
       logout: () => {
-        set({ user: null, accessToken: null, isAuthenticated: false });
+        set({ user: null, accessToken: null, isAuthenticated: false, _hasHydrated: true });
       },
 
       hasRole: (allowedRoles) => {
@@ -51,6 +58,9 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'kumpul_cafe_auth',
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

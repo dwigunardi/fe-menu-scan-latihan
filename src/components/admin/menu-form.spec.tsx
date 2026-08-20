@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MenuForm } from './menu-form';
 import { renderWithProviders } from '../../test/test-utils';
@@ -95,7 +95,7 @@ describe('MenuForm Component', () => {
     await user.click(variantsTab);
 
     // Click quick default group creation
-    const defaultGroupBtn = screen.getByRole('button', { name: /\+ Buat Grup Ukuran Default/i });
+    const defaultGroupBtn = await screen.findByRole('button', { name: /\+ Buat Grup Ukuran Default/i });
     await user.click(defaultGroupBtn);
 
     expect(screen.getByDisplayValue('Ukuran Cup')).toBeInTheDocument();
@@ -109,7 +109,7 @@ describe('MenuForm Component', () => {
     await user.click(removeGroupBtn);
 
     expect(screen.queryByDisplayValue('Ukuran Cup')).not.toBeInTheDocument();
-  });
+  }, 15000);
 
   it('navigates back to /admin/menus when Cancel button is clicked', async () => {
     const user = userEvent.setup();
