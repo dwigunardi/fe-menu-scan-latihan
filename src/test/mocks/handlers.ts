@@ -50,6 +50,31 @@ export const mockMenus = [
   },
 ];
 
+export const mockTables = [
+  {
+    id: 'table-1',
+    tableNumber: 'T-01',
+    capacity: 4,
+    status: 'VACANT',
+    activeGuestName: null,
+    currentSessionId: null,
+    qrCodeUrl: 'http://localhost:3000/scan?table=T-01',
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
+  },
+  {
+    id: 'table-2',
+    tableNumber: 'T-02',
+    capacity: 2,
+    status: 'OCCUPIED',
+    activeGuestName: 'Budi Santoso',
+    currentSessionId: 'sess-123',
+    qrCodeUrl: 'http://localhost:3000/scan?table=T-02',
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
+  },
+];
+
 let serverKeyPair: CryptoKeyPair | null = null;
 let currentServerSessionKey: CryptoKey | null = null;
 
@@ -318,6 +343,108 @@ export const handlers = [
     return HttpResponse.json({
       statusCode: 200,
       message: 'Menu deleted',
+      data: { success: true },
+    });
+  }),
+
+  // Tables API
+  http.get(`${API_BASE}/admin/tables`, ({ request }) => {
+    const url = new URL(request.url);
+    const status = url.searchParams.get('status');
+    const search = url.searchParams.get('search')?.toLowerCase();
+    const page = Number(url.searchParams.get('page')) || 1;
+    const limit = Number(url.searchParams.get('limit')) || 10;
+
+    let filtered = [...mockTables];
+    if (status && status !== 'ALL') {
+      filtered = filtered.filter((t) => t.status === status);
+    }
+    if (search) {
+      filtered = filtered.filter(
+        (t) =>
+          t.tableNumber.toLowerCase().includes(search) ||
+          (t.activeGuestName && t.activeGuestName.toLowerCase().includes(search))
+      );
+    }
+
+    const totalItems = filtered.length;
+    const totalPages = limit === -1 ? 1 : Math.ceil(totalItems / limit) || 1;
+    const items = limit === -1 ? filtered : filtered.slice((page - 1) * limit, page * limit);
+
+    return HttpResponse.json({
+      statusCode: 200,
+      data: {
+        items,
+        meta: {
+          page,
+          limit,
+          totalItems,
+          totalPages,
+          hasNextPage: limit === -1 ? false : page < totalPages,
+          hasPrevPage: limit === -1 ? false : page > 1,
+        },
+      },
+    });
+  }),
+
+  http.post(`${API_BASE}/admin/tables`, async ({ request }) => {
+    const body = await extractRequestBody(request);
+    const newTable = {
+      id: `table-${Date.now()}`,
+      tableNumber: body.tableNumber || 'T-99',
+      capacity: Number(body.capacity) || 4,
+      status: 'VACANT',
+      activeGuestName: null,
+      currentSessionId: null,
+      qrCodeUrl: `http://localhost:3000/scan?table=${body.tableNumber || 'T-99'}`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    return HttpResponse.json({
+      statusCode: 201,
+      message: 'Table created',
+      data: newTable,
+    });
+  }),
+
+  http.patch(`${API_BASE}/admin/tables/:id`, async ({ params, request }) => {
+    const { id } = params;
+    const body = await extractRequestBody(request);
+    const existing = mockTables.find((t) => t.id === id) || mockTables[0];
+    const updated = {
+      ...existing,
+      ...body,
+      id,
+      updatedAt: new Date().toISOString(),
+    };
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Table updated',
+      data: updated,
+    });
+  }),
+
+  http.post(`${API_BASE}/admin/tables/:id/reset`, ({ params }) => {
+    const { id } = params;
+    const existing = mockTables.find((t) => t.id === id) || mockTables[0];
+    const reset = {
+      ...existing,
+      status: 'VACANT',
+      activeGuestName: null,
+      currentSessionId: null,
+      updatedAt: new Date().toISOString(),
+    };
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Table session reset successfully',
+      data: reset,
+    });
+  }),
+
+  http.delete(`${API_BASE}/admin/tables/:id`, () => {
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Table deleted',
       data: { success: true },
     });
   }),

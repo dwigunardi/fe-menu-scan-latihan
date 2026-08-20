@@ -1,6 +1,6 @@
 'use client';
 
-import { SubmitEvent, useState } from 'react';
+import { SubmitEvent, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Eye, EyeOff, Lock, User, ShieldCheck, Crown, Receipt, Coffee, ConciergeBell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,19 @@ import { toast } from 'sonner';
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { setAuth } = useAuthStore();
+  const { setAuth, isAuthenticated, user, _hasHydrated } = useAuthStore();
 
   const [username, setUsername] = useState('admin@menuscan.com');
   const [password, setPassword] = useState('admin123');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Auto-redirect if already authenticated
+  useEffect(() => {
+    if (_hasHydrated && isAuthenticated && user) {
+      handleRoleRedirect(user.role);
+    }
+  }, [_hasHydrated, isAuthenticated, user]);
 
   // Smart Role-Based Redirect
   const handleRoleRedirect = (role: UserRole) => {

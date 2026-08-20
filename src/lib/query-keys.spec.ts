@@ -5,7 +5,9 @@ describe('adminQueryKeys', () => {
   it('generates consistent keys for all admin resources', () => {
     expect(adminQueryKeys.all).toEqual(['admin']);
     expect(adminQueryKeys.categories()).toEqual(['admin', 'categories']);
-    expect(adminQueryKeys.tables()).toEqual(['admin', 'tables']);
+    expect(adminQueryKeys.tables()).toEqual(['admin', 'tables', 'ALL']);
+    expect(adminQueryKeys.tables('VACANT')).toEqual(['admin', 'tables', 'VACANT']);
+    expect(adminQueryKeys.tablesPaginated({ page: 1 })).toEqual(['admin', 'tables', 'paginated', { page: 1 }]);
     expect(adminQueryKeys.dashboardStats()).toEqual(['admin', 'dashboard', 'stats']);
     expect(adminQueryKeys.menuDetail('menu-123')).toEqual(['admin', 'menus', 'detail', 'menu-123']);
   });

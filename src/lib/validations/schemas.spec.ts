@@ -9,6 +9,7 @@ import {
   CategorySchema,
   MenuFormSchema,
 } from './admin-menu.schema';
+import { TableSchema, TableFormSchema } from './table.schema';
 import { z } from 'zod';
 
 describe('Zod Validation Schemas Contract', () => {
@@ -91,6 +92,62 @@ describe('Zod Validation Schemas Contract', () => {
       };
 
       expect(CategorySchema.safeParse(validCategory).success).toBe(true);
+    });
+  });
+
+  describe('Table Schemas', () => {
+    it('validates TableSchema with numeric coercion and default status', () => {
+      const validTable = {
+        id: 't-1',
+        tableNumber: 'T-01',
+        capacity: '4',
+        status: 'VACANT',
+      };
+
+      const result = TableSchema.safeParse(validTable);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.capacity).toBe(4);
+        expect(result.data.status).toBe('VACANT');
+      }
+    });
+
+    it('falls back to number field or default when tableNumber is missing', () => {
+      const tableWithNumber = {
+        id: 't-2',
+        number: '02',
+        capacity: 2,
+      };
+
+      const res1 = TableSchema.safeParse(tableWithNumber);
+      expect(res1.success).toBe(true);
+      if (res1.success) {
+        expect(res1.data.tableNumber).toBe('02');
+      }
+
+      const tableWithNoNumber = {
+        id: 't-3',
+        capacity: 4,
+      };
+
+      const res2 = TableSchema.safeParse(tableWithNoNumber);
+      expect(res2.success).toBe(true);
+      if (res2.success) {
+        expect(res2.data.tableNumber).toBe('01');
+      }
+
+      const resInvalid = TableSchema.safeParse(null);
+      expect(resInvalid.success).toBe(false);
+    });
+
+    it('validates TableFormSchema', () => {
+      const validForm = {
+        tableNumber: 'VIP-1',
+        capacity: 6,
+      };
+
+      const result = TableFormSchema.safeParse(validForm);
+      expect(result.success).toBe(true);
     });
   });
 });
