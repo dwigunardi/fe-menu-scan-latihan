@@ -7,6 +7,7 @@ import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { AdminBottomNav } from '@/components/admin/admin-bottom-nav';
 
+import { SessionExpiredModal } from '@/components/admin/session-expired-modal';
 import { ErrorBoundary } from '@/components/common/error-boundary';
 
 export default function AdminRootLayout({
@@ -41,6 +42,9 @@ export default function AdminRootLayout({
           <AdminBottomNav />
         </div>
       </div>
+
+      {/* Graceful Re-Authentication Modal when session expires */}
+      <SessionExpiredModal />
     </AuthGuard>
   );
 }

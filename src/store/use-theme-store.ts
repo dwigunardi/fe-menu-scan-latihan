@@ -41,7 +41,7 @@ export const useThemeStore = create<ThemeState>()(
       },
     }),
     {
-      name: 'app_theme_preference',
+      name: 'kumpul-cafe-theme',
       storage: createJSONStorage(() => localStorage),
     }
   )
