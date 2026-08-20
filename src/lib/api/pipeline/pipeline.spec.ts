@@ -175,5 +175,79 @@ describe('Interceptor Middleware Pipeline', () => {
         expect(result.value.message).toBe('Parameter tidak valid');
       }
     });
+
+    it('silently refreshes token on 401 and retries the original request', async () => {
+      useAuthStore.getState().setAuth(
+        { id: 'u1', name: 'Admin', role: 'ADMIN' },
+        'expired-access-token',
+        'valid-refresh-token'
+      );
+
+      let attempts = 0;
+      server.use(
+        http.get(`${API_BASE}/admin/test-protected`, ({ request }) => {
+          attempts++;
+          const auth = request.headers.get('Authorization');
+          if (auth === 'Bearer renewed-access-token-789') {
+            return HttpResponse.json({
+              statusCode: 200,
+              data: { success: true, attempts },
+            });
+          }
+          return HttpResponse.json(
+            { statusCode: 401, error: 'Unauthorized', message: 'Token expired' },
+            { status: 401 }
+          );
+        })
+      );
+
+      const result = await executePipeline<any>('/admin/test-protected');
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.success).toBe(true);
+      }
+      expect(useAuthStore.getState().accessToken).toBe('renewed-access-token-789');
+    });
+
+    it('triggers reauth modal when refresh token is invalid on 401', async () => {
+      useAuthStore.getState().setAuth(
+        { id: 'u1', name: 'Admin', role: 'ADMIN' },
+        'expired-access-token',
+        'expired-refresh-token'
+      );
+
+      server.use(
+        http.get(`${API_BASE}/admin/test-expired-all`, () => {
+          return HttpResponse.json(
+            { statusCode: 401, error: 'Unauthorized', message: 'Token expired' },
+            { status: 401 }
+          );
+        })
+      );
+
+      const result = await executePipeline<any>('/admin/test-expired-all');
+
+      expect(result.isLeft()).toBe(true);
+      expect(useAuthStore.getState().isReauthModalOpen).toBe(true);
+    });
+
+    it('logs out and redirects when 401 occurs with no active user session', async () => {
+      useAuthStore.getState().logout();
+
+      server.use(
+        http.get(`${API_BASE}/admin/test-no-user`, () => {
+          return HttpResponse.json(
+            { statusCode: 401, error: 'Unauthorized', message: 'No session' },
+            { status: 401 }
+          );
+        })
+      );
+
+      const result = await executePipeline<any>('/admin/test-no-user');
+
+      expect(result.isLeft()).toBe(true);
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    });
   });
 });

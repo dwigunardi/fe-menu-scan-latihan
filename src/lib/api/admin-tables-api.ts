@@ -71,7 +71,10 @@ export async function createAdminTable(
 ): Promise<Either<ApiError, TableData>> {
   return hardenedFetch('/admin/tables', TableSchema, {
     method: 'POST',
-    body: payload,
+    body: {
+      number: payload.tableNumber,
+      ...payload,
+    },
   });
 }
 
@@ -84,7 +87,10 @@ export async function updateAdminTable(
 ): Promise<Either<ApiError, TableData>> {
   return hardenedFetch(`/admin/tables/${id}`, TableSchema, {
     method: 'PATCH',
-    body: payload,
+    body: {
+      ...(payload.tableNumber ? { number: payload.tableNumber } : {}),
+      ...payload,
+    },
   });
 }
 

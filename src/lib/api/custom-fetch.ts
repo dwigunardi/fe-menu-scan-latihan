@@ -18,6 +18,7 @@ export interface CustomFetchOptions extends Omit<RequestInit, 'body'> {
   skipEncryption?: boolean;
   skipHandshakeToken?: boolean;
   retryOnHandshakeExpired?: boolean;
+  retryOnTokenExpired?: boolean;
 }
 
 const API_BASE_URL =
