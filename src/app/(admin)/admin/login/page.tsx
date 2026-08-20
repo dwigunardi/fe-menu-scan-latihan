@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { SubmitEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, Eye, EyeOff, Lock, User, ShieldCheck, Crown, Receipt, Coffee, ConciergeBell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,10 +24,13 @@ export default function AdminLoginPage() {
   const handleRoleRedirect = (role: UserRole) => {
     switch (role) {
       case 'KITCHEN':
+      case 'DAPUR':
         router.replace('/admin/orders');
         break;
       case 'CASHIER':
+      case 'KASIR':
       case 'WAITER':
+      case 'PELAYAN':
         router.replace('/admin/tables');
         break;
       case 'ADMIN':
@@ -37,7 +40,7 @@ export default function AdminLoginPage() {
     }
   };
 
-  const handleLogin = async (e: FormEvent) => {
+  const handleLogin = async (e: SubmitEvent) => {
     e.preventDefault();
     if (!username || !password) {
       toast.error('Mohon masukkan username / email dan password');

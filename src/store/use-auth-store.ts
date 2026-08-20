@@ -1,11 +1,19 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-export type UserRole = 'ADMIN' | 'CASHIER' | 'KITCHEN' | 'WAITER';
+export type UserRole =
+  | 'ADMIN'
+  | 'CASHIER'
+  | 'KITCHEN'
+  | 'WAITER'
+  | 'KASIR'
+  | 'DAPUR'
+  | 'PELAYAN';
 
 export interface StaffUser {
   id: string;
-  username: string;
+  username?: string | null;
+  email?: string | null;
   name: string;
   role: UserRole;
 }

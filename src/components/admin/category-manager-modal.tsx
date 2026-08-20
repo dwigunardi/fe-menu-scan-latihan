@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { SubmitEvent, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import {
   Dialog,
@@ -36,7 +36,7 @@ export function CategoryManagerModal({
   const createMutation = useCreateCategoryMutation();
   const deleteMutation = useDeleteCategoryMutation();
 
-  const handleCreate = async (e: FormEvent) => {
+  const handleCreate = async (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!newCategoryName.trim()) return;
 
