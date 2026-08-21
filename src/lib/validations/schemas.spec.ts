@@ -10,6 +10,7 @@ import {
   MenuFormSchema,
 } from './admin-menu.schema';
 import { TableSchema, TableFormSchema } from './table.schema';
+import { OrderSchema, OrderItemSchema, SelectedVariantSnapshotSchema } from './order.schema';
 import { z } from 'zod';
 
 describe('Zod Validation Schemas Contract', () => {
@@ -148,6 +149,66 @@ describe('Zod Validation Schemas Contract', () => {
 
       const result = TableFormSchema.safeParse(validForm);
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('Order Schemas', () => {
+    it('validates OrderSchema with nested items and variants snapshot mapping', () => {
+      const rawOrder = {
+        id: 'o-1',
+        orderNumber: 'ORD-123',
+        tableId: 't-1',
+        table: { id: 't-1', number: '04' },
+        customerName: 'Budi',
+        status: 'PENDING',
+        totalAmount: '50000',
+        orderItems: [
+          {
+            id: 'oi-1',
+            menuItemId: 'm-1',
+            menuNameSnapshot: 'Caramel Macchiato',
+            priceSnapshot: 25000,
+            quantity: 2,
+            subtotal: 50000,
+            notes: 'Less ice',
+            selectedVariants: [
+              {
+                groupNameSnapshot: 'Size',
+                optionNameSnapshot: 'Large',
+                extraPriceSnapshot: 5000,
+              },
+            ],
+          },
+        ],
+      };
+
+      const result = OrderSchema.safeParse(rawOrder);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.totalAmount).toBe(50000);
+        expect(result.data.tableNumber).toBe('04');
+        expect(result.data.orderItems[0].menuName).toBe('Caramel Macchiato');
+        expect(result.data.orderItems[0].selectedVariants[0].groupName).toBe('Size');
+      }
+    });
+
+    it('handles variant snapshot preprocessing and non-object fallback', () => {
+      const rawVariant = {
+        groupNameSnapshot: 'Suhu',
+        optionNameSnapshot: 'Dingin',
+        extraPriceSnapshot: 0,
+      };
+
+      const result = SelectedVariantSnapshotSchema.safeParse(rawVariant);
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.groupName).toBe('Suhu');
+        expect(result.data.optionName).toBe('Dingin');
+      }
+
+      expect(SelectedVariantSnapshotSchema.safeParse(null).success).toBe(false);
+      expect(OrderItemSchema.safeParse(null).success).toBe(false);
+      expect(OrderSchema.safeParse(null).success).toBe(false);
     });
   });
 });

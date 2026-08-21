@@ -75,6 +75,77 @@ export const mockTables = [
   },
 ];
 
+export const mockOrders = [
+  {
+    id: 'ord-1',
+    orderNumber: 'ORD-20260820-001',
+    tableId: 'table-1',
+    table: { id: 'table-1', number: '01' },
+    tableNumber: '01',
+    customerName: 'Budi Santoso',
+    status: 'PENDING',
+    totalAmount: 52000,
+    paidAt: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    orderItems: [
+      {
+        id: 'oi-1',
+        menuItemId: 'menu-1',
+        menuNameSnapshot: 'Kopi Susu Gula Aren',
+        priceSnapshot: 22000,
+        quantity: 2,
+        subtotal: 44000,
+        notes: 'Less sugar, no ice',
+        selectedVariants: [
+          {
+            id: 'v-1',
+            groupNameSnapshot: 'Ukuran',
+            optionNameSnapshot: 'Large',
+            extraPriceSnapshot: 4000,
+          },
+        ],
+      },
+      {
+        id: 'oi-2',
+        menuItemId: 'menu-2',
+        menuNameSnapshot: 'Kentang Goreng',
+        priceSnapshot: 8000,
+        quantity: 1,
+        subtotal: 8000,
+        notes: null,
+        selectedVariants: [],
+      },
+    ],
+  },
+  {
+    id: 'ord-2',
+    orderNumber: 'ORD-20260820-002',
+    tableId: 'table-2',
+    table: { id: 'table-2', number: '02' },
+    tableNumber: '02',
+    customerName: 'Siti Rahma',
+    status: 'PREPARING',
+    totalAmount: 35000,
+    paidAt: null,
+    createdAt: new Date(Date.now() - 10 * 60000).toISOString(),
+    updatedAt: new Date().toISOString(),
+    orderItems: [
+      {
+        id: 'oi-3',
+        menuItemId: 'menu-1',
+        menuNameSnapshot: 'Croissant Coklat',
+        priceSnapshot: 35000,
+        quantity: 1,
+        subtotal: 35000,
+        notes: null,
+        selectedVariants: [],
+      },
+    ],
+  },
+];
+
+
 let serverKeyPair: CryptoKeyPair | null = null;
 let currentServerSessionKey: CryptoKey | null = null;
 
@@ -478,6 +549,64 @@ export const handlers = [
       statusCode: 200,
       message: 'Table deleted',
       data: { success: true },
+    });
+  }),
+
+  // Orders API
+  http.get(`${API_BASE}/admin/orders`, ({ request }) => {
+    const url = new URL(request.url);
+    const status = url.searchParams.get('status');
+    const search = url.searchParams.get('search')?.toLowerCase();
+    const page = Number(url.searchParams.get('page')) || 1;
+    const limit = Number(url.searchParams.get('limit')) || 20;
+
+    let filtered = [...mockOrders];
+
+    if (status && status !== 'ALL') {
+      filtered = filtered.filter((o) => o.status === status);
+    }
+
+    if (search) {
+      filtered = filtered.filter(
+        (o) =>
+          o.orderNumber.toLowerCase().includes(search) ||
+          o.customerName.toLowerCase().includes(search)
+      );
+    }
+
+    const total = filtered.length;
+    const items = limit === -1 ? filtered : filtered.slice((page - 1) * limit, page * limit);
+
+    return HttpResponse.json({
+      statusCode: 200,
+      data: {
+        items,
+        meta: {
+          page,
+          limit,
+          totalItems: total,
+          totalPages: limit === -1 ? 1 : Math.ceil(total / limit),
+          hasNextPage: page * limit < total,
+          hasPrevPage: page > 1,
+        },
+      },
+    });
+  }),
+
+  http.patch(`${API_BASE}/admin/orders/:id/status`, async ({ params, request }) => {
+    const { id } = params;
+    const body = await extractRequestBody(request);
+    const existing = mockOrders.find((o) => o.id === id) || mockOrders[0];
+    const updated = {
+      ...existing,
+      status: body.status || 'PREPARING',
+      paidAt: body.status === 'PAID' ? new Date().toISOString() : existing.paidAt,
+      updatedAt: new Date().toISOString(),
+    };
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Order status updated',
+      data: updated,
     });
   }),
 ];

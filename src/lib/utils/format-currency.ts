@@ -10,3 +10,6 @@ export function formatRupiah(amount: number): string {
     maximumFractionDigits: 0,
   }).format(amount);
 }
+
+export const formatCurrency = formatRupiah;
+
