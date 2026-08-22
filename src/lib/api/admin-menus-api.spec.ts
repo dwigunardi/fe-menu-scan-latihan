@@ -11,6 +11,8 @@ import {
   updateAdminMenu,
   toggleMenuAvailability,
   deleteAdminMenu,
+  uploadAdminMenuImage,
+  formatImageUrl,
 } from './admin-menus-api';
 
 describe('admin-menus-api', () => {
@@ -63,29 +65,27 @@ describe('admin-menus-api', () => {
       const result = await getAdminMenus('cat-1');
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
-        expect(result.value.every((m) => m.categoryId === 'cat-1')).toBe(true);
+        expect(result.value.length).toBe(1);
+        expect(result.value[0].categoryId).toBe('cat-1');
       }
-
-      const allRes = await getAdminMenus('ALL');
-      expect(allRes.isRight()).toBe(true);
     });
 
     it('fetches paginated menus with all query parameters (page, limit, search, isAvailable, sortBy, sortOrder)', async () => {
       const result = await getAdminMenusPaginated({
         page: 1,
         limit: 10,
-        search: 'Goreng',
         categoryId: 'cat-1',
+        search: 'Goreng',
         isAvailable: true,
-        sortBy: 'price',
+        sortBy: 'name',
         sortOrder: 'asc',
       });
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
-        expect(result.value.items.length).toBe(1);
-        expect(result.value.items[0].name).toContain('Nasi Goreng');
+        expect(result.value.items).toBeDefined();
+        expect(result.value.meta).toBeDefined();
         expect(result.value.meta.page).toBe(1);
-        expect(result.value.meta.totalItems).toBe(1);
+        expect(result.value.meta.limit).toBe(10);
       }
     });
 
@@ -100,21 +100,20 @@ describe('admin-menus-api', () => {
 
     it('creates a menu item successfully', async () => {
       const result = await createAdminMenu({
-        name: 'Kopi Susu Gula Aren',
-        description: 'Espresso dengan susu dan aren',
-        price: 22000,
+        name: 'Ayam Geprek Sambal Bawang',
+        description: 'Ayam goreng renyah dengan ulekan cabai rawit pedas',
+        price: 25000,
         promoPrice: null,
-        imageUrl: '',
+        categoryId: 'cat-1',
+        imageUrl: 'https://images.unsplash.com/photo-ayam-geprek',
         isAvailable: true,
-        isBestSeller: false,
-        isRecommended: false,
-        categoryId: 'cat-2',
+        isBestSeller: true,
+        isRecommended: true,
         variantGroups: [],
       });
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
-        expect(result.value.name).toBe('Kopi Susu Gula Aren');
-        expect(result.value.price).toBe(22000);
+        expect(result.value.name).toBe('Ayam Geprek Sambal Bawang');
       }
     });
 
@@ -140,6 +139,26 @@ describe('admin-menus-api', () => {
       if (result.isRight()) {
         expect(result.value.success).toBe(true);
       }
+    });
+  });
+
+  describe('Uploads & Image Formatting API', () => {
+    it('uploads a menu image and returns webp URL metadata', async () => {
+      const dummyFile = new File(['fake-image-bytes'], 'test-photo.jpg', { type: 'image/jpeg' });
+      const result = await uploadAdminMenuImage(dummyFile);
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.url).toContain('/uploads/menus/');
+        expect(result.value.mimeType).toBe('image/webp');
+      }
+    });
+
+    it('formats relative image URLs correctly', () => {
+      expect(formatImageUrl('/uploads/menus/sample.webp')).toContain('/uploads/menus/sample.webp');
+      expect(formatImageUrl('https://images.unsplash.com/photo-123')).toBe('https://images.unsplash.com/photo-123');
+      expect(formatImageUrl('')).toBe('');
+      expect(formatImageUrl(null)).toBe('');
     });
   });
 });

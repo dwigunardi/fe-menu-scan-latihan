@@ -179,3 +179,42 @@ export async function deleteAdminMenu(id: string): Promise<Either<ApiError, { su
     method: 'DELETE',
   });
 }
+
+
+export interface UploadImageResponse {
+  url: string;
+  filename: string;
+  size: number;
+  mimeType: string;
+  width?: number;
+  height?: number;
+}
+
+/**
+ * Formats image URL to handle both absolute URLs and backend static assets (/uploads/...).
+ */
+export function formatImageUrl(url?: string | null): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const cleanBase = apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
+  return `${cleanBase}${url.startsWith('/') ? url : `/${url}`}`;
+}
+
+/**
+ * Uploads and sanitizes a menu image file, converting automatically to WebP.
+ */
+export async function uploadAdminMenuImage(
+  file: File
+): Promise<Either<ApiError, UploadImageResponse>> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return customFetch<UploadImageResponse>('/admin/uploads/image', {
+    method: 'POST',
+    body: formData,
+    skipEncryption: true,
+  });
+}

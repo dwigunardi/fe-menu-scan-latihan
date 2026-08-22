@@ -172,6 +172,18 @@ async function extractRequestBody(request: Request): Promise<any> {
  * MSW Network Interceptors
  */
 export const handlers = [
+  // ─── ADMIN UPLOADS ───
+  http.post(`${API_BASE}/admin/uploads/image`, async () => {
+    return HttpResponse.json({
+      data: {
+        url: '/uploads/menus/menu-test-12345.webp',
+        filename: 'menu-test-12345.webp',
+        size: 102400,
+        mimeType: 'image/webp',
+      },
+    });
+  }),
+
   // Auth Handshake
   http.post(`${API_BASE}/auth/handshake`, async ({ request }) => {
     const keyPair = await getOrCreateServerKeyPair();
