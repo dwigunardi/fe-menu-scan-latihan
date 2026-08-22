@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, DragEvent } from 'react';
 import {
   useAdminOrdersPaginatedQuery,
   useUpdateOrderStatusMutation,
@@ -27,13 +27,78 @@ import {
   Clock,
   CircleDollarSign,
   ShoppingBag,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
+
+interface KanbanColumnConfig {
+  status: OrderStatus;
+  title: string;
+  icon: typeof BellRing;
+  badgeBg: string;
+  emptyText: string;
+  activeBorderColor: string;
+  activeBgColor: string;
+  accentTextColor: string;
+  iconBgColor: string;
+}
+
+const kanbanColumns: KanbanColumnConfig[] = [
+  {
+    status: 'PENDING',
+    title: 'Pesanan Masuk',
+    icon: BellRing,
+    badgeBg: 'bg-amber-500 text-white',
+    emptyText: 'Tidak ada pesanan baru',
+    activeBorderColor: 'border-amber-500 ring-2 ring-amber-500/20',
+    activeBgColor: 'bg-amber-50/50 dark:bg-amber-950/20',
+    accentTextColor: 'text-amber-600',
+    iconBgColor: 'bg-amber-500/10 text-amber-600',
+  },
+  {
+    status: 'PREPARING',
+    title: 'Sedang Dimasak',
+    icon: Flame,
+    badgeBg: 'bg-blue-600 text-white',
+    emptyText: 'Dapur sedang santai',
+    activeBorderColor: 'border-blue-500 ring-2 ring-blue-500/20',
+    activeBgColor: 'bg-blue-50/50 dark:bg-blue-950/20',
+    accentTextColor: 'text-blue-600',
+    iconBgColor: 'bg-blue-500/10 text-blue-600',
+  },
+  {
+    status: 'SERVED',
+    title: 'Siap Saji',
+    icon: ChefHat,
+    badgeBg: 'bg-emerald-600 text-white',
+    emptyText: 'Semua telah disajikan',
+    activeBorderColor: 'border-emerald-500 ring-2 ring-emerald-500/20',
+    activeBgColor: 'bg-emerald-50/50 dark:bg-emerald-950/20',
+    accentTextColor: 'text-emerald-600',
+    iconBgColor: 'bg-emerald-500/10 text-emerald-600',
+  },
+  {
+    status: 'PAID',
+    title: 'Selesai / Lunas',
+    icon: CheckCircle2,
+    badgeBg: 'bg-stone-600 text-white',
+    emptyText: 'Belum ada transaksi lunas',
+    activeBorderColor: 'border-stone-500 ring-2 ring-stone-500/20',
+    activeBgColor: 'bg-stone-100/60 dark:bg-zinc-900/60',
+    accentTextColor: 'text-stone-700 dark:text-zinc-300',
+    iconBgColor: 'bg-stone-200 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300',
+  },
+];
 
 export default function AdminOrdersPage() {
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [search, setSearch] = useState('');
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
+
+  // Drag and Drop States
+  const [draggedOrder, setDraggedOrder] = useState<OrderData | null>(null);
+  const [activeDropZone, setActiveDropZone] = useState<OrderStatus | null>(null);
 
   // Selected Order for Receipt Modal
   const [selectedOrderForReceipt, setSelectedOrderForReceipt] =
@@ -99,7 +164,7 @@ export default function AdminOrdersPage() {
 
     const totalRevenue = orders
       .filter((o) => o.status === 'PAID')
-      .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+      .reduce((acc, curr) => acc + Number(curr.totalAmount || 0), 0);
 
     return {
       totalOrders,
@@ -109,7 +174,7 @@ export default function AdminOrdersPage() {
       paidCount,
       totalRevenue,
     };
-  }, [orders, pendingOrders, preparingOrders, servedOrders, paidOrders]);
+  }, [orders, pendingOrders.length, preparingOrders.length, servedOrders.length, paidOrders.length]);
 
   const handleUpdateStatus = (id: string, newStatus: OrderStatus) => {
     updateStatusMutation.mutate({ id, status: newStatus });
@@ -119,89 +184,152 @@ export default function AdminOrdersPage() {
     setSelectedOrderForReceipt(order);
   };
 
+  // Drag and Drop Event Handlers
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, order: OrderData) => {
+    setDraggedOrder(order);
+    e.dataTransfer.setData('text/plain', JSON.stringify({ orderId: order.id, status: order.status }));
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setDraggedOrder(null);
+    setActiveDropZone(null);
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>, targetStatus: OrderStatus) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (activeDropZone !== targetStatus) {
+      setActiveDropZone(targetStatus);
+    }
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setActiveDropZone(null);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>, targetStatus: OrderStatus) => {
+    e.preventDefault();
+    let orderToUpdate = draggedOrder;
+
+    // Fallback if state was cleared during drag transition
+    if (!orderToUpdate) {
+      try {
+        const raw = e.dataTransfer.getData('text/plain');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.orderId) {
+            orderToUpdate = orders.find((o) => o.id === parsed.orderId) || null;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse dragged order:', e);
+      }
+    }
+
+    if (orderToUpdate && orderToUpdate.status !== targetStatus) {
+      handleUpdateStatus(orderToUpdate.id, targetStatus);
+    }
+    setDraggedOrder(null);
+    setActiveDropZone(null);
+  };
+
+  const getOrdersForColumn = (status: OrderStatus) => {
+    switch (status) {
+      case 'PENDING':
+        return pendingOrders;
+      case 'PREPARING':
+        return preparingOrders;
+      case 'SERVED':
+        return servedOrders;
+      case 'PAID':
+        return paidOrders;
+      default:
+        return [];
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header with Title & Action Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
+      {/* Header & Controls */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-zinc-50">
-              Kitchen Display & Pesanan
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-stone-900 dark:text-zinc-50 flex items-center gap-2">
+              <ChefHat className="h-6 w-6 text-amber-600" />
+              Kitchen Display System (KDS)
             </h1>
-            <span className="flex h-2.5 w-2.5 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+              <Sparkles className="h-3 w-3" /> Drag & Drop
             </span>
           </div>
           <p className="text-xs text-stone-500 dark:text-zinc-400 mt-1">
-            Pantau antrean pesanan dapur, barista, dan kasir secara real-time.
+            Pantau dan geser kartu pesanan antar status secara real-time seperti Trello.
           </p>
         </div>
 
-        {/* Action Buttons: Sound, View Switcher, Refresh */}
-        <div className="flex items-center gap-2">
+        {/* View Switcher & Actions */}
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
           {/* Sound Toggle */}
           <Button
-            variant="outline"
             size="sm"
+            variant="outline"
             onClick={() => setIsSoundEnabled(!isSoundEnabled)}
-            className="h-9 px-3 rounded-xl border-stone-200 dark:border-zinc-800 text-xs"
+            className={`h-9 px-3 rounded-xl border-stone-200 dark:border-zinc-800 ${isSoundEnabled
+                ? 'text-amber-600 bg-amber-50/50 dark:bg-amber-950/20'
+                : 'text-stone-400'
+              }`}
             title={isSoundEnabled ? 'Suara Bel Aktif' : 'Suara Bel Dibisukan'}
           >
             {isSoundEnabled ? (
-              <>
-                <Volume2 className="h-4 w-4 text-emerald-600 mr-1.5" />
-                <span className="hidden sm:inline">Bel Aktif</span>
-              </>
+              <Volume2 className="h-4 w-4 mr-1.5 text-amber-600" />
             ) : (
-              <>
-                <VolumeX className="h-4 w-4 text-stone-400 mr-1.5" />
-                <span className="hidden sm:inline">Bisu</span>
-              </>
+              <VolumeX className="h-4 w-4 mr-1.5 text-stone-400" />
             )}
+            <span className="text-xs font-semibold">
+              {isSoundEnabled ? 'Bel Aktif' : 'Mute'}
+            </span>
           </Button>
 
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-stone-100 dark:bg-zinc-800 p-0.5 rounded-xl border border-stone-200 dark:border-zinc-700">
+          {/* View Mode Toggle: Kanban vs Table */}
+          <div className="flex items-center bg-stone-100 dark:bg-zinc-800/80 p-1 rounded-xl border border-stone-200/80 dark:border-zinc-700/80">
             <button
               type="button"
               onClick={() => setViewMode('kanban')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                viewMode === 'kanban'
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'kanban'
                   ? 'bg-white dark:bg-zinc-900 text-amber-600 shadow-xs'
-                  : 'text-stone-500 hover:text-stone-800 dark:text-zinc-400'
-              }`}
+                  : 'text-stone-500 hover:text-stone-900 dark:hover:text-zinc-200'
+                }`}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
-              <span>Kanban KDS</span>
+              Kanban
             </button>
             <button
               type="button"
               onClick={() => setViewMode('table')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                viewMode === 'table'
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'table'
                   ? 'bg-white dark:bg-zinc-900 text-amber-600 shadow-xs'
-                  : 'text-stone-500 hover:text-stone-800 dark:text-zinc-400'
-              }`}
+                  : 'text-stone-500 hover:text-stone-900 dark:hover:text-zinc-200'
+                }`}
             >
               <List className="h-3.5 w-3.5" />
-              <span>Tabel Riwayat</span>
+              Tabel
             </button>
           </div>
 
-          {/* Manual Refresh */}
+          {/* Refresh Button */}
           <Button
+            size="icon"
             variant="outline"
-            size="sm"
             onClick={() => refetch()}
             disabled={isRefetching}
-            className="h-9 w-9 p-0 rounded-xl"
-            title="Refresh Data"
+            className="h-9 w-9 rounded-xl border-stone-200 dark:border-zinc-800"
+            title="Muat Ulang Pesanan"
           >
             <RotateCw
-              className={`h-4 w-4 text-stone-600 dark:text-zinc-300 ${
-                isRefetching ? 'animate-spin' : ''
-              }`}
+              className={`h-4 w-4 text-stone-600 dark:text-zinc-300 ${isRefetching ? 'animate-spin' : ''
+                }`}
             />
           </Button>
         </div>
@@ -314,11 +442,10 @@ export default function AdminOrdersPage() {
                 key={status}
                 type="button"
                 onClick={() => setStatusFilter(status)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
-                  isActive
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${isActive
                     ? 'bg-amber-600 text-white shadow-xs'
                     : 'bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 hover:bg-stone-200'
-                }`}
+                  }`}
               >
                 {labels[status]}
               </button>
@@ -338,147 +465,72 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       ) : viewMode === 'kanban' ? (
-        /* KANBAN BOARD 4 COLUMNS */
+        /* KANBAN BOARD 4 INTERACTIVE DRAG & DROP COLUMNS */
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
-          {/* 1. Kolom PENDING */}
-          <div className="rounded-3xl bg-stone-100/70 dark:bg-zinc-950 p-3.5 border border-stone-200/80 dark:border-zinc-800/80 space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
-                  <BellRing className="h-3.5 w-3.5" />
+          {kanbanColumns.map((col) => {
+            const columnOrders = getOrdersForColumn(col.status);
+            const Icon = col.icon;
+            const isHovered = activeDropZone === col.status;
+            const isDifferentStatus = draggedOrder && draggedOrder.status !== col.status;
+
+            return (
+              <div
+                key={col.status}
+                onDragOver={(e) => handleDragOver(e, col.status)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, col.status)}
+                className={`rounded-3xl p-3.5 border transition-all duration-200 space-y-3 ${isHovered && isDifferentStatus
+                    ? `${col.activeBorderColor} ${col.activeBgColor} scale-[1.01] shadow-lg`
+                    : 'bg-stone-100/70 dark:bg-zinc-950 border-stone-200/80 dark:border-zinc-800/80'
+                  }`}
+              >
+                {/* Column Header */}
+                <div className="flex items-center justify-between px-1">
+                  <div className="flex items-center gap-2">
+                    <div className={`h-6 w-6 rounded-lg flex items-center justify-center ${col.iconBgColor}`}>
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <h3 className="text-xs font-bold text-stone-800 dark:text-zinc-200 uppercase tracking-wider">
+                      {col.title}
+                    </h3>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-lg font-extrabold text-[11px] ${col.badgeBg}`}>
+                    {columnOrders.length}
+                  </span>
                 </div>
-                <h3 className="text-xs font-bold text-stone-800 dark:text-zinc-200 uppercase tracking-wider">
-                  Pesanan Masuk
-                </h3>
+
+                {/* Drop Indicator Placeholder when dragging a card over this column */}
+                {isHovered && isDifferentStatus && (
+                  <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 border-dashed border-amber-600 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-bold animate-pulse shadow-xs">
+                    <ArrowRight className="h-4 w-4" />
+                    <span>Lepaskan untuk pindah ke {col.title}</span>
+                  </div>
+                )}
+
+                {/* Orders Cards Stack */}
+                <div className="space-y-3 min-h-[160px] max-h-[720px] overflow-y-auto pr-1">
+                  {columnOrders.length === 0 ? (
+                    <div className="py-12 text-center text-stone-400 dark:text-zinc-600 text-xs font-medium border-2 border-dashed border-stone-200 dark:border-zinc-800 rounded-2xl">
+                      {col.emptyText}
+                    </div>
+                  ) : (
+                    columnOrders.map((order) => (
+                      <OrderCard
+                        key={order.id}
+                        order={order}
+                        onUpdateStatus={handleUpdateStatus}
+                        onOpenReceipt={handleOpenReceipt}
+                        isPending={updateStatusMutation.isPending}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        isDragging={draggedOrder?.id === order.id}
+                      />
+                    ))
+                  )}
+                </div>
               </div>
-              <span className="px-2 py-0.5 rounded-lg bg-amber-500 text-white font-extrabold text-[11px]">
-                {pendingOrders.length}
-              </span>
-            </div>
-
-            <div className="space-y-3 min-h-[150px]">
-              {pendingOrders.length === 0 ? (
-                <div className="py-12 text-center text-stone-400 text-xs font-medium border-2 border-dashed border-stone-200 dark:border-zinc-800 rounded-2xl">
-                  Tidak ada pesanan baru
-                </div>
-              ) : (
-                pendingOrders.map((order) => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    onUpdateStatus={handleUpdateStatus}
-                    onOpenReceipt={handleOpenReceipt}
-                    isPending={updateStatusMutation.isPending}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* 2. Kolom PREPARING */}
-          <div className="rounded-3xl bg-stone-100/70 dark:bg-zinc-950 p-3.5 border border-stone-200/80 dark:border-zinc-800/80 space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
-                  <Flame className="h-3.5 w-3.5" />
-                </div>
-                <h3 className="text-xs font-bold text-stone-800 dark:text-zinc-200 uppercase tracking-wider">
-                  Sedang Dimasak
-                </h3>
-              </div>
-              <span className="px-2 py-0.5 rounded-lg bg-blue-600 text-white font-extrabold text-[11px]">
-                {preparingOrders.length}
-              </span>
-            </div>
-
-            <div className="space-y-3 min-h-[150px]">
-              {preparingOrders.length === 0 ? (
-                <div className="py-12 text-center text-stone-400 text-xs font-medium border-2 border-dashed border-stone-200 dark:border-zinc-800 rounded-2xl">
-                  Dapur sedang santai
-                </div>
-              ) : (
-                preparingOrders.map((order) => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    onUpdateStatus={handleUpdateStatus}
-                    onOpenReceipt={handleOpenReceipt}
-                    isPending={updateStatusMutation.isPending}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* 3. Kolom SERVED */}
-          <div className="rounded-3xl bg-stone-100/70 dark:bg-zinc-950 p-3.5 border border-stone-200/80 dark:border-zinc-800/80 space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-                  <ChefHat className="h-3.5 w-3.5" />
-                </div>
-                <h3 className="text-xs font-bold text-stone-800 dark:text-zinc-200 uppercase tracking-wider">
-                  Siap Saji
-                </h3>
-              </div>
-              <span className="px-2 py-0.5 rounded-lg bg-emerald-600 text-white font-extrabold text-[11px]">
-                {servedOrders.length}
-              </span>
-            </div>
-
-            <div className="space-y-3 min-h-[150px]">
-              {servedOrders.length === 0 ? (
-                <div className="py-12 text-center text-stone-400 text-xs font-medium border-2 border-dashed border-stone-200 dark:border-zinc-800 rounded-2xl">
-                  Semua telah disajikan
-                </div>
-              ) : (
-                servedOrders.map((order) => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    onUpdateStatus={handleUpdateStatus}
-                    onOpenReceipt={handleOpenReceipt}
-                    isPending={updateStatusMutation.isPending}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-
-          {/* 4. Kolom PAID */}
-          <div className="rounded-3xl bg-stone-100/70 dark:bg-zinc-950 p-3.5 border border-stone-200/80 dark:border-zinc-800/80 space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-2">
-                <div className="h-6 w-6 rounded-lg bg-stone-200 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 flex items-center justify-center">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                </div>
-                <h3 className="text-xs font-bold text-stone-800 dark:text-zinc-200 uppercase tracking-wider">
-                  Selesai / Lunas
-                </h3>
-              </div>
-              <span className="px-2 py-0.5 rounded-lg bg-stone-600 text-white font-extrabold text-[11px]">
-                {paidOrders.length}
-              </span>
-            </div>
-
-            <div className="space-y-3 min-h-[150px] max-h-[700px] overflow-y-auto pr-1">
-              {paidOrders.length === 0 ? (
-                <div className="py-12 text-center text-stone-400 text-xs font-medium border-2 border-dashed border-stone-200 dark:border-zinc-800 rounded-2xl">
-                  Belum ada pesanan lunas
-                </div>
-              ) : (
-                paidOrders.map((order) => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    onUpdateStatus={handleUpdateStatus}
-                    onOpenReceipt={handleOpenReceipt}
-                    isPending={updateStatusMutation.isPending}
-                  />
-                ))
-              )}
-            </div>
-          </div>
+            );
+          })}
         </div>
       ) : (
         /* TABLE AUDIT VIEW */
@@ -521,32 +573,35 @@ export default function AdminOrdersPage() {
                       <td className="py-3.5 px-4 text-stone-700 dark:text-zinc-300">
                         {order.customerName}
                       </td>
-                      <td className="py-3.5 px-4 max-w-xs truncate text-stone-600 dark:text-zinc-400">
-                        {order.orderItems
-                          .map((i) => `${i.quantity}x ${i.menuName}`)
-                          .join(', ')}
+                      <td className="py-3.5 px-4">
+                        <div className="flex flex-col gap-0.5">
+                          {order.orderItems.map((item, idx) => (
+                            <span key={idx} className="text-stone-800 dark:text-zinc-200">
+                              <span className="font-bold">{item.quantity}x</span> {item.menuName}
+                            </span>
+                          ))}
+                        </div>
                       </td>
-                      <td className="py-3.5 px-4 font-bold text-amber-700 dark:text-amber-400">
+                      <td className="py-3.5 px-4 font-extrabold text-amber-700 dark:text-amber-400">
                         {formatCurrency(order.totalAmount)}
                       </td>
                       <td className="py-3.5 px-4">
                         <span
-                          className={`px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${
-                            order.status === 'PENDING'
-                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-bold inline-flex items-center gap-1 ${order.status === 'PENDING'
+                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400'
                               : order.status === 'PREPARING'
-                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                              : order.status === 'SERVED'
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                              : order.status === 'PAID'
-                              ? 'bg-stone-100 text-stone-800 dark:bg-zinc-800 dark:text-zinc-300'
-                              : 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300'
-                          }`}
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-400'
+                                : order.status === 'SERVED'
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400'
+                                  : order.status === 'PAID'
+                                    ? 'bg-stone-100 text-stone-800 dark:bg-zinc-800 dark:text-zinc-300'
+                                    : 'bg-red-100 text-red-800'
+                            }`}
                         >
                           {order.status}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-stone-400 text-[11px]">
+                      <td className="py-3.5 px-4 text-stone-400">
                         {new Date(order.createdAt).toLocaleTimeString('id-ID', {
                           hour: '2-digit',
                           minute: '2-digit',
@@ -557,7 +612,7 @@ export default function AdminOrdersPage() {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleOpenReceipt(order)}
-                          className="h-8 px-2.5 text-xs text-stone-600 hover:text-amber-600"
+                          className="h-7 text-xs text-amber-700 hover:text-amber-800"
                         >
                           <Receipt className="h-3.5 w-3.5 mr-1" />
                           Struk
@@ -572,12 +627,11 @@ export default function AdminOrdersPage() {
         </div>
       )}
 
-      {/* Receipt Modal Preview & Thermal Printer */}
+      {/* Order Receipt Thermal Modal */}
       <OrderReceiptModal
+        order={selectedOrderForReceipt}
         isOpen={Boolean(selectedOrderForReceipt)}
         onClose={() => setSelectedOrderForReceipt(null)}
-        order={selectedOrderForReceipt}
-        onUpdateStatus={handleUpdateStatus}
       />
     </div>
   );

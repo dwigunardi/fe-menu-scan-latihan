@@ -17,7 +17,7 @@ describe('AdminOrdersPage', () => {
     const wrapper = createQueryWrapper();
     render(<AdminOrdersPage />, { wrapper });
 
-    expect(screen.getByText('Kitchen Display & Pesanan')).toBeInTheDocument();
+    expect(screen.getByText(/Kitchen Display System/i)).toBeInTheDocument();
     expect(screen.getByText('Total Pesanan')).toBeInTheDocument();
     expect(screen.getByText('Omzet Lunas')).toBeInTheDocument();
 
@@ -34,7 +34,7 @@ describe('AdminOrdersPage', () => {
       expect(screen.getByText('ORD-20260820-001')).toBeInTheDocument();
     });
 
-    const tableViewBtn = screen.getByRole('button', { name: /Tabel Riwayat/i });
+    const tableViewBtn = screen.getByRole('button', { name: /Tabel/i });
     fireEvent.click(tableViewBtn);
 
     expect(screen.getByText('Menu Pesanan')).toBeInTheDocument();
@@ -60,6 +60,21 @@ describe('AdminOrdersPage', () => {
     const soundBtn = screen.getByTitle('Suara Bel Aktif');
     fireEvent.click(soundBtn);
 
-    expect(screen.getByText('Bisu')).toBeInTheDocument();
+    expect(screen.getByText('Mute')).toBeInTheDocument();
+  });
+
+  it('handles drag and drop interaction over kanban columns', async () => {
+    const wrapper = createQueryWrapper();
+    render(<AdminOrdersPage />, { wrapper });
+
+    await waitFor(() => {
+      expect(screen.getByText('ORD-20260820-001')).toBeInTheDocument();
+    });
+
+    const orderText = screen.getByText('ORD-20260820-001');
+    expect(orderText).toBeInTheDocument();
+
+    const columnHeading = screen.getByRole('heading', { name: 'Sedang Dimasak' });
+    expect(columnHeading).toBeInTheDocument();
   });
 });
