@@ -297,6 +297,22 @@ export const handlers = [
     });
   }),
 
+  http.put(`${API_BASE}/admin/categories/:id`, async ({ params, request }) => {
+    const { id } = params;
+    const body = await extractRequestBody(request);
+    const updated = {
+      id,
+      name: body.name || 'Updated Category',
+      sortOrder: body.sortOrder || 1,
+      createdAt: '2026-01-01',
+      updatedAt: new Date().toISOString(),
+    };
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Category updated',
+      data: updated,
+    });
+  }),
   http.patch(`${API_BASE}/admin/categories/:id`, async ({ params, request }) => {
     const { id } = params;
     const body = await extractRequestBody(request);
@@ -408,6 +424,22 @@ export const handlers = [
     });
   }),
 
+  http.put(`${API_BASE}/admin/menus/:id`, async ({ params, request }) => {
+    const { id } = params;
+    const body = await extractRequestBody(request);
+    const existing = mockMenus.find((m) => m.id === id) || mockMenus[0];
+    const updated = {
+      ...existing,
+      ...body,
+      id,
+      updatedAt: new Date().toISOString(),
+    };
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Menu updated',
+      data: updated,
+    });
+  }),
   http.patch(`${API_BASE}/admin/menus/:id`, async ({ params, request }) => {
     const { id } = params;
     const body = await extractRequestBody(request);
@@ -425,6 +457,22 @@ export const handlers = [
     });
   }),
 
+  http.put(`${API_BASE}/admin/menus/:id/status`, async ({ params, request }) => {
+    const { id } = params;
+    const body = await extractRequestBody(request);
+    const existing = mockMenus.find((m) => m.id === id) || mockMenus[0];
+    const updated = {
+      ...existing,
+      id,
+      isAvailable: body.isAvailable,
+      updatedAt: new Date().toISOString(),
+    };
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Status updated',
+      data: updated,
+    });
+  }),
   http.patch(`${API_BASE}/admin/menus/:id/status`, async ({ params, request }) => {
     const { id } = params;
     const body = await extractRequestBody(request);
@@ -446,6 +494,93 @@ export const handlers = [
     return HttpResponse.json({
       statusCode: 200,
       message: 'Menu deleted',
+      data: { success: true },
+    });
+  }),
+
+  
+  // Table Zones API
+  http.get(`${API_BASE}/admin/table-zones`, () => {
+    return HttpResponse.json({
+      statusCode: 200,
+      data: [
+        {
+          id: 'zone-1',
+          name: 'Indoor (AC Non-Smoking)',
+          description: 'Area berpendingin ruangan',
+          color: 'blue',
+          sortOrder: 1,
+          tableCount: 4,
+          vacantCount: 3,
+          occupiedCount: 1,
+          totalCapacity: 16,
+        },
+        {
+          id: 'zone-2',
+          name: 'Outdoor (Garden Smoking)',
+          description: 'Area taman merokok',
+          color: 'emerald',
+          sortOrder: 2,
+          tableCount: 4,
+          vacantCount: 4,
+          occupiedCount: 0,
+          totalCapacity: 14,
+        },
+        {
+          id: 'zone-3',
+          name: 'VIP Lounge / Meeting',
+          description: 'Ruang privat eksklusif',
+          color: 'amber',
+          sortOrder: 3,
+          tableCount: 2,
+          vacantCount: 1,
+          occupiedCount: 1,
+          totalCapacity: 18,
+        },
+      ],
+    });
+  }),
+
+  http.post(`${API_BASE}/admin/table-zones`, async ({ request }) => {
+    const body = await extractRequestBody(request);
+    const newZone = {
+      id: `zone-${Date.now()}`,
+      name: body.name || 'New Zone',
+      description: body.description || null,
+      color: body.color || 'amber',
+      sortOrder: body.sortOrder || 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    return HttpResponse.json({
+      statusCode: 201,
+      message: 'Zone created',
+      data: newZone,
+    });
+  }),
+
+  http.put(`${API_BASE}/admin/table-zones/:id`, async ({ params, request }) => {
+    const { id } = params;
+    const body = await extractRequestBody(request);
+    const updatedZone = {
+      id,
+      name: body.name || 'Updated Zone',
+      description: body.description || null,
+      color: body.color || 'amber',
+      sortOrder: body.sortOrder || 1,
+      updatedAt: new Date().toISOString(),
+    };
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Zone updated',
+      data: updatedZone,
+    });
+  }),
+
+  http.delete(`${API_BASE}/admin/table-zones/:id`, () => {
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Zone deleted',
       data: { success: true },
     });
   }),
@@ -510,6 +645,22 @@ export const handlers = [
     });
   }),
 
+  http.put(`${API_BASE}/admin/tables/:id`, async ({ params, request }) => {
+    const { id } = params;
+    const body = await extractRequestBody(request);
+    const existing = mockTables.find((t) => t.id === id) || mockTables[0];
+    const updated = {
+      ...existing,
+      ...body,
+      id,
+      updatedAt: new Date().toISOString(),
+    };
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Table updated',
+      data: updated,
+    });
+  }),
   http.patch(`${API_BASE}/admin/tables/:id`, async ({ params, request }) => {
     const { id } = params;
     const body = await extractRequestBody(request);
@@ -593,6 +744,22 @@ export const handlers = [
     });
   }),
 
+  http.put(`${API_BASE}/admin/orders/:id/status`, async ({ params, request }) => {
+    const { id } = params;
+    const body = await extractRequestBody(request);
+    const existing = mockOrders.find((o) => o.id === id) || mockOrders[0];
+    const updated = {
+      ...existing,
+      status: body.status || 'PREPARING',
+      paidAt: body.status === 'PAID' ? new Date().toISOString() : existing.paidAt,
+      updatedAt: new Date().toISOString(),
+    };
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Order status updated',
+      data: updated,
+    });
+  }),
   http.patch(`${API_BASE}/admin/orders/:id/status`, async ({ params, request }) => {
     const { id } = params;
     const body = await extractRequestBody(request);

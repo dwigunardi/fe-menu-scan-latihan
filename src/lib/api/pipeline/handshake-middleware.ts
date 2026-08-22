@@ -4,6 +4,7 @@ import { Middleware } from './types';
 /**
  * Handshake Middleware:
  * Ensures active ECDH session key & token, and injects 'x-handshake-token' header.
+ * If handshake session is temporarily unavailable, gracefully falls back to standard HTTP transport.
  */
 export const handshakeMiddleware: Middleware = async (ctx, next) => {
   if (!ctx.options.skipHandshakeToken) {

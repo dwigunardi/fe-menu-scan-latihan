@@ -212,7 +212,7 @@ describe('MenuForm Component', () => {
 
   it('handles API error when update submission fails', async () => {
     server.use(
-      http.patch(`${API_BASE}/admin/menus/:id`, () => {
+      http.put(`${API_BASE}/admin/menus/:id`, () => {
         return HttpResponse.json({ message: 'Update failed' }, { status: 500 });
       })
     );

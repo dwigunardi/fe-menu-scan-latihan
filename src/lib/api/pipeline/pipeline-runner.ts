@@ -113,12 +113,14 @@ export async function executePipeline<T = unknown>(
 
     const json = await response.json().catch(() => null);
 
-    // 1. Auto-retry on Handshake Expired (401 with HANDSHAKE in message)
-    if (
-      response.status === 401 &&
-      context.options.retryOnHandshakeExpired &&
-      json?.message?.includes('HANDSHAKE')
-    ) {
+    // 1. Auto-retry on Handshake Expired / Invalid (401/400 with handshake in message)
+    const isHandshakeError =
+      (response.status === 401 || response.status === 400) &&
+      (json?.message?.toLowerCase()?.includes('handshake') ||
+        json?.error?.toLowerCase()?.includes('handshake') ||
+        json?.code === 'HANDSHAKE_FAILED');
+
+    if (isHandshakeError && context.options.retryOnHandshakeExpired) {
       const handshakeResult = await performHandshake();
       if (handshakeResult.isRight()) {
         const retryResult = await executePipeline<T>(endpoint, {

@@ -30,6 +30,13 @@ const CategoryListSchema = z.union([
   z.array(CategorySchema),
 ]);
 
+const ToggleStatusResponseSchema = z.union([
+  AdminMenuItemSchema,
+  z.object({
+    item: AdminMenuItemSchema,
+  }).transform((val) => val.item),
+]);
+
 const MenuListSchema = z.union([
   createPaginatedResponseSchema(AdminMenuItemSchema),
   z.array(AdminMenuItemSchema),
@@ -70,7 +77,7 @@ export async function updateAdminCategory(
   }
 ): Promise<Either<ApiError, CategoryData>> {
   return hardenedFetch(`/admin/categories/${id}`, CategorySchema, {
-    method: 'PATCH',
+    method: 'PUT',
     body: payload,
   });
 }
@@ -146,7 +153,7 @@ export async function updateAdminMenu(
   payload: Partial<MenuFormInput>
 ): Promise<Either<ApiError, AdminMenuItem>> {
   return hardenedFetch(`/admin/menus/${id}`, AdminMenuItemSchema, {
-    method: 'PATCH',
+    method: 'PUT',
     body: payload,
   });
 }
@@ -158,8 +165,8 @@ export async function toggleMenuAvailability(
   id: string,
   isAvailable: boolean
 ): Promise<Either<ApiError, AdminMenuItem>> {
-  return hardenedFetch(`/admin/menus/${id}/status`, AdminMenuItemSchema, {
-    method: 'PATCH',
+  return hardenedFetch(`/admin/menus/${id}/status`, ToggleStatusResponseSchema as z.ZodType<AdminMenuItem>, {
+    method: 'PUT',
     body: { isAvailable },
   });
 }

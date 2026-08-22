@@ -81,7 +81,7 @@ describe('use-admin-orders hooks', () => {
 
     it('handles mutation rollback on error', async () => {
       server.use(
-        http.patch(`${API_BASE}/admin/orders/:id/status`, () => {
+        http.put(`${API_BASE}/admin/orders/:id/status`, () => {
           return HttpResponse.json(
             { statusCode: 400, message: 'Invalid transition' },
             { status: 400 }

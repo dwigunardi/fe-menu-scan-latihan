@@ -56,7 +56,7 @@ export async function updateAdminOrderStatus(
   status: OrderStatus
 ): Promise<Either<ApiError, OrderData>> {
   return hardenedFetch(`/admin/orders/${id}/status`, OrderSchema, {
-    method: 'PATCH',
+    method: 'PUT',
     body: { status },
   });
 }

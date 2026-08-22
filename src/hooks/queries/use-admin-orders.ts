@@ -84,6 +84,7 @@ export function useUpdateOrderStatusMutation() {
     },
 
     onError: (err, _variables, context) => {
+      console.log(err, _variables, context);
       // Rollback on error
       if (context?.previousQueries) {
         for (const [key, data] of context.previousQueries) {

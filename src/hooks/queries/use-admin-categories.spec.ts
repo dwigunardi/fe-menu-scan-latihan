@@ -97,7 +97,7 @@ describe('use-admin-categories hooks', () => {
 
     it('throws ApiError when update mutation fails', async () => {
       server.use(
-        http.patch(`${API_BASE}/admin/categories/:id`, () => {
+        http.put(`${API_BASE}/admin/categories/:id`, () => {
           return HttpResponse.json({ message: 'Update failed' }, { status: 500 });
         })
       );

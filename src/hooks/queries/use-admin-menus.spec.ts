@@ -185,7 +185,7 @@ describe('use-admin-menus hooks', () => {
 
     it('throws ApiError when update menu mutation fails', async () => {
       server.use(
-        http.patch(`${API_BASE}/admin/menus/:id`, () => {
+        http.put(`${API_BASE}/admin/menus/:id`, () => {
           return HttpResponse.json({ message: 'Update failed' }, { status: 500 });
         })
       );
@@ -230,7 +230,7 @@ describe('use-admin-menus hooks', () => {
 
     it('handles rollback on mutation failure', async () => {
       server.use(
-        http.patch(`${API_BASE}/admin/menus/:id/status`, () => {
+        http.put(`${API_BASE}/admin/menus/:id/status`, () => {
           return HttpResponse.json({ message: 'Status failed' }, { status: 500 });
         })
       );
