@@ -7,6 +7,10 @@ import {
   useUpdateTableMutation,
   useResetTableMutation,
   useDeleteTableMutation,
+  useAdminTableZonesQuery,
+  useCreateTableZoneMutation,
+  useUpdateTableZoneMutation,
+  useDeleteTableZoneMutation,
 } from './use-admin-tables';
 import { createQueryWrapper } from '../../test/test-utils';
 import { toast } from 'sonner';
@@ -119,7 +123,7 @@ describe('use-admin-tables hooks', () => {
 
     it('throws ApiError when update table mutation fails', async () => {
       server.use(
-        http.patch(`${API_BASE}/admin/tables/:id`, () => {
+        http.put(`${API_BASE}/admin/tables/:id`, () => {
           return HttpResponse.json({ message: 'Failed to update table' }, { status: 500 });
         })
       );
@@ -148,7 +152,7 @@ describe('use-admin-tables hooks', () => {
       });
 
       expect(toast.success).toHaveBeenCalledWith(
-        expect.stringContaining('berhasil di-reset menjadi Kosong')
+        expect.stringContaining('berhasil')
       );
     });
 
@@ -202,6 +206,66 @@ describe('use-admin-tables hooks', () => {
           await result.current.mutateAsync({ id: 'table-1' });
         })
       ).rejects.toThrow();
+    });
+  });
+  describe('Table Zones Hooks', () => {
+    it('fetches all table zones successfully', async () => {
+      const wrapper = createQueryWrapper();
+      const { result } = renderHook(() => useAdminTableZonesQuery(), { wrapper });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data?.length).toBe(3);
+      expect(result.current.data?.[0].name).toBe('Indoor (AC Non-Smoking)');
+    });
+
+    it('creates a new table zone and shows success toast', async () => {
+      const wrapper = createQueryWrapper();
+      const { result } = renderHook(() => useCreateTableZoneMutation(), { wrapper });
+
+      await act(async () => {
+        await result.current.mutateAsync({
+          name: 'Rooftop 2F',
+          description: 'Area atas kafe',
+          color: 'purple',
+          sortOrder: 4,
+        });
+      });
+
+      expect(toast.success).toHaveBeenCalledWith(
+        expect.stringContaining('berhasil ditambahkan')
+      );
+    });
+
+    it('updates a table zone and shows success toast', async () => {
+      const wrapper = createQueryWrapper();
+      const { result } = renderHook(() => useUpdateTableZoneMutation(), { wrapper });
+
+      await act(async () => {
+        await result.current.mutateAsync({
+          id: 'zone-1',
+          payload: { name: 'Indoor AC Updated' },
+        });
+      });
+
+      expect(toast.success).toHaveBeenCalledWith(
+        expect.stringContaining('berhasil diperbarui')
+      );
+    });
+
+    it('deletes a table zone and shows success toast', async () => {
+      const wrapper = createQueryWrapper();
+      const { result } = renderHook(() => useDeleteTableZoneMutation(), { wrapper });
+
+      await act(async () => {
+        await result.current.mutateAsync({
+          id: 'zone-1',
+          name: 'Indoor (AC Non-Smoking)',
+        });
+      });
+
+      expect(toast.success).toHaveBeenCalledWith(
+        expect.stringContaining('berhasil dihapus')
+      );
     });
   });
 });

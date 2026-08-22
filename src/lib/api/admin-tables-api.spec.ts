@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import {
   getAdminTables,
   getAdminTablesPaginated,
@@ -6,6 +5,10 @@ import {
   updateAdminTable,
   resetAdminTable,
   deleteAdminTable,
+  getAdminTableZones,
+  createAdminTableZone,
+  updateAdminTableZone,
+  deleteAdminTableZone,
 } from './admin-tables-api';
 
 describe('admin-tables-api', () => {
@@ -83,5 +86,46 @@ describe('admin-tables-api', () => {
   it('deletes a table successfully', async () => {
     const result = await deleteAdminTable('table-1');
     expect(result.isRight()).toBe(true);
+  });
+  describe('Table Zones API', () => {
+    it('fetches all table zones successfully', async () => {
+      const result = await getAdminTableZones();
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.length).toBe(3);
+        expect(result.value[0].name).toBe('Indoor (AC Non-Smoking)');
+      }
+    });
+
+    it('creates a new table zone successfully', async () => {
+      const result = await createAdminTableZone({
+        name: 'Rooftop VIP',
+        description: 'Balkon lantai 2',
+        color: 'purple',
+        sortOrder: 4,
+      });
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.name).toBe('Rooftop VIP');
+      }
+    });
+
+    it('updates a table zone successfully', async () => {
+      const result = await updateAdminTableZone('zone-1', {
+        name: 'Indoor AC Main',
+      });
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.name).toBe('Indoor AC Main');
+      }
+    });
+
+    it('deletes a table zone successfully', async () => {
+      const result = await deleteAdminTableZone('zone-1');
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.success).toBe(true);
+      }
+    });
   });
 });

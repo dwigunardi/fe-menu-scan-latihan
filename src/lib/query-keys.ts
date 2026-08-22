@@ -8,6 +8,7 @@ export const adminQueryKeys = {
   tables: (status?: string) => ['admin', 'tables', status || 'ALL'] as const,
   tablesPaginated: (params: Record<string, unknown> = {}) =>
     ['admin', 'tables', 'paginated', params] as const,
+  tableZones: () => ['admin', 'table-zones'] as const,
   orders: (status?: string) => ['admin', 'orders', status || 'ALL'] as const,
   ordersPaginated: (params: Record<string, unknown> = {}) =>
     ['admin', 'orders', 'paginated', params] as const,

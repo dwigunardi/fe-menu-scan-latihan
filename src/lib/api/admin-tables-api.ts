@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { hardenedFetch } from './hardened-fetch';
-import { customFetch } from './custom-fetch';
 import { Either, right } from './either';
 import { ApiError } from './api-error';
 import {
@@ -8,6 +7,9 @@ import {
   TableSchema,
   TableFormInput,
   TableStatus,
+  TableZoneData,
+  TableZoneSchema,
+  TableZoneFormInput,
 } from '../validations/table.schema';
 import { createPaginatedResponseSchema } from '../validations/pagination.schema';
 import { PaginatedResult } from '@/types/pagination';
@@ -16,6 +18,8 @@ export interface QueryTableParams {
   page?: number;
   limit?: number;
   status?: TableStatus | string;
+  zoneId?: string;
+  seatingType?: string;
   search?: string;
   sortBy?: 'number' | 'status' | 'createdAt' | 'tableNumber' | 'capacity';
   sortOrder?: 'asc' | 'desc';
@@ -25,6 +29,8 @@ const TableListSchema = z.union([
   createPaginatedResponseSchema(TableSchema),
   z.array(TableSchema),
 ]);
+
+const TableZoneListSchema = z.array(TableZoneSchema);
 
 /**
  * Fetches all tables (unbounded via limit: -1).
@@ -40,7 +46,6 @@ export async function getAdminTables(status?: string): Promise<Either<ApiError, 
 
 /**
  * Fetches paginated admin table list with search and status filters.
- * Runtime contract enforced by Zod createPaginatedResponseSchema(TableSchema).
  */
 export async function getAdminTablesPaginated(
   params: QueryTableParams = {}
@@ -49,6 +54,8 @@ export async function getAdminTablesPaginated(
   if (params.page) query.set('page', String(params.page));
   if (params.limit !== undefined) query.set('limit', String(params.limit));
   if (params.status && params.status !== 'ALL') query.set('status', params.status);
+  if (params.zoneId && params.zoneId !== 'ALL') query.set('zoneId', params.zoneId);
+  if (params.seatingType && params.seatingType !== 'ALL') query.set('seatingType', params.seatingType);
   if (params.search) query.set('search', params.search);
   if (params.sortBy) {
     const backendSortBy = params.sortBy === 'tableNumber' ? 'number' : params.sortBy;
@@ -86,7 +93,7 @@ export async function updateAdminTable(
   payload: Partial<TableFormInput & { status: TableStatus }>
 ): Promise<Either<ApiError, TableData>> {
   return hardenedFetch(`/admin/tables/${id}`, TableSchema, {
-    method: 'PATCH',
+    method: 'PUT',
     body: {
       ...(payload.tableNumber ? { number: payload.tableNumber } : {}),
       ...payload,
@@ -107,7 +114,39 @@ export async function resetAdminTable(id: string): Promise<Either<ApiError, Tabl
  * Deletes a table.
  */
 export async function deleteAdminTable(id: string): Promise<Either<ApiError, { success: boolean }>> {
-  return customFetch<{ success: boolean }>(`/admin/tables/${id}`, {
+  return hardenedFetch(`/admin/tables/${id}`, z.object({ success: z.boolean() }), {
+    method: 'DELETE',
+  });
+}
+
+// -------------------------------------------------------------
+// TABLE ZONES APIs
+// -------------------------------------------------------------
+export async function getAdminTableZones(): Promise<Either<ApiError, TableZoneData[]>> {
+  return hardenedFetch('/admin/table-zones', TableZoneListSchema);
+}
+
+export async function createAdminTableZone(
+  payload: TableZoneFormInput
+): Promise<Either<ApiError, TableZoneData>> {
+  return hardenedFetch('/admin/table-zones', TableZoneSchema, {
+    method: 'POST',
+    body: payload,
+  });
+}
+
+export async function updateAdminTableZone(
+  id: string,
+  payload: Partial<TableZoneFormInput>
+): Promise<Either<ApiError, TableZoneData>> {
+  return hardenedFetch(`/admin/table-zones/${id}`, TableZoneSchema, {
+    method: 'PUT',
+    body: payload,
+  });
+}
+
+export async function deleteAdminTableZone(id: string): Promise<Either<ApiError, { success: boolean }>> {
+  return hardenedFetch(`/admin/table-zones/${id}`, z.object({ success: z.boolean() }), {
     method: 'DELETE',
   });
 }

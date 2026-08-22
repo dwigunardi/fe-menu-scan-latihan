@@ -6,9 +6,13 @@ import {
   updateAdminTable,
   resetAdminTable,
   deleteAdminTable,
+  getAdminTableZones,
+  createAdminTableZone,
+  updateAdminTableZone,
+  deleteAdminTableZone,
   QueryTableParams,
 } from '@/lib/api/admin-tables-api';
-import { TableFormInput, TableStatus, TableData } from '@/lib/validations/table.schema';
+import { TableFormInput, TableStatus, TableData, TableZoneFormInput } from '@/lib/validations/table.schema';
 import { adminQueryKeys } from '@/lib/query-keys';
 import { notifyApiError } from '@/lib/api/notify-error';
 import { toast } from 'sonner';
@@ -99,49 +103,8 @@ export function useResetTableMutation() {
       }
       return result.value;
     },
-    onMutate: async ({ id }) => {
-      await queryClient.cancelQueries({ queryKey: adminQueryKeys.all });
-
-      const previousData = queryClient.getQueriesData({
-        queryKey: ['admin', 'tables'],
-      });
-
-      queryClient.setQueriesData<any>(
-        { queryKey: ['admin', 'tables'] },
-        (old: any) => {
-          if (!old) return old;
-          if (Array.isArray(old)) {
-            return old.map((t: TableData) =>
-              t.id === id ? { ...t, status: 'VACANT', activeGuestName: null, currentSessionId: null } : t
-            );
-          }
-          if (old.items && Array.isArray(old.items)) {
-            return {
-              ...old,
-              items: old.items.map((t: TableData) =>
-                t.id === id ? { ...t, status: 'VACANT', activeGuestName: null, currentSessionId: null } : t
-              ),
-            };
-          }
-          return old;
-        }
-      );
-
-      return { previousData };
-    },
-    onError: (_err, _vars, context) => {
-      if (context?.previousData) {
-        context.previousData.forEach(([queryKey, data]) => {
-          queryClient.setQueryData(queryKey, data);
-        });
-      }
-    },
-    onSettled: (_data, _error, vars) => {
-      if (!_error) {
-        toast.success(
-          `Sesi ${vars.tableNumber ? `Meja "${vars.tableNumber}"` : 'Meja'} berhasil di-reset menjadi Kosong!`
-        );
-      }
+    onSuccess: (resetTable) => {
+      toast.success(`Sesi Meja "${resetTable.tableNumber}" berhasil dikosongkan!`);
       queryClient.invalidateQueries({ queryKey: adminQueryKeys.all });
     },
   });
@@ -159,10 +122,83 @@ export function useDeleteTableMutation() {
       }
       return result.value;
     },
-    onSuccess: (_data, vars) => {
-      toast.success(
-        `Meja ${vars.tableNumber ? `"${vars.tableNumber}"` : ''} berhasil dihapus!`
-      );
+    onSuccess: (_, variables) => {
+      toast.success(`Meja "${variables.tableNumber || ''}" berhasil dihapus!`);
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.all });
+    },
+  });
+}
+
+// -------------------------------------------------------------
+// TABLE ZONES HOOKS
+// -------------------------------------------------------------
+export function useAdminTableZonesQuery() {
+  return useQuery({
+    queryKey: adminQueryKeys.tableZones(),
+    queryFn: async () => {
+      const result = await getAdminTableZones();
+      if (result.isLeft()) {
+        notifyApiError(result.value);
+        throw result.value;
+      }
+      return result.value;
+    },
+    staleTime: 1000 * 60 * 2,
+  });
+}
+
+export function useCreateTableZoneMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: TableZoneFormInput) => {
+      const result = await createAdminTableZone(payload);
+      if (result.isLeft()) {
+        notifyApiError(result.value);
+        throw result.value;
+      }
+      return result.value;
+    },
+    onSuccess: (newZone) => {
+      toast.success(`Zona "${newZone.name}" berhasil ditambahkan!`);
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.all });
+    },
+  });
+}
+
+export function useUpdateTableZoneMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: Partial<TableZoneFormInput> }) => {
+      const result = await updateAdminTableZone(id, payload);
+      if (result.isLeft()) {
+        notifyApiError(result.value);
+        throw result.value;
+      }
+      return result.value;
+    },
+    onSuccess: (updatedZone) => {
+      toast.success(`Zona "${updatedZone.name}" berhasil diperbarui!`);
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.all });
+    },
+  });
+}
+
+export function useDeleteTableZoneMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name?: string }) => {
+      const result = await deleteAdminTableZone(id);
+      if (result.isLeft()) {
+        notifyApiError(result.value);
+        throw result.value;
+      }
+      return result.value;
+    },
+    onSuccess: (_, variables) => {
+      toast.success(`Zona "${variables.name || ''}" berhasil dihapus!`);
       queryClient.invalidateQueries({ queryKey: adminQueryKeys.all });
     },
   });

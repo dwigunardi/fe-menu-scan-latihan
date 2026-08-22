@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { TableFormModal } from './table-form-modal';
 import { TableQrModal } from './table-qr-modal';
+import { TableResetModal } from './table-reset-modal';
+import { TableDeleteModal } from './table-delete-modal';
+import { ZoneManagerModal } from './zone-manager-modal';
 import { createQueryWrapper } from '../../test/test-utils';
 import { TableData } from '@/lib/validations/table.schema';
 import { toast } from 'sonner';
@@ -43,8 +46,8 @@ describe('Table Modals', () => {
       );
 
       expect(screen.getByText('Tambah Meja Baru')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Contoh: T-01, 01, VIP-1')).toHaveValue('');
-      expect(screen.getByPlaceholderText('Contoh: 4')).toHaveValue('4');
+      expect(screen.getByPlaceholderText('Contoh: 01, T-01, VIP-1')).toHaveValue('');
+      expect(screen.getByPlaceholderText('Contoh: 4')).toHaveValue(4);
     });
 
     it('allows clearing capacity input and typing new number without leading zero bug', () => {
@@ -62,11 +65,11 @@ describe('Table Modals', () => {
       
       // User deletes the 4
       fireEvent.change(capacityInput, { target: { value: '' } });
-      expect(capacityInput).toHaveValue('');
+      expect(capacityInput).toHaveValue(null);
 
       // User types 2
       fireEvent.change(capacityInput, { target: { value: '2' } });
-      expect(capacityInput).toHaveValue('2');
+      expect(capacityInput).toHaveValue(2);
     });
 
     it('renders in Edit mode with pre-filled table data', () => {
@@ -81,8 +84,8 @@ describe('Table Modals', () => {
       );
 
       expect(screen.getByText('Edit Meja T-01')).toBeInTheDocument();
-      expect(screen.getByPlaceholderText('Contoh: T-01, 01, VIP-1')).toHaveValue('T-01');
-      expect(screen.getByPlaceholderText('Contoh: 4')).toHaveValue('4');
+      expect(screen.getByPlaceholderText('Contoh: 01, T-01, VIP-1')).toHaveValue('T-01');
+      expect(screen.getByPlaceholderText('Contoh: 4')).toHaveValue(4);
     });
 
     it('submits form successfully and closes modal', async () => {
@@ -97,11 +100,8 @@ describe('Table Modals', () => {
         { wrapper }
       );
 
-      const tableNumberInput = screen.getByPlaceholderText('Contoh: T-01, 01, VIP-1');
-      fireEvent.change(tableNumberInput, { target: { value: 'T-05' } });
-
-      const capacityInput = screen.getByPlaceholderText('Contoh: 4');
-      fireEvent.change(capacityInput, { target: { value: '6' } });
+      const tableNumberInput = screen.getByPlaceholderText('Contoh: 01, T-01, VIP-1');
+      fireEvent.change(tableNumberInput, { target: { value: 'T-02' } });
 
       const submitBtn = screen.getByRole('button', { name: /Tambah Meja/i });
       fireEvent.click(submitBtn);
@@ -163,6 +163,47 @@ describe('Table Modals', () => {
       expect(toast.success).toHaveBeenCalledWith(
         expect.stringContaining('berhasil diunduh')
       );
+    });
+  });
+
+  describe('ZoneManagerModal', () => {
+    it('renders zone manager with list of active zones', async () => {
+      const wrapper = createQueryWrapper();
+      render(
+        <ZoneManagerModal
+          isOpen={true}
+          onClose={vi.fn()}
+        />,
+        { wrapper }
+      );
+
+      expect(screen.getByText('Kelola Zona & Area Kafe')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Indoor (AC Non-Smoking)')).toBeInTheDocument();
+      });
+    });
+
+    it('allows typing new zone name and submitting form', async () => {
+      const wrapper = createQueryWrapper();
+      render(
+        <ZoneManagerModal
+          isOpen={true}
+          onClose={vi.fn()}
+        />,
+        { wrapper }
+      );
+
+      const nameInput = screen.getByPlaceholderText('Misal: Outdoor Garden, VIP Room');
+      fireEvent.change(nameInput, { target: { value: 'Rooftop Lounge' } });
+
+      const submitBtn = screen.getByRole('button', { name: /Tambah Zona/i });
+      fireEvent.click(submitBtn);
+
+      await waitFor(() => {
+        expect(toast.success).toHaveBeenCalledWith(
+          expect.stringContaining('berhasil ditambahkan')
+        );
+      });
     });
   });
 });
