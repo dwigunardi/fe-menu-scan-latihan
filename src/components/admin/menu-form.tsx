@@ -3,8 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useForm, useFieldArray, Resolver } from 'react-hook-form';
+import { useForm, useFieldArray, Controller, Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+
+function formatRupiahDisplay(val: number | string | null | undefined): string {
+  if (val === null || val === undefined || val === '') return '';
+  const digits = typeof val === 'number' ? String(val) : String(val).replace(/\D/g, '');
+  if (!digits) return '';
+  const num = Number(digits);
+  if (isNaN(num)) return '';
+  return new Intl.NumberFormat('id-ID').format(num);
+}
 import {
   ArrowLeft,
   Plus,
@@ -26,9 +35,18 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { formatRupiah } from '@/lib/utils/format-currency';
@@ -301,17 +319,28 @@ export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
                     <Label htmlFor="categoryId" className="text-xs font-semibold text-stone-700 dark:text-zinc-300">
                       Kategori Menu <span className="text-red-500">*</span>
                     </Label>
-                    <select
-                      id="categoryId"
-                      {...register('categoryId')}
-                      className="mt-1 w-full h-10 px-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-amber-500 cursor-pointer"
+                    <Select
+                      value={watchedCategoryId}
+                      onValueChange={(val) =>
+                        setValue('categoryId', val, {
+                          shouldValidate: true,
+                          shouldDirty: true,
+                        })
+                      }
                     >
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger id="categoryId" className="mt-1 w-full">
+                        <SelectValue placeholder="Pilih Kategori Menu" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
                     {errors.categoryId && (
                       <p className="text-xs text-red-500 mt-1">{errors.categoryId.message}</p>
                     )}
@@ -319,14 +348,31 @@ export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
 
                   <div>
                     <Label htmlFor="price" className="text-xs font-semibold text-stone-700 dark:text-zinc-300 whitespace-nowrap">
-                      Harga Normal (Rp) <span className="text-red-500">*</span>
+                      Harga Normal <span className="text-red-500">*</span>
                     </Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      placeholder="25000"
-                      {...register('price', { valueAsNumber: true })}
-                      className="mt-1 font-mono"
+                    <Controller
+                      name="price"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="relative mt-1">
+                          <span className="absolute left-3.5 top-2.5 text-xs sm:text-sm font-bold text-amber-600 dark:text-amber-500 font-mono select-none pointer-events-none">
+                            Rp
+                          </span>
+                          <Input
+                            id="price"
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="0"
+                            value={formatRupiahDisplay(field.value)}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/\D/g, '');
+                              const val = raw ? Number(raw) : 0;
+                              field.onChange(val);
+                            }}
+                            className="pl-10 font-mono font-semibold text-xs sm:text-sm"
+                          />
+                        </div>
+                      )}
                     />
                     {errors.price && (
                       <p className="text-xs text-red-500 mt-1">{errors.price.message}</p>
@@ -335,16 +381,31 @@ export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
 
                   <div>
                     <Label htmlFor="promoPrice" className="text-xs font-semibold text-stone-700 dark:text-zinc-300 whitespace-nowrap">
-                      Harga Promo (Rp, Opsional)
+                      Harga Promo (Opsional)
                     </Label>
-                    <Input
-                      id="promoPrice"
-                      type="number"
-                      placeholder="Kosongkan jika tidak promo"
-                      {...register('promoPrice', {
-                        setValueAs: (v) => (v === '' || v === null ? null : Number(v)),
-                      })}
-                      className="mt-1 font-mono"
+                    <Controller
+                      name="promoPrice"
+                      control={control}
+                      render={({ field }) => (
+                        <div className="relative mt-1">
+                          <span className="absolute left-3.5 top-2.5 text-xs sm:text-sm font-bold text-amber-600 dark:text-amber-500 font-mono select-none pointer-events-none">
+                            Rp
+                          </span>
+                          <Input
+                            id="promoPrice"
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="Kosongkan jika tidak promo"
+                            value={formatRupiahDisplay(field.value)}
+                            onChange={(e) => {
+                              const raw = e.target.value.replace(/\D/g, '');
+                              const val = raw ? Number(raw) : null;
+                              field.onChange(val);
+                            }}
+                            className="pl-10 font-mono font-semibold text-xs sm:text-sm"
+                          />
+                        </div>
+                      )}
                     />
                   </div>
                 </div>
@@ -376,11 +437,10 @@ export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
                       <button
                         type="button"
                         onClick={() => setUploadMode('upload')}
-                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1 ${
-                          uploadMode === 'upload'
-                            ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-2xs font-bold'
-                            : 'text-stone-500 dark:text-zinc-400 hover:text-stone-900'
-                        }`}
+                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1 ${uploadMode === 'upload'
+                          ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-2xs font-bold'
+                          : 'text-stone-500 dark:text-zinc-400 hover:text-stone-900'
+                          }`}
                       >
                         <UploadCloud className="h-3 w-3" />
                         <span>Upload File</span>
@@ -388,11 +448,10 @@ export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
                       <button
                         type="button"
                         onClick={() => setUploadMode('url')}
-                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1 ${
-                          uploadMode === 'url'
-                            ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-2xs font-bold'
-                            : 'text-stone-500 dark:text-zinc-400 hover:text-stone-900'
-                        }`}
+                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1 ${uploadMode === 'url'
+                          ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-400 shadow-2xs font-bold'
+                          : 'text-stone-500 dark:text-zinc-400 hover:text-stone-900'
+                          }`}
                       >
                         <LinkIcon className="h-3 w-3" />
                         <span>Input URL</span>
@@ -407,11 +466,10 @@ export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
-                        className={`border-2 border-dashed rounded-2xl p-4 sm:p-5 transition-all text-center relative flex flex-col items-center justify-center ${
-                          isDragging
-                            ? 'border-amber-500 bg-amber-500/10'
-                            : 'border-stone-200 dark:border-zinc-800 hover:border-amber-500/60 bg-stone-50/50 dark:bg-zinc-800/20'
-                        }`}
+                        className={`border-2 border-dashed rounded-2xl p-4 sm:p-5 transition-all text-center relative flex flex-col items-center justify-center ${isDragging
+                          ? 'border-amber-500 bg-amber-500/10'
+                          : 'border-stone-200 dark:border-zinc-800 hover:border-amber-500/60 bg-stone-50/50 dark:bg-zinc-800/20'
+                          }`}
                       >
                         <input
                           type="file"
@@ -457,14 +515,15 @@ export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
                                 <RefreshCw className="h-3 w-3" />
                                 <span>Ganti</span>
                               </label>
-                              <button
-                                type="button"
-                                onClick={handleClearImage}
-                                className="p-1 rounded-lg border border-stone-200 dark:border-zinc-700 text-stone-400 hover:text-red-600 transition-colors cursor-pointer"
-                                title="Hapus Foto"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
+                              <SimpleTooltip content="Hapus Foto" side="top">
+                                <button
+                                  type="button"
+                                  onClick={handleClearImage}
+                                  className="p-1 rounded-lg border border-stone-200 dark:border-zinc-700 text-stone-400 hover:text-red-600 transition-colors cursor-pointer"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </button>
+                              </SimpleTooltip>
                             </div>
                           </div>
                         ) : (
@@ -649,16 +708,18 @@ export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
                             </div>
                           </div>
 
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => removeGroup(groupIndex)}
-                            className="text-stone-400 hover:text-red-600 -mr-2 -mt-2 cursor-pointer"
-                            title="Hapus Grup"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <SimpleTooltip content="Hapus Grup Variasi" side="top">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeGroup(groupIndex)}
+                              aria-label="Hapus Grup"
+                              className="text-stone-400 hover:text-red-600 -mr-2 -mt-2 cursor-pointer"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </SimpleTooltip>
                         </div>
 
                         {/* Option Items inside this group */}
@@ -811,28 +872,40 @@ function VariantOptionList({
             {...register(`variantGroups.${groupIndex}.options.${optionIndex}.name`)}
             className="flex-1 bg-white dark:bg-zinc-900 text-xs sm:text-sm h-9"
           />
-          <div className="relative w-32 shrink-0">
-            <span className="absolute left-2.5 top-2.5 text-xs text-stone-400 font-mono">+Rp</span>
-            <Input
-              type="number"
-              placeholder="0"
-              {...register(
-                `variantGroups.${groupIndex}.options.${optionIndex}.extraPrice`,
-                { valueAsNumber: true }
-              )}
-              className="pl-10 bg-white dark:bg-zinc-900 text-xs sm:text-sm font-mono h-9"
-            />
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={() => remove(optionIndex)}
-            className="text-stone-400 hover:text-red-600 h-9 w-9 shrink-0 cursor-pointer"
-            title="Hapus Opsi"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          <Controller
+            name={`variantGroups.${groupIndex}.options.${optionIndex}.extraPrice`}
+            control={control}
+            render={({ field }) => (
+              <div className="relative w-36 shrink-0">
+                <span className="absolute left-2.5 top-2 text-xs font-bold text-amber-600 dark:text-amber-500 font-mono select-none pointer-events-none">
+                  +Rp
+                </span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={formatRupiahDisplay(field.value)}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D/g, '');
+                    const val = raw ? Number(raw) : 0;
+                    field.onChange(val);
+                  }}
+                  className="pl-10 bg-white dark:bg-zinc-900 text-xs sm:text-sm font-mono font-semibold h-9"
+                />
+              </div>
+            )}
+          />
+          <SimpleTooltip content="Hapus Opsi" side="top">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => remove(optionIndex)}
+              className="text-stone-400 hover:text-red-600 h-9 w-9 shrink-0 cursor-pointer"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </SimpleTooltip>
         </div>
       ))}
 

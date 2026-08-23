@@ -105,7 +105,7 @@ describe('MenuForm Component', () => {
     await user.click(addOptionBtn);
 
     // Remove the group
-    const removeGroupBtn = screen.getByTitle('Hapus Grup');
+    const removeGroupBtn = screen.getByRole('button', { name: /Hapus Grup/i });
     await user.click(removeGroupBtn);
 
     expect(screen.queryByDisplayValue('Ukuran Cup')).not.toBeInTheDocument();
