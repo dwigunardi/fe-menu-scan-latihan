@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod';
 import { hardenedFetch } from './hardened-fetch';
 import { customFetch } from './custom-fetch';
 import { Either, right } from './either';
@@ -14,6 +14,7 @@ import { createPaginatedResponseSchema } from '../validations/pagination.schema'
 import { PaginatedResult } from '@/types/pagination';
 
 export type AdminMenuItem = AdminMenuItemType;
+export type { CategoryData };
 
 export interface QueryMenuParams {
   page?: number;
@@ -198,7 +199,10 @@ export function formatImageUrl(url?: string | null): string {
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
     return url;
   }
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  const apiBase =
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    'http://localhost:5000';
   const cleanBase = apiBase.replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
   return `${cleanBase}${url.startsWith('/') ? url : `/${url}`}`;
 }

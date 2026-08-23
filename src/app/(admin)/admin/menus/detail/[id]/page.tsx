@@ -19,6 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatRupiah } from '@/lib/utils/format-currency';
+import { formatImageUrl } from '@/lib/api/admin-menus-api';
 import {
   useAdminMenuDetailQuery,
   useToggleMenuAvailabilityMutation,
@@ -148,7 +149,7 @@ export default function MenuDetailPage() {
             <div className="h-60 w-full bg-stone-100 dark:bg-zinc-800 relative flex items-center justify-center overflow-hidden">
               {menu.imageUrl ? (
                 <img
-                  src={menu.imageUrl}
+                  src={formatImageUrl(menu.imageUrl)}
                   alt={menu.name}
                   className="h-full w-full object-cover"
                 />
