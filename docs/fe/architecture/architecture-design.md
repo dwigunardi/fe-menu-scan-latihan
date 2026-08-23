@@ -47,36 +47,32 @@ public/                              # PWA Assets & Service Worker
 
 src/
 ├── app/                             # Next.js App Router Pages & Routes
+│   ├── (auth)/                      # Grouping Route Auth Bersih (Clean URLs)
+│   │   ├── login/page.tsx           # /login -> Universal Staff Login
+│   │   └── select-branch/page.tsx   # /select-branch -> Branch Selection
+│   │
 │   ├── (public)/                    # Grouping Route Publik (Pelanggan Kumpul Cafe via QR)
-│   │   ├── menu/                    # Halaman Utama QR Code Menu & Banners
-│   │   │   └── page.tsx
-│   │   ├── order/
-│   │   │   ├── checkout/            # Rincian Pesanan & Pembayaran QRIS
-│   │   │   │   └── page.tsx
-│   │   │   └── status/[orderNumber]/# Live Tracking Status Pesanan Real-time
-│   │   │       └── page.tsx
-│   │   └── layout.tsx               # Public Mobile-First Layout
+│   │   ├── menu/page.tsx            # /menu?table=01 -> QR Menu & Banners
+│   │   ├── scan/page.tsx            # /scan -> In-App Scanner
+│   │   └── layout.tsx               # Public Mobile-First Shell Layout
 │   │
-│   ├── (admin)/                     # Grouping Route Staff & Admin Portal (RBAC)
-│   │   ├── admin/
-│   │   │   ├── login/               # Halaman Login Multi-Role (Admin/Cashier/Kitchen/Waiter)
-│   │   │   │   └── page.tsx
-│   │   │   ├── dashboard/           # Summary Dashboard & Ringkasan Statistics (Admin)
-│   │   │   │   └── page.tsx
-│   │   │   ├── orders/              # Live Kitchen Display System (KDS) & Order Monitor
-│   │   │   │   └── page.tsx
-│   │   │   ├── tables/              # Floor Plan & 1-Tap Reset Meja (Kasir / Waiter)
-│   │   │   │   └── page.tsx
-│   │   │   ├── banners/             # Manajemen Promo Banners (Admin)
-│   │   │   │   └── page.tsx
-│   │   │   ├── categories/          # Pengelolaan Kategori Menu
-│   │   │   │   └── page.tsx
-│   │   │   ├── menus/               # Pengelolaan Item Menu & Variasi
-│   │   │   │   └── page.tsx
-│   │   │   └── reports/             # Laporan Pendapatan & Omset Harian (Admin)
-│   │   │       └── page.tsx
-│   │   └── layout.tsx               # Staff Portal Layout (Sidebar & Role Protection)
+│   ├── (dashboard)/                 # Grouping Route Internal Portal & Operasional (RBAC)
+│   │   ├── admin/                   # /admin/* -> Owner / Manager Management
+│   │   │   ├── dashboard/page.tsx   # Summary Dashboard & Omset
+│   │   │   ├── menus/page.tsx       # Katalog Menu & Variasi
+│   │   │   ├── categories/page.tsx  # Kategori Menu
+│   │   │   ├── tables/page.tsx      # Manajemen Meja & Zona
+│   │   │   └── orders/page.tsx      # Log Riwayat Pesanan
+│   │   ├── kitchen/                 # /kitchen/* -> Kitchen Staff Scope
+│   │   │   └── orders/page.tsx      # /kitchen/orders -> Live Kitchen Display (KDS)
+│   │   ├── cashier/                 # /cashier/* -> Cashier Staff Scope
+│   │   │   └── tables/page.tsx      # /cashier/tables -> Denah Meja & Kasir POS
+│   │   ├── waiter/                  # /waiter/* -> Waiter Staff Scope
+│   │   │   └── tables/page.tsx      # /waiter/tables -> Denah Meja Pelayan
+│   │   ├── not-found.tsx            # Dashboard Error Card 404
+│   │   └── layout.tsx               # Reusable Shell (CommonHeader + Sidebar + BottomNav)
 │   │
+│   ├── not-found.tsx                # Global Public 404
 │   ├── layout.tsx                   # Root Application Layout & Global Providers
 │   ├── globals.css                  # Global Styles & Tailwind CSS v4 Directive
 │   └── page.tsx                     # Landing / Redirect Page
