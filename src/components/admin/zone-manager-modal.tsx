@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
   useAdminTableZonesQuery,
   useCreateTableZoneMutation,
@@ -221,24 +222,26 @@ export function ZoneManagerModal({ isOpen, onClose }: ZoneManagerModalProps) {
                     </div>
 
                     <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => handleStartEdit(zone)}
-                        disabled={isPending}
-                        className="h-7 w-7 rounded-lg border border-stone-200 dark:border-zinc-700 flex items-center justify-center text-stone-400 hover:text-amber-600 hover:border-amber-500 transition-colors cursor-pointer"
-                        title="Edit Zona"
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(zone)}
-                        disabled={isPending}
-                        className="h-7 w-7 rounded-lg border border-stone-200 dark:border-zinc-700 flex items-center justify-center text-stone-400 hover:text-red-600 hover:border-red-500 transition-colors cursor-pointer"
-                        title="Hapus Zona"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                      <SimpleTooltip content="Edit Zona" side="top">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(zone)}
+                          disabled={isPending}
+                          className="h-7 w-7 rounded-lg border border-stone-200 dark:border-zinc-700 flex items-center justify-center text-stone-400 hover:text-amber-600 hover:border-amber-500 transition-colors cursor-pointer"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </button>
+                      </SimpleTooltip>
+                      <SimpleTooltip content="Hapus Zona" side="top">
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(zone)}
+                          disabled={isPending}
+                          className="h-7 w-7 rounded-lg border border-stone-200 dark:border-zinc-700 flex items-center justify-center text-stone-400 hover:text-red-600 hover:border-red-500 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </SimpleTooltip>
                     </div>
                   </div>
                 ))}

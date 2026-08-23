@@ -10,6 +10,14 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+} from '@/components/ui/select';
 import { TableData, SeatingType } from '@/lib/validations/table.schema';
 import {
   useCreateTableMutation,
@@ -187,18 +195,24 @@ export function TableFormModal({
               )}
             </div>
 
-            <select
-              value={zoneId}
-              onChange={(e) => setZoneId(e.target.value)}
-              className="w-full h-10 px-3 text-xs rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-stone-900 dark:text-zinc-100 font-medium focus:ring-2 focus:ring-amber-500 focus:outline-hidden cursor-pointer"
+            <Select
+              value={zoneId || '__NONE__'}
+              onValueChange={(val) => setZoneId(val === '__NONE__' ? '' : val)}
             >
-              <option value="">-- Tanpa Zona (Umum) --</option>
-              {zones.map((z) => (
-                <option key={z.id} value={z.id}>
-                  📍 {z.name} {z.description ? `(${z.description})` : ''}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Pilih Lokasi Zona / Area" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="__NONE__">-- Tanpa Zona (Umum) --</SelectItem>
+                  {zones.map((z) => (
+                    <SelectItem key={z.id} value={z.id}>
+                      📍 {z.name} {z.description ? `(${z.description})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* 3. Tipe Tempat Duduk (Seating Type) */}

@@ -98,7 +98,7 @@ describe('CategoryManagerModal', () => {
       />
     );
 
-    const deleteButtons = screen.getAllByTitle('Hapus Kategori');
+    const deleteButtons = screen.getAllByRole('button', { name: /Hapus Kategori/i });
     await user.click(deleteButtons[0]);
 
     expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining('Makanan Utama'));
@@ -119,7 +119,7 @@ describe('CategoryManagerModal', () => {
       />
     );
 
-    const deleteButtons = screen.getAllByTitle('Hapus Kategori');
+    const deleteButtons = screen.getAllByRole('button', { name: /Hapus Kategori/i });
     await user.click(deleteButtons[0]);
 
     expect(window.confirm).toHaveBeenCalled();

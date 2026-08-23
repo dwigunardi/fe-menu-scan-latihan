@@ -21,6 +21,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
   useAdminCategoriesQuery,
   useCreateCategoryMutation,
@@ -266,22 +267,24 @@ export default function AdminCategoriesPage() {
                     </td>
                     <td className="py-4 px-6 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEdit(cat)}
-                          className="h-9 w-9 rounded-xl border border-stone-200 dark:border-zinc-800 flex items-center justify-center text-stone-600 dark:text-zinc-300 hover:text-amber-600 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
-                          title="Edit Kategori"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTarget(cat)}
-                          className="h-9 w-9 rounded-xl border border-stone-200 dark:border-zinc-800 flex items-center justify-center text-stone-600 dark:text-zinc-300 hover:text-red-600 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
-                          title="Hapus Kategori"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <SimpleTooltip content="Edit Kategori" side="top">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEdit(cat)}
+                            className="h-9 w-9 rounded-xl border border-stone-200 dark:border-zinc-800 flex items-center justify-center text-stone-600 dark:text-zinc-300 hover:text-amber-600 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                        </SimpleTooltip>
+                        <SimpleTooltip content="Hapus Kategori" side="top">
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTarget(cat)}
+                            className="h-9 w-9 rounded-xl border border-stone-200 dark:border-zinc-800 flex items-center justify-center text-stone-600 dark:text-zinc-300 hover:text-red-600 hover:border-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </SimpleTooltip>
                       </div>
                     </td>
                   </tr>

@@ -1,6 +1,7 @@
 import { ReactElement, ReactNode } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export function createTestQueryClient() {
   return new QueryClient({
@@ -19,7 +20,11 @@ export function createTestQueryClient() {
 export function createQueryWrapper() {
   const queryClient = createTestQueryClient();
   return function QueryWrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider delayDuration={0}>{children}</TooltipProvider>
+      </QueryClientProvider>
+    );
   };
 }
 
@@ -30,7 +35,11 @@ export function renderWithProviders(
   const queryClient = options?.queryClient || createTestQueryClient();
 
   function Wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider delayDuration={0}>{children}</TooltipProvider>
+      </QueryClientProvider>
+    );
   }
 
   return {

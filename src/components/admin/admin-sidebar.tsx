@@ -19,6 +19,7 @@ import {
 import { useAuthStore, UserRole } from '@/store/use-auth-store';
 import { useSidebarStore } from '@/store/use-sidebar-store';
 import { cn } from '@/lib/utils/cn';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 
 interface NavItem {
   title: string;
@@ -118,28 +119,30 @@ export function AdminSidebar() {
 
           {/* Collapse Toggle Button (Inside header on expanded mode) */}
           {!collapsed && (
-            <button
-              type="button"
-              onClick={toggleCollapse}
-              className="h-8 w-8 rounded-xl border border-stone-200 dark:border-zinc-800 flex items-center justify-center text-stone-500 hover:text-stone-900 dark:hover:text-zinc-100 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
-              title="Kecilkan Sidebar (Minimalis)"
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </button>
+            <SimpleTooltip content="Kecilkan Sidebar" side="right">
+              <button
+                type="button"
+                onClick={toggleCollapse}
+                className="h-8 w-8 rounded-xl border border-stone-200 dark:border-zinc-800 flex items-center justify-center text-stone-500 hover:text-stone-900 dark:hover:text-zinc-100 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer shrink-0"
+              >
+                <PanelLeftClose className="h-4 w-4" />
+              </button>
+            </SimpleTooltip>
           )}
         </div>
 
         {/* Expand button when collapsed */}
         {collapsed && (
           <div className="flex justify-center pt-3 pb-1 shrink-0">
-            <button
-              type="button"
-              onClick={toggleCollapse}
-              className="h-8 w-8 rounded-xl border border-stone-200 dark:border-zinc-800 flex items-center justify-center text-stone-500 hover:text-amber-600 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
-              title="Perlebar Sidebar"
-            >
-              <PanelLeftOpen className="h-4 w-4" />
-            </button>
+            <SimpleTooltip content="Perlebar Sidebar" side="right">
+              <button
+                type="button"
+                onClick={toggleCollapse}
+                className="h-8 w-8 rounded-xl border border-stone-200 dark:border-zinc-800 flex items-center justify-center text-stone-500 hover:text-amber-600 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+              >
+                <PanelLeftOpen className="h-4 w-4" />
+              </button>
+            </SimpleTooltip>
           </div>
         )}
 
@@ -158,37 +161,37 @@ export function AdminSidebar() {
               (item.href !== '/admin' && pathname.startsWith(item.href));
 
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center rounded-2xl text-sm font-semibold transition-all group relative',
-                  collapsed
-                    ? 'justify-center h-11 w-11 mx-auto'
-                    : 'gap-3 px-3.5 py-2.5',
-                  isActive
-                    ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-bold shadow-xs'
-                    : 'text-stone-600 dark:text-zinc-400 hover:bg-stone-50 dark:hover:bg-zinc-800/60 hover:text-stone-900 dark:hover:text-zinc-100'
-                )}
-                title={collapsed ? item.title : undefined}
-              >
-                <Icon
+              <SimpleTooltip key={item.href} content={collapsed ? item.title : undefined} side="right">
+                <Link
+                  href={item.href}
                   className={cn(
-                    'h-5 w-5 shrink-0 transition-colors',
+                    'flex items-center rounded-2xl text-sm font-semibold transition-all group relative',
+                    collapsed
+                      ? 'justify-center h-11 w-11 mx-auto'
+                      : 'gap-3 px-3.5 py-2.5',
                     isActive
-                      ? 'text-amber-600 dark:text-amber-400'
-                      : 'text-stone-400 group-hover:text-stone-700 dark:group-hover:text-zinc-200'
+                      ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 font-bold shadow-xs'
+                      : 'text-stone-600 dark:text-zinc-400 hover:bg-stone-50 dark:hover:bg-zinc-800/60 hover:text-stone-900 dark:hover:text-zinc-100'
                   )}
-                />
-                {!collapsed && (
-                  <span className="truncate animate-in fade-in duration-200">
-                    {item.title}
-                  </span>
-                )}
-                {isActive && collapsed && (
-                  <span className="absolute -left-1.5 h-6 w-1 rounded-r-full bg-amber-600" />
-                )}
-              </Link>
+                >
+                  <Icon
+                    className={cn(
+                      'h-5 w-5 shrink-0 transition-colors',
+                      isActive
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-stone-400 group-hover:text-stone-700 dark:group-hover:text-zinc-200'
+                    )}
+                  />
+                  {!collapsed && (
+                    <span className="truncate animate-in fade-in duration-200">
+                      {item.title}
+                    </span>
+                  )}
+                  {isActive && collapsed && (
+                    <span className="absolute -left-1.5 h-6 w-1 rounded-r-full bg-amber-600" />
+                  )}
+                </Link>
+              </SimpleTooltip>
             );
           })}
         </nav>
@@ -210,16 +213,14 @@ export function AdminSidebar() {
                   {userRole}
                 </span>
               </div>
-              <div
-                className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 shrink-0"
-                title="Online"
-              />
+              <SimpleTooltip content="Status: Online" side="top">
+                <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 shrink-0 cursor-default" />
+              </SimpleTooltip>
             </>
           ) : (
-            <div
-              className="h-3 w-3 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20"
-              title={userName + ' (' + userRole + ')'}
-            />
+            <SimpleTooltip content={`${userName} (${userRole})`} side="right">
+              <div className="h-3 w-3 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 cursor-default" />
+            </SimpleTooltip>
           )}
         </div>
       </div>

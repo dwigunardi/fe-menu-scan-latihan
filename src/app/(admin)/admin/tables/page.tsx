@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
   useAdminTablesPaginatedQuery,
   useAdminTableZonesQuery,
@@ -533,12 +534,13 @@ export default function AdminTablesPage() {
                                   <h3 className="text-base sm:text-xl font-black tracking-tight text-stone-900 dark:text-zinc-50 font-mono truncate">
                                     {displayNum}
                                   </h3>
-                                  <span
-                                    className="text-[10px] sm:text-xs px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-zinc-800/90 border border-stone-200/60 dark:border-zinc-700/50 text-stone-700 dark:text-zinc-300 font-semibold shrink-0"
-                                    title={table.seatingType}
-                                  >
-                                    {seatingIcon} <span className="hidden sm:inline">{table.seatingType}</span>
-                                  </span>
+                                  <SimpleTooltip content={table.seatingType} side="top">
+                                    <span
+                                      className="text-[10px] sm:text-xs px-2 py-0.5 rounded-lg bg-stone-100 dark:bg-zinc-800/90 border border-stone-200/60 dark:border-zinc-700/50 text-stone-700 dark:text-zinc-300 font-semibold shrink-0 cursor-default"
+                                    >
+                                      {seatingIcon} <span className="hidden sm:inline">{table.seatingType}</span>
+                                    </span>
+                                  </SimpleTooltip>
                                 </div>
 
                                 {/* Active Guest or Subtitle */}
@@ -580,53 +582,57 @@ export default function AdminTablesPage() {
                               {/* Bottom: Action Buttons with Contrast & Clear Visuals */}
                               <div className="pt-2.5 border-t border-stone-100 dark:border-zinc-800/80 flex items-center justify-between gap-1.5">
                                 {/* QR Sticker Button */}
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleOpenQr(table)}
-                                  className="flex-1 text-[11px] sm:text-xs h-7.5 sm:h-8 px-2 rounded-xl font-semibold bg-stone-50 dark:bg-zinc-800/90 hover:bg-amber-600 hover:text-white dark:hover:bg-amber-600 dark:hover:text-white border-stone-200 dark:border-zinc-700/60 text-stone-700 dark:text-zinc-200 shadow-2xs transition-all cursor-pointer"
-                                  title="Stiker QR Meja"
-                                >
-                                  <QrCode className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-amber-600 dark:text-amber-400 group-hover/btn:text-white shrink-0" />
-                                  <span>QR</span>
-                                </Button>
-
-                                {/* Reset Session */}
-                                {table.status !== 'VACANT' && (
+                                <SimpleTooltip content="Stiker QR Meja" side="top">
                                   <Button
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => handleResetSession(table)}
-                                    disabled={resetMutation.isPending}
-                                    className="text-[11px] sm:text-xs h-7.5 sm:h-8 px-2 rounded-xl font-semibold bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700/60 shadow-2xs transition-all cursor-pointer"
-                                    title="Reset Sesi Meja"
+                                    onClick={() => handleOpenQr(table)}
+                                    className="flex-1 text-[11px] sm:text-xs h-7.5 sm:h-8 px-2 rounded-xl font-semibold bg-stone-50 dark:bg-zinc-800/90 hover:bg-amber-600 hover:text-white dark:hover:bg-amber-600 dark:hover:text-white border-stone-200 dark:border-zinc-700/60 text-stone-700 dark:text-zinc-200 shadow-2xs transition-all cursor-pointer"
                                   >
-                                    <RotateCcw className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-blue-600 dark:text-blue-400 shrink-0" />
-                                    <span>Reset</span>
+                                    <QrCode className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-amber-600 dark:text-amber-400 group-hover/btn:text-white shrink-0" />
+                                    <span>QR</span>
                                   </Button>
+                                </SimpleTooltip>
+
+                                {/* Reset Session */}
+                                {table.status !== 'VACANT' && (
+                                  <SimpleTooltip content="Reset Sesi Meja" side="top">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleResetSession(table)}
+                                      disabled={resetMutation.isPending}
+                                      className="text-[11px] sm:text-xs h-7.5 sm:h-8 px-2 rounded-xl font-semibold bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 dark:hover:text-white text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700/60 shadow-2xs transition-all cursor-pointer"
+                                    >
+                                      <RotateCcw className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 text-blue-600 dark:text-blue-400 shrink-0" />
+                                      <span>Reset</span>
+                                    </Button>
+                                  </SimpleTooltip>
                                 )}
 
                                 {/* Edit & Delete Icons */}
                                 <div className="flex items-center gap-1 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenEdit(table)}
-                                    className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-xl border border-stone-200 dark:border-zinc-700/60 bg-stone-50 dark:bg-zinc-800/70 flex items-center justify-center text-stone-400 hover:text-amber-600 hover:border-amber-500/80 transition-all cursor-pointer shadow-2xs"
-                                    title="Edit Meja"
-                                  >
-                                    <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDelete(table)}
-                                    disabled={deleteMutation.isPending}
-                                    className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-xl border border-stone-200 dark:border-zinc-700/60 bg-stone-50 dark:bg-zinc-800/70 flex items-center justify-center text-stone-400 hover:text-red-600 hover:border-red-500/80 transition-all cursor-pointer shadow-2xs"
-                                    title="Hapus Meja"
-                                  >
-                                    <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                                  </button>
+                                  <SimpleTooltip content="Edit Meja" side="top">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenEdit(table)}
+                                      className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-xl border border-stone-200 dark:border-zinc-700/60 bg-stone-50 dark:bg-zinc-800/70 flex items-center justify-center text-stone-400 hover:text-amber-600 hover:border-amber-500/80 transition-all cursor-pointer shadow-2xs"
+                                    >
+                                      <Edit className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                    </button>
+                                  </SimpleTooltip>
+                                  <SimpleTooltip content="Hapus Meja" side="top">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDelete(table)}
+                                      disabled={deleteMutation.isPending}
+                                      className="h-7.5 w-7.5 sm:h-8 sm:w-8 rounded-xl border border-stone-200 dark:border-zinc-700/60 bg-stone-50 dark:bg-zinc-800/70 flex items-center justify-center text-stone-400 hover:text-red-600 hover:border-red-500/80 transition-all cursor-pointer shadow-2xs"
+                                    >
+                                      <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                                    </button>
+                                  </SimpleTooltip>
                                 </div>
                               </div>
                             </div>

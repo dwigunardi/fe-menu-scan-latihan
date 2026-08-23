@@ -6,6 +6,7 @@ import { HandshakeProvider } from '@/providers/handshake-provider';
 import { ToasterProvider } from '@/providers/toaster-provider';
 import { PwaProvider } from '@/providers/pwa-provider';
 import { ThemeProvider } from '@/providers/theme-provider';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 export const metadata: Metadata = {
   title: 'Kumpul Cafe - Digital QR Menu & Ordering',
@@ -45,8 +46,10 @@ export default function RootLayout({
           <QueryProvider>
             <HandshakeProvider>
               <PwaProvider>
-                {children}
-                <ToasterProvider />
+                <TooltipProvider delayDuration={400}>
+                  {children}
+                  <ToasterProvider />
+                </TooltipProvider>
               </PwaProvider>
             </HandshakeProvider>
           </QueryProvider>

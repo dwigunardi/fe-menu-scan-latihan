@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
   useCreateCategoryMutation,
   useDeleteCategoryMutation,
@@ -97,15 +98,17 @@ export function CategoryManagerModal({
               <span className="font-semibold text-stone-800 dark:text-zinc-200">
                 {category.name}
               </span>
-              <button
-                type="button"
-                onClick={() => handleDelete(category.id, category.name)}
-                disabled={deleteMutation.isPending}
-                className="text-stone-400 hover:text-red-600 transition-colors p-1 cursor-pointer"
-                title="Hapus Kategori"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <SimpleTooltip content="Hapus Kategori" side="left">
+                <button
+                  type="button"
+                  onClick={() => handleDelete(category.id, category.name)}
+                  disabled={deleteMutation.isPending}
+                  aria-label="Hapus Kategori"
+                  className="text-stone-400 hover:text-red-600 transition-colors p-1 cursor-pointer"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </SimpleTooltip>
             </div>
           ))}
         </div>

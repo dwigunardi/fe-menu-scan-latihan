@@ -6,6 +6,7 @@ import { Sparkles, Eye, EyeOff, Lock, User, ShieldCheck, Crown, Receipt, Coffee,
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import { useAuthStore, UserRole } from '@/store/use-auth-store';
 import { loginStaff } from '@/lib/api/auth-api';
 import { notifyApiError } from '@/lib/api/notify-error';
@@ -123,14 +124,15 @@ export default function AdminLoginPage() {
                 className="pl-10 pr-10 font-mono"
               />
               <Lock className="h-4 w-4 absolute left-3.5 top-3.5 text-stone-400 dark:text-zinc-500" />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-3.5 text-stone-400 hover:text-stone-700 dark:text-zinc-500 dark:hover:text-zinc-200 cursor-pointer"
-                title={showPassword ? 'Sembunyikan password' : 'Lihat password'}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
+              <SimpleTooltip content={showPassword ? 'Sembunyikan password' : 'Lihat password'} side="left">
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-3.5 text-stone-400 hover:text-stone-700 dark:text-zinc-500 dark:hover:text-zinc-200 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </SimpleTooltip>
             </div>
           </div>
 
