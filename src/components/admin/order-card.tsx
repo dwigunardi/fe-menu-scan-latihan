@@ -4,6 +4,7 @@ import { useMemo, DragEvent } from 'react';
 import { OrderData, OrderStatus } from '@/lib/validations/order.schema';
 import { formatCurrency } from '@/lib/utils/format-currency';
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
   Clock,
   User,
@@ -24,6 +25,7 @@ interface OrderCardProps {
   onDragStart?: (e: DragEvent<HTMLDivElement>, order: OrderData) => void;
   onDragEnd?: (e: DragEvent<HTMLDivElement>) => void;
   isDragging?: boolean;
+  isMobile?: boolean;
 }
 
 /**
@@ -59,6 +61,7 @@ export function OrderCard({
   onDragStart,
   onDragEnd,
   isDragging,
+  isMobile = false,
 }: OrderCardProps) {
   const { label: timeLabel, elapsedMinutes } = useMemo(
     () => formatOrderTime(order.createdAt),
@@ -107,10 +110,12 @@ export function OrderCard({
 
   return (
     <div
-      draggable={!isPending}
-      onDragStart={(e) => onDragStart?.(e, order)}
-      onDragEnd={(e) => onDragEnd?.(e)}
-      className={`rounded-2xl border bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden cursor-grab active:cursor-grabbing select-none group ${
+      draggable={!isPending && !isMobile}
+      onDragStart={(e) => !isMobile && onDragStart?.(e, order)}
+      onDragEnd={(e) => !isMobile && onDragEnd?.(e)}
+      className={`rounded-2xl border bg-white dark:bg-zinc-900 shadow-sm hover:shadow-md transition-all flex flex-col justify-between overflow-hidden select-none group ${
+        isMobile ? 'touch-pan-y cursor-default' : 'cursor-grab active:cursor-grabbing'
+      } ${
         isDragging
           ? 'opacity-40 scale-[0.98] ring-2 ring-amber-500/50 border-amber-500/80 shadow-2xl rotate-1'
           : 'border-stone-200/90 dark:border-zinc-800 hover:border-amber-400/80 dark:hover:border-amber-500/50'
@@ -121,12 +126,15 @@ export function OrderCard({
         <div className="flex items-center justify-between gap-2">
           {/* Table Badge with Drag Handle */}
           <div className="flex items-center gap-1.5 min-w-0">
-            <div
-              className="text-stone-300 dark:text-zinc-600 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors shrink-0"
-              title="Geser kartu untuk memindahkan status"
-            >
-              <GripVertical className="h-4 w-4" />
-            </div>
+            {!isMobile && (
+              <SimpleTooltip content="Geser kartu untuk memindahkan status" side="top">
+                <div
+                  className="text-stone-300 dark:text-zinc-600 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors shrink-0 cursor-grab active:cursor-grabbing"
+                >
+                  <GripVertical className="h-4 w-4" />
+                </div>
+              </SimpleTooltip>
+            )}
             <span className="px-2.5 py-0.5 rounded-lg bg-amber-500/15 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 font-black text-xs tracking-wider uppercase shrink-0">
               {formattedTableNumber}
               {order.zoneName && (
@@ -138,13 +146,14 @@ export function OrderCard({
           </div>
 
           {/* Elapsed Timer Pill */}
-          <div
-            className={`px-2 py-0.5 rounded-lg text-[10.5px] border flex items-center gap-1 shrink-0 font-medium ${timerColor}`}
-            title={fullDateTimeTooltip}
-          >
-            <Clock className="h-3 w-3 shrink-0" />
-            <span className="whitespace-nowrap">{timeLabel}</span>
-          </div>
+          <SimpleTooltip content={fullDateTimeTooltip} side="top">
+            <div
+              className={`px-2 py-0.5 rounded-lg text-[10.5px] border flex items-center gap-1 shrink-0 font-medium cursor-default ${timerColor}`}
+            >
+              <Clock className="h-3 w-3 shrink-0" />
+              <span className="whitespace-nowrap">{timeLabel}</span>
+            </div>
+          </SimpleTooltip>
         </div>
 
         {/* Customer Name & Order ID Info */}
@@ -164,13 +173,13 @@ export function OrderCard({
         {order.orderItems.map((item, idx) => (
           <div key={item.id || idx} className={idx > 0 ? 'pt-2' : ''}>
             <div className="flex items-start justify-between gap-2 text-xs">
-              <div className="font-semibold text-stone-900 dark:text-zinc-100 flex items-start gap-1.5 min-w-0">
+              <div className="font-semibold text-stone-900 dark:text-zinc-100 flex items-start gap-1.5 min-w-0 flex-1">
                 <span className="h-5 px-1.5 rounded-md bg-stone-100 dark:bg-zinc-800 text-stone-800 dark:text-zinc-200 font-extrabold flex items-center justify-center text-[11px] shrink-0">
                   {item.quantity}x
                 </span>
                 <span className="leading-snug break-words">{item.menuName}</span>
               </div>
-              <span className="font-bold text-stone-600 dark:text-zinc-400 shrink-0 text-right">
+              <span className="font-bold text-stone-600 dark:text-zinc-400 shrink-0 text-right whitespace-nowrap pl-1 font-mono">
                 {formatCurrency(item.subtotal)}
               </span>
             </div>
@@ -203,9 +212,9 @@ export function OrderCard({
 
       {/* 3. Footer: Total Amount & Status Action Buttons */}
       <div className="p-3 border-t border-stone-100 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/50 space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-stone-500 dark:text-zinc-400 font-medium">Total Tagihan:</span>
-          <span className="font-black text-amber-700 dark:text-amber-400 text-sm">
+        <div className="flex items-center justify-between gap-2 text-xs">
+          <span className="text-stone-500 dark:text-zinc-400 font-medium whitespace-nowrap">Total Tagihan:</span>
+          <span className="font-black text-amber-700 dark:text-amber-400 text-sm whitespace-nowrap font-mono">
             {formatCurrency(order.totalAmount)}
           </span>
         </div>

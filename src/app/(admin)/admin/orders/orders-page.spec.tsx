@@ -22,7 +22,8 @@ describe('AdminOrdersPage', () => {
     expect(screen.getByText('Omzet Lunas')).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText('ORD-20260820-001')).toBeInTheDocument();
+      const orderElements = screen.getAllByText('ORD-20260820-001');
+      expect(orderElements.length).toBeGreaterThan(0);
     });
   });
 
@@ -31,7 +32,8 @@ describe('AdminOrdersPage', () => {
     render(<AdminOrdersPage />, { wrapper });
 
     await waitFor(() => {
-      expect(screen.getByText('ORD-20260820-001')).toBeInTheDocument();
+      const orderElements = screen.getAllByText('ORD-20260820-001');
+      expect(orderElements.length).toBeGreaterThan(0);
     });
 
     const tableViewBtn = screen.getByRole('button', { name: /Tabel/i });
@@ -57,7 +59,7 @@ describe('AdminOrdersPage', () => {
     const wrapper = createQueryWrapper();
     render(<AdminOrdersPage />, { wrapper });
 
-    const soundBtn = screen.getByTitle('Suara Bel Aktif');
+    const soundBtn = screen.getByRole('button', { name: /Bel Aktif/i });
     fireEvent.click(soundBtn);
 
     expect(screen.getByText('Mute')).toBeInTheDocument();
@@ -68,13 +70,14 @@ describe('AdminOrdersPage', () => {
     render(<AdminOrdersPage />, { wrapper });
 
     await waitFor(() => {
-      expect(screen.getByText('ORD-20260820-001')).toBeInTheDocument();
+      const orderElements = screen.getAllByText('ORD-20260820-001');
+      expect(orderElements.length).toBeGreaterThan(0);
     });
 
-    const orderText = screen.getByText('ORD-20260820-001');
-    expect(orderText).toBeInTheDocument();
+    const orderElements = screen.getAllByText('ORD-20260820-001');
+    expect(orderElements[0]).toBeInTheDocument();
 
-    const columnHeading = screen.getByRole('heading', { name: 'Sedang Dimasak' });
-    expect(columnHeading).toBeInTheDocument();
+    const columnHeadings = screen.getAllByRole('heading', { name: 'Sedang Dimasak' });
+    expect(columnHeadings.length).toBeGreaterThan(0);
   });
 });

@@ -12,6 +12,7 @@ import { OrderCard } from '@/components/admin/order-card';
 import { OrderReceiptModal } from '@/components/admin/order-receipt-modal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { SimpleTooltip } from '@/components/ui/tooltip';
 import {
   Flame,
   ChefHat,
@@ -93,6 +94,7 @@ const kanbanColumns: KanbanColumnConfig[] = [
 export default function AdminOrdersPage() {
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
+  const [mobileActiveTab, setMobileActiveTab] = useState<OrderStatus>('PENDING');
   const [search, setSearch] = useState('');
   const [isSoundEnabled, setIsSoundEnabled] = useState(true);
 
@@ -253,14 +255,14 @@ export default function AdminOrdersPage() {
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-stone-900 dark:text-zinc-50 flex items-center gap-2">
-              <ChefHat className="h-6 w-6 text-amber-600" />
-              Kitchen Display System (KDS)
+              <ChefHat className="h-6 w-6 text-amber-600 shrink-0" />
+              <span className="whitespace-nowrap">Kitchen Display System (KDS)</span>
             </h1>
-            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20 shrink-0">
               <Sparkles className="h-3 w-3" /> Drag & Drop
             </span>
           </div>
@@ -270,27 +272,28 @@ export default function AdminOrdersPage() {
         </div>
 
         {/* View Switcher & Actions */}
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex justify-end items-center gap-2 flex-wrap sm:flex-nowrap">
           {/* Sound Toggle */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setIsSoundEnabled(!isSoundEnabled)}
-            className={`h-9 px-3 rounded-xl border-stone-200 dark:border-zinc-800 ${isSoundEnabled
+          <SimpleTooltip content={isSoundEnabled ? 'Suara Bel Aktif' : 'Suara Bel Dibisukan'} side="bottom">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setIsSoundEnabled(!isSoundEnabled)}
+              className={`h-9 px-3 rounded-xl border-stone-200 dark:border-zinc-800 ${isSoundEnabled
                 ? 'text-amber-600 bg-amber-50/50 dark:bg-amber-950/20'
                 : 'text-stone-400'
-              }`}
-            title={isSoundEnabled ? 'Suara Bel Aktif' : 'Suara Bel Dibisukan'}
-          >
-            {isSoundEnabled ? (
-              <Volume2 className="h-4 w-4 mr-1.5 text-amber-600" />
-            ) : (
-              <VolumeX className="h-4 w-4 mr-1.5 text-stone-400" />
-            )}
-            <span className="text-xs font-semibold">
-              {isSoundEnabled ? 'Bel Aktif' : 'Mute'}
-            </span>
-          </Button>
+                }`}
+            >
+              {isSoundEnabled ? (
+                <Volume2 className="h-4 w-4 mr-1.5 text-amber-600" />
+              ) : (
+                <VolumeX className="h-4 w-4 mr-1.5 text-stone-400" />
+              )}
+              <span className="text-xs font-semibold">
+                {isSoundEnabled ? 'Bel Aktif' : 'Mute'}
+              </span>
+            </Button>
+          </SimpleTooltip>
 
           {/* View Mode Toggle: Kanban vs Table */}
           <div className="flex items-center bg-stone-100 dark:bg-zinc-800/80 p-1 rounded-xl border border-stone-200/80 dark:border-zinc-700/80">
@@ -298,8 +301,8 @@ export default function AdminOrdersPage() {
               type="button"
               onClick={() => setViewMode('kanban')}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'kanban'
-                  ? 'bg-white dark:bg-zinc-900 text-amber-600 shadow-xs'
-                  : 'text-stone-500 hover:text-stone-900 dark:hover:text-zinc-200'
+                ? 'bg-white dark:bg-zinc-900 text-amber-600 shadow-xs'
+                : 'text-stone-500 hover:text-stone-900 dark:hover:text-zinc-200'
                 }`}
             >
               <LayoutGrid className="h-3.5 w-3.5" />
@@ -309,8 +312,8 @@ export default function AdminOrdersPage() {
               type="button"
               onClick={() => setViewMode('table')}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${viewMode === 'table'
-                  ? 'bg-white dark:bg-zinc-900 text-amber-600 shadow-xs'
-                  : 'text-stone-500 hover:text-stone-900 dark:hover:text-zinc-200'
+                ? 'bg-white dark:bg-zinc-900 text-amber-600 shadow-xs'
+                : 'text-stone-500 hover:text-stone-900 dark:hover:text-zinc-200'
                 }`}
             >
               <List className="h-3.5 w-3.5" />
@@ -319,31 +322,32 @@ export default function AdminOrdersPage() {
           </div>
 
           {/* Refresh Button */}
-          <Button
-            size="icon"
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={isRefetching}
-            className="h-9 w-9 rounded-xl border-stone-200 dark:border-zinc-800"
-            title="Muat Ulang Pesanan"
-          >
-            <RotateCw
-              className={`h-4 w-4 text-stone-600 dark:text-zinc-300 ${isRefetching ? 'animate-spin' : ''
-                }`}
-            />
-          </Button>
+          <SimpleTooltip content="Muat Ulang Pesanan" side="bottom">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isRefetching}
+              className="h-9 w-9 rounded-xl border-stone-200 dark:border-zinc-800"
+            >
+              <RotateCw
+                className={`h-4 w-4 text-stone-600 dark:text-zinc-300 ${isRefetching ? 'animate-spin' : ''
+                  }`}
+              />
+            </Button>
+          </SimpleTooltip>
         </div>
       </div>
 
       {/* Summary Metrics KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4">
         {/* Total Orders */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-xs flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-stone-100 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 flex items-center justify-center">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-xs flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-stone-100 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 flex items-center justify-center shrink-0">
             <ShoppingBag className="h-5 w-5" />
           </div>
-          <div>
-            <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider truncate">
               Total Pesanan
             </p>
             <p className="text-lg font-bold text-stone-900 dark:text-zinc-100">
@@ -353,12 +357,12 @@ export default function AdminOrdersPage() {
         </div>
 
         {/* Pending Orders */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-amber-200/80 dark:border-amber-900/40 shadow-xs flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-amber-200/80 dark:border-amber-900/40 shadow-xs flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
             <Clock className="h-5 w-5" />
           </div>
-          <div>
-            <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider truncate">
               Pesanan Masuk
             </p>
             <p className="text-lg font-bold text-amber-600">
@@ -368,12 +372,12 @@ export default function AdminOrdersPage() {
         </div>
 
         {/* Preparing Cooking Orders */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-blue-200/80 dark:border-blue-900/40 shadow-xs flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-blue-200/80 dark:border-blue-900/40 shadow-xs flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center shrink-0">
             <Flame className="h-5 w-5" />
           </div>
-          <div>
-            <p className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider truncate">
               Sedang Dimasak
             </p>
             <p className="text-lg font-bold text-blue-600">
@@ -383,12 +387,12 @@ export default function AdminOrdersPage() {
         </div>
 
         {/* Served Orders */}
-        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-emerald-200/80 dark:border-emerald-900/40 shadow-xs flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-emerald-200/80 dark:border-emerald-900/40 shadow-xs flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
             <ChefHat className="h-5 w-5" />
           </div>
-          <div>
-            <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider truncate">
               Siap Saji
             </p>
             <p className="text-lg font-bold text-emerald-600">
@@ -398,8 +402,8 @@ export default function AdminOrdersPage() {
         </div>
 
         {/* Total Paid Today Revenue */}
-        <div className="col-span-2 lg:col-span-1 p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-xs flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+        <div className="col-span-2 md:col-span-2 xl:col-span-1 p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-xs flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
             <CircleDollarSign className="h-5 w-5" />
           </div>
           <div className="min-w-0">
@@ -414,9 +418,9 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Control Bar: Search & Status Filters */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-zinc-900 p-3 rounded-2xl border border-stone-200/80 dark:border-zinc-800">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 bg-white dark:bg-zinc-900 p-3 rounded-2xl border border-stone-200/80 dark:border-zinc-800">
         {/* Search */}
-        <div className="relative w-full sm:w-80">
+        <div className="relative w-full md:w-72 lg:w-80 shrink-0">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-stone-400" />
           <Input
             placeholder="Cari no. pesanan atau nama tamu..."
@@ -427,7 +431,7 @@ export default function AdminOrdersPage() {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {['ALL', 'PENDING', 'PREPARING', 'SERVED', 'PAID'].map((status) => {
             const labels: Record<string, string> = {
               ALL: 'Semua',
@@ -443,8 +447,8 @@ export default function AdminOrdersPage() {
                 type="button"
                 onClick={() => setStatusFilter(status)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${isActive
-                    ? 'bg-amber-600 text-white shadow-xs'
-                    : 'bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 hover:bg-stone-200'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 hover:bg-stone-200'
                   }`}
               >
                 {labels[status]}
@@ -465,72 +469,160 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       ) : viewMode === 'kanban' ? (
-        /* KANBAN BOARD 4 INTERACTIVE DRAG & DROP COLUMNS */
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
-          {kanbanColumns.map((col) => {
-            const columnOrders = getOrdersForColumn(col.status);
-            const Icon = col.icon;
-            const isHovered = activeDropZone === col.status;
-            const isDifferentStatus = draggedOrder && draggedOrder.status !== col.status;
+        <div className="space-y-4">
+          {/* 1. MOBILE VIEW: Segmented Status Selector & Single Column View (< sm) */}
+          <div className="sm:hidden space-y-4">
+            {/* Segmented Status Selector Tabs with Real-time Count Badges */}
+            <div className="grid grid-cols-4 gap-1 p-1 bg-stone-100 dark:bg-zinc-800/80 rounded-2xl border border-stone-200/80 dark:border-zinc-700/80">
+              {kanbanColumns.map((col) => {
+                const count = getOrdersForColumn(col.status).length;
+                const isActive = mobileActiveTab === col.status;
+                const Icon = col.icon;
+                return (
+                  <button
+                    key={col.status}
+                    type="button"
+                    onClick={() => setMobileActiveTab(col.status)}
+                    className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl transition-all text-center cursor-pointer ${
+                      isActive
+                        ? 'bg-white dark:bg-zinc-900 text-amber-600 dark:text-amber-500 shadow-xs font-bold'
+                        : 'text-stone-500 hover:text-stone-900 dark:text-zinc-400'
+                    }`}
+                  >
+                    <div className="relative">
+                      <Icon className="h-4 w-4 mb-0.5" />
+                      {count > 0 && (
+                        <span
+                          className={`absolute -top-1.5 -right-3 text-[9px] font-extrabold px-1 rounded-full ${
+                            isActive
+                              ? 'bg-amber-600 text-white'
+                              : 'bg-stone-300 dark:bg-zinc-700 text-stone-800 dark:text-zinc-200'
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] leading-tight truncate w-full">{col.title.split(' ')[0]}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-            return (
-              <div
-                key={col.status}
-                onDragOver={(e) => handleDragOver(e, col.status)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, col.status)}
-                className={`rounded-3xl p-3.5 border transition-all duration-200 space-y-3 ${isHovered && isDifferentStatus
+            {/* Active Single Column (100% full-width, clean vertical scroll only) */}
+            {(() => {
+              const activeCol = kanbanColumns.find((c) => c.status === mobileActiveTab) || kanbanColumns[0];
+              const columnOrders = getOrdersForColumn(activeCol.status);
+              const Icon = activeCol.icon;
+
+              return (
+                <div className="rounded-3xl p-3.5 border bg-stone-100/70 dark:bg-zinc-950 border-stone-200/80 dark:border-zinc-800/80 space-y-3 w-full">
+                  {/* Column Header */}
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-6 w-6 rounded-lg flex items-center justify-center ${activeCol.iconBgColor}`}>
+                        <Icon className="h-3.5 w-3.5" />
+                      </div>
+                      <h3 className="text-xs font-bold text-stone-800 dark:text-zinc-200 uppercase tracking-wider">
+                        {activeCol.title}
+                      </h3>
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-lg font-extrabold text-xs ${activeCol.badgeBg}`}>
+                      {columnOrders.length} Pesanan
+                    </span>
+                  </div>
+
+                  {/* Orders Cards Stack */}
+                  <div className="space-y-3">
+                    {columnOrders.length === 0 ? (
+                      <div className="py-16 text-center text-stone-400 dark:text-zinc-600 text-xs font-medium border-2 border-dashed border-stone-200 dark:border-zinc-800 rounded-2xl">
+                        {activeCol.emptyText}
+                      </div>
+                    ) : (
+                      columnOrders.map((order) => (
+                        <OrderCard
+                          key={order.id}
+                          order={order}
+                          onUpdateStatus={handleUpdateStatus}
+                          onOpenReceipt={handleOpenReceipt}
+                          isPending={updateStatusMutation.isPending}
+                          isMobile={true}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* 2. TABLET & DESKTOP MULTI-COLUMN KANBAN BOARD (>= sm) */}
+          <div className="hidden sm:flex xl:grid xl:grid-cols-4 gap-4 items-start overflow-x-auto pb-4 pt-1 no-scrollbar sm:scrollbar-thin">
+            {kanbanColumns.map((col) => {
+              const columnOrders = getOrdersForColumn(col.status);
+              const Icon = col.icon;
+              const isHovered = activeDropZone === col.status;
+              const isDifferentStatus = draggedOrder && draggedOrder.status !== col.status;
+
+              return (
+                <div
+                  key={col.status}
+                  onDragOver={(e) => handleDragOver(e, col.status)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, col.status)}
+                  className={`w-[290px] sm:w-[320px] xl:w-auto shrink-0 xl:shrink rounded-3xl p-3.5 border transition-all duration-200 space-y-3 ${isHovered && isDifferentStatus
                     ? `${col.activeBorderColor} ${col.activeBgColor} scale-[1.01] shadow-lg`
                     : 'bg-stone-100/70 dark:bg-zinc-950 border-stone-200/80 dark:border-zinc-800/80'
-                  }`}
-              >
-                {/* Column Header */}
-                <div className="flex items-center justify-between px-1">
-                  <div className="flex items-center gap-2">
-                    <div className={`h-6 w-6 rounded-lg flex items-center justify-center ${col.iconBgColor}`}>
-                      <Icon className="h-3.5 w-3.5" />
+                    }`}
+                >
+                  {/* Column Header */}
+                  <div className="flex items-center justify-between px-1">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-6 w-6 rounded-lg flex items-center justify-center ${col.iconBgColor}`}>
+                        <Icon className="h-3.5 w-3.5" />
+                      </div>
+                      <h3 className="text-xs font-bold text-stone-800 dark:text-zinc-200 uppercase tracking-wider">
+                        {col.title}
+                      </h3>
                     </div>
-                    <h3 className="text-xs font-bold text-stone-800 dark:text-zinc-200 uppercase tracking-wider">
-                      {col.title}
-                    </h3>
+                    <span className={`px-2 py-0.5 rounded-lg font-extrabold text-[11px] ${col.badgeBg}`}>
+                      {columnOrders.length}
+                    </span>
                   </div>
-                  <span className={`px-2 py-0.5 rounded-lg font-extrabold text-[11px] ${col.badgeBg}`}>
-                    {columnOrders.length}
-                  </span>
-                </div>
 
-                {/* Drop Indicator Placeholder when dragging a card over this column */}
-                {isHovered && isDifferentStatus && (
-                  <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 border-dashed border-amber-600 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-bold animate-pulse shadow-xs">
-                    <ArrowRight className="h-4 w-4" />
-                    <span>Lepaskan untuk pindah ke {col.title}</span>
-                  </div>
-                )}
-
-                {/* Orders Cards Stack */}
-                <div className="space-y-3 min-h-[160px] max-h-[720px] overflow-y-auto pr-1">
-                  {columnOrders.length === 0 ? (
-                    <div className="py-12 text-center text-stone-400 dark:text-zinc-600 text-xs font-medium border-2 border-dashed border-stone-200 dark:border-zinc-800 rounded-2xl">
-                      {col.emptyText}
+                  {/* Drop Indicator Placeholder when dragging a card over this column */}
+                  {isHovered && isDifferentStatus && (
+                    <div className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl border-2 border-dashed border-amber-600 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-xs font-bold animate-pulse shadow-xs">
+                      <ArrowRight className="h-4 w-4" />
+                      <span>Lepaskan untuk pindah ke {col.title}</span>
                     </div>
-                  ) : (
-                    columnOrders.map((order) => (
-                      <OrderCard
-                        key={order.id}
-                        order={order}
-                        onUpdateStatus={handleUpdateStatus}
-                        onOpenReceipt={handleOpenReceipt}
-                        isPending={updateStatusMutation.isPending}
-                        onDragStart={handleDragStart}
-                        onDragEnd={handleDragEnd}
-                        isDragging={draggedOrder?.id === order.id}
-                      />
-                    ))
                   )}
+
+                  {/* Orders Cards Stack */}
+                  <div className="space-y-3 min-h-[160px] max-h-[720px] overflow-y-auto pr-1">
+                    {columnOrders.length === 0 ? (
+                      <div className="py-12 text-center text-stone-400 dark:text-zinc-600 text-xs font-medium border-2 border-dashed border-stone-200 dark:border-zinc-800 rounded-2xl">
+                        {col.emptyText}
+                      </div>
+                    ) : (
+                      columnOrders.map((order) => (
+                        <OrderCard
+                          key={order.id}
+                          order={order}
+                          onUpdateStatus={handleUpdateStatus}
+                          onOpenReceipt={handleOpenReceipt}
+                          isPending={updateStatusMutation.isPending}
+                          onDragStart={handleDragStart}
+                          onDragEnd={handleDragEnd}
+                          isDragging={draggedOrder?.id === order.id}
+                        />
+                      ))
+                    )}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       ) : (
         /* TABLE AUDIT VIEW */
@@ -588,14 +680,14 @@ export default function AdminOrdersPage() {
                       <td className="py-3.5 px-4">
                         <span
                           className={`px-2.5 py-1 rounded-full text-[11px] font-bold inline-flex items-center gap-1 ${order.status === 'PENDING'
-                              ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400'
-                              : order.status === 'PREPARING'
-                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-400'
-                                : order.status === 'SERVED'
-                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400'
-                                  : order.status === 'PAID'
-                                    ? 'bg-stone-100 text-stone-800 dark:bg-zinc-800 dark:text-zinc-300'
-                                    : 'bg-red-100 text-red-800'
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-400'
+                            : order.status === 'PREPARING'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-400'
+                              : order.status === 'SERVED'
+                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-400'
+                                : order.status === 'PAID'
+                                  ? 'bg-stone-100 text-stone-800 dark:bg-zinc-800 dark:text-zinc-300'
+                                  : 'bg-red-100 text-red-800'
                             }`}
                         >
                           {order.status}
