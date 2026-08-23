@@ -21,6 +21,8 @@ const mockTable: TableData = {
   tableNumber: 'T-01',
   capacity: 4,
   status: 'VACANT',
+  seatingType: 'DINING',
+  tags: [],
   activeGuestName: null,
   currentSessionId: null,
   qrCodeUrl: 'http://localhost:3000/scan?table=T-01',

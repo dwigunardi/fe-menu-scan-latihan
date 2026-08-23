@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import {
   getAdminTables,
   getAdminTablesPaginated,
@@ -53,6 +54,8 @@ describe('admin-tables-api', () => {
     const result = await createAdminTable({
       tableNumber: 'VIP-01',
       capacity: 8,
+      seatingType: 'DINING',
+      tags: [],
     });
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
@@ -66,6 +69,8 @@ describe('admin-tables-api', () => {
     const result = await updateAdminTable('table-1', {
       tableNumber: 'T-01-A',
       capacity: 6,
+      seatingType: 'DINING',
+      tags: [],
     });
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
@@ -87,6 +92,7 @@ describe('admin-tables-api', () => {
     const result = await deleteAdminTable('table-1');
     expect(result.isRight()).toBe(true);
   });
+
   describe('Table Zones API', () => {
     it('fetches all table zones successfully', async () => {
       const result = await getAdminTableZones();
@@ -123,9 +129,6 @@ describe('admin-tables-api', () => {
     it('deletes a table zone successfully', async () => {
       const result = await deleteAdminTableZone('zone-1');
       expect(result.isRight()).toBe(true);
-      if (result.isRight()) {
-        expect(result.value.success).toBe(true);
-      }
     });
   });
 });

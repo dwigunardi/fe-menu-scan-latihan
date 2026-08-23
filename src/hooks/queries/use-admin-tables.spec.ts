@@ -78,6 +78,8 @@ describe('use-admin-tables hooks', () => {
         await result.current.mutateAsync({
           tableNumber: 'VIP-02',
           capacity: 6,
+          seatingType: 'DINING',
+          tags: [],
         });
       });
 
@@ -98,7 +100,12 @@ describe('use-admin-tables hooks', () => {
 
       await expect(
         act(async () => {
-          await result.current.mutateAsync({ tableNumber: 'ERR-1', capacity: 4 });
+          await result.current.mutateAsync({
+            tableNumber: 'ERR-1',
+            capacity: 4,
+            seatingType: 'DINING',
+            tags: [],
+          });
         })
       ).rejects.toThrow();
     });
@@ -208,6 +215,7 @@ describe('use-admin-tables hooks', () => {
       ).rejects.toThrow();
     });
   });
+
   describe('Table Zones Hooks', () => {
     it('fetches all table zones successfully', async () => {
       const wrapper = createQueryWrapper();
