@@ -2,10 +2,11 @@
 
 import { OrdersView } from '@/components/admin/orders-view';
 import { RoleGuard } from '@/components/common/role-guard';
+import { ROLE_GROUPS } from '@/lib/constants/roles';
 
 export default function KitchenOrdersPage() {
   return (
-    <RoleGuard allowedRoles={['ADMIN', 'KITCHEN', 'DAPUR', 'CASHIER', 'KASIR']}>
+    <RoleGuard allowedRoles={ROLE_GROUPS.KITCHEN_OR_ADMIN}>
       <OrdersView
         pageTitle="Kitchen Display System (KDS)"
         pageSubtitle="Pantau antrean pesanan dapur secara real-time dan kelola status memasak."

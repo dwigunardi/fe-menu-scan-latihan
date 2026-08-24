@@ -4,12 +4,13 @@ import { useAdminCategoriesQuery } from '@/hooks/queries/use-admin-categories';
 import { MenuForm } from '@/components/admin/menu-form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoleGuard } from '@/components/common/role-guard';
+import { ROLE } from '@/lib/constants/roles';
 
 export default function CreateMenuPage() {
   const { data: categories = [], isLoading } = useAdminCategoriesQuery();
 
   return (
-    <RoleGuard allowedRoles={['ADMIN']}>
+    <RoleGuard allowedRoles={[ROLE.ADMIN]}>
       {isLoading ? (
         <div className="space-y-6 max-w-5xl py-6">
           <div className="space-y-2">

@@ -14,7 +14,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
-import { useAuthStore, UserRole } from '@/store/use-auth-store';
+import { useAuthStore, UserRole, ROLE } from '@/store/use-auth-store';
 import { useSidebarStore } from '@/store/use-sidebar-store';
 import { cn } from '@/lib/utils/cn';
 import { SimpleTooltip } from '@/components/ui/tooltip';
@@ -23,7 +23,7 @@ export interface CommonNavItem {
   title: string;
   href: string;
   icon: ComponentType<{ className?: string }>;
-  allowedRoles: UserRole[];
+  allowedRoles: UserRole[] | readonly UserRole[];
 }
 
 const defaultNavItems: CommonNavItem[] = [
@@ -32,37 +32,37 @@ const defaultNavItems: CommonNavItem[] = [
     title: 'Dashboard Omset',
     href: '/admin/dashboard',
     icon: LayoutDashboard,
-    allowedRoles: ['ADMIN'],
+    allowedRoles: [ROLE.ADMIN],
   },
   {
     title: 'Log Pesanan Admin',
     href: '/admin/orders',
     icon: UtensilsCrossed,
-    allowedRoles: ['ADMIN'],
+    allowedRoles: [ROLE.ADMIN],
   },
   {
     title: 'Denah Meja & Kasir',
     href: '/admin/tables',
     icon: Grid2X2,
-    allowedRoles: ['ADMIN'],
+    allowedRoles: [ROLE.ADMIN],
   },
   {
     title: 'Katalog Menu',
     href: '/admin/menus',
     icon: BookOpen,
-    allowedRoles: ['ADMIN'],
+    allowedRoles: [ROLE.ADMIN],
   },
   {
     title: 'Kategori Menu',
     href: '/admin/categories',
     icon: Tags,
-    allowedRoles: ['ADMIN'],
+    allowedRoles: [ROLE.ADMIN],
   },
   {
     title: 'Banner Promo',
     href: '/admin/banners',
     icon: ImageIcon,
-    allowedRoles: ['ADMIN'],
+    allowedRoles: [ROLE.ADMIN],
   },
 
   // Kitchen Specific
@@ -70,7 +70,7 @@ const defaultNavItems: CommonNavItem[] = [
     title: 'Kitchen Display (KDS)',
     href: '/kitchen/orders',
     icon: UtensilsCrossed,
-    allowedRoles: ['KITCHEN', 'DAPUR'],
+    allowedRoles: [ROLE.KITCHEN, ROLE.DAPUR],
   },
 
   // Cashier Specific
@@ -78,13 +78,13 @@ const defaultNavItems: CommonNavItem[] = [
     title: 'Denah Meja & Kasir',
     href: '/cashier/tables',
     icon: Grid2X2,
-    allowedRoles: ['CASHIER', 'KASIR'],
+    allowedRoles: [ROLE.CASHIER, ROLE.KASIR],
   },
   {
     title: 'Monitor Antrean KDS',
     href: '/kitchen/orders',
     icon: UtensilsCrossed,
-    allowedRoles: ['CASHIER', 'KASIR'],
+    allowedRoles: [ROLE.CASHIER, ROLE.KASIR],
   },
 
   // Waiter Specific
@@ -92,7 +92,7 @@ const defaultNavItems: CommonNavItem[] = [
     title: 'Denah Meja Pelayan',
     href: '/waiter/tables',
     icon: Grid2X2,
-    allowedRoles: ['WAITER', 'PELAYAN'],
+    allowedRoles: [ROLE.WAITER, ROLE.PELAYAN],
   },
 ];
 

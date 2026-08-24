@@ -9,14 +9,14 @@ import {
   Grid2X2,
   BookOpen,
 } from 'lucide-react';
-import { useAuthStore, UserRole } from '@/store/use-auth-store';
+import { useAuthStore, UserRole, ROLE, ROLE_GROUPS } from '@/store/use-auth-store';
 import { cn } from '@/lib/utils/cn';
 
 interface MobileNavItem {
   title: string;
   href: string;
   icon: ComponentType<{ className?: string }>;
-  allowedRoles: UserRole[];
+  allowedRoles: UserRole[] | readonly UserRole[];
 }
 
 const mobileNavItems: MobileNavItem[] = [
@@ -24,37 +24,37 @@ const mobileNavItems: MobileNavItem[] = [
     title: 'Dashboard',
     href: '/admin/dashboard',
     icon: LayoutDashboard,
-    allowedRoles: ['ADMIN'],
+    allowedRoles: [ROLE.ADMIN],
   },
   {
     title: 'KDS Dapur',
     href: '/kitchen/orders',
     icon: UtensilsCrossed,
-    allowedRoles: ['KITCHEN', 'DAPUR', 'CASHIER', 'KASIR', 'ADMIN'],
+    allowedRoles: ROLE_GROUPS.KITCHEN_OR_ADMIN,
   },
   {
     title: 'Kasir',
     href: '/cashier/tables',
     icon: Grid2X2,
-    allowedRoles: ['CASHIER', 'KASIR'],
+    allowedRoles: [ROLE.CASHIER, ROLE.KASIR],
   },
   {
     title: 'Pelayan',
     href: '/waiter/tables',
     icon: Grid2X2,
-    allowedRoles: ['WAITER', 'PELAYAN'],
+    allowedRoles: [ROLE.WAITER, ROLE.PELAYAN],
   },
   {
     title: 'Denah Meja',
     href: '/admin/tables',
     icon: Grid2X2,
-    allowedRoles: ['ADMIN'],
+    allowedRoles: [ROLE.ADMIN],
   },
   {
     title: 'Menu',
     href: '/admin/menus',
     icon: BookOpen,
-    allowedRoles: ['ADMIN'],
+    allowedRoles: [ROLE.ADMIN],
   },
 ];
 

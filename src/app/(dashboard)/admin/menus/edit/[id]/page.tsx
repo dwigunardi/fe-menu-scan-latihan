@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { RoleGuard } from '@/components/common/role-guard';
+import { ROLE } from '@/lib/constants/roles';
 
 export default function EditMenuPage() {
   const params = useParams();
@@ -20,7 +21,7 @@ export default function EditMenuPage() {
   const isLoading = isMenuLoading || isCatLoading;
 
   return (
-    <RoleGuard allowedRoles={['ADMIN']}>
+    <RoleGuard allowedRoles={[ROLE.ADMIN]}>
       {isLoading ? (
         <div className="space-y-6 max-w-5xl py-6">
           <div className="space-y-2">

@@ -1,13 +1,14 @@
 import { z } from 'zod';
+import { ROLE } from '../constants/roles';
 
 export const UserRoleSchema = z.enum([
-  'ADMIN',
-  'CASHIER',
-  'KITCHEN',
-  'WAITER',
-  'KASIR',
-  'DAPUR',
-  'PELAYAN',
+  ROLE.ADMIN,
+  ROLE.CASHIER,
+  ROLE.KITCHEN,
+  ROLE.WAITER,
+  ROLE.KASIR,
+  ROLE.DAPUR,
+  ROLE.PELAYAN,
 ]);
 
 export const StaffUserSchema = z.object({

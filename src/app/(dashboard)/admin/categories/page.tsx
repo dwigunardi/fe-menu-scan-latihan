@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { SimpleTooltip } from '@/components/ui/tooltip';
 import { RoleGuard } from '@/components/common/role-guard';
+import { ROLE } from '@/lib/constants/roles';
 import {
   useAdminCategoriesQuery,
   useCreateCategoryMutation,
@@ -136,7 +137,7 @@ export default function AdminCategoriesPage() {
   const isDeleting = deleteMutation.isPending;
 
   return (
-    <RoleGuard allowedRoles={['ADMIN']}>
+    <RoleGuard allowedRoles={[ROLE.ADMIN]}>
       <div className="space-y-6 max-w-7xl mx-auto transition-colors">
         {/* Header Section */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

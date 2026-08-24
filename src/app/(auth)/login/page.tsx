@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { loginStaff } from '@/lib/api/auth-api';
-import { useAuthStore, UserRole } from '@/store/use-auth-store';
+import { useAuthStore, UserRole, ROLE } from '@/store/use-auth-store';
 import { notifyApiError } from '@/lib/api/notify-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,19 +45,19 @@ export default function StaffLoginPage() {
   // Smart Role-Based Redirect
   const handleRoleRedirect = (role: UserRole) => {
     switch (role) {
-      case 'KITCHEN':
-      case 'DAPUR':
+      case ROLE.KITCHEN:
+      case ROLE.DAPUR:
         router.replace('/kitchen/orders');
         break;
-      case 'CASHIER':
-      case 'KASIR':
+      case ROLE.CASHIER:
+      case ROLE.KASIR:
         router.replace('/cashier/tables');
         break;
-      case 'WAITER':
-      case 'PELAYAN':
+      case ROLE.WAITER:
+      case ROLE.PELAYAN:
         router.replace('/waiter/tables');
         break;
-      case 'ADMIN':
+      case ROLE.ADMIN:
       default:
         router.replace('/admin/dashboard');
         break;

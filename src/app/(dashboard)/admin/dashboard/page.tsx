@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { DollarSign, ShoppingBag, Users, TrendingUp, BookOpen, UtensilsCrossed, Grid2X2 } from 'lucide-react';
 import { RoleGuard } from '@/components/common/role-guard';
+import { ROLE } from '@/lib/constants/roles';
 
 export default function AdminDashboardPage() {
   return (
-    <RoleGuard allowedRoles={['ADMIN']}>
+    <RoleGuard allowedRoles={[ROLE.ADMIN]}>
       <div className="space-y-8">
         {/* Title */}
         <div>

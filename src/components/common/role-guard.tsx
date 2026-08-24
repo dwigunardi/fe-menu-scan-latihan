@@ -3,11 +3,11 @@
 import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
-import { useAuthStore, UserRole } from '@/store/use-auth-store';
+import { useAuthStore, UserRole, ROLE } from '@/store/use-auth-store';
 import { Button } from '@/components/ui/button';
 
 interface RoleGuardProps {
-  allowedRoles: UserRole[];
+  allowedRoles: UserRole[] | readonly UserRole[];
   fallbackUrl?: string;
   children: ReactNode;
 }
@@ -17,20 +17,20 @@ export function RoleGuard({ allowedRoles, fallbackUrl, children }: RoleGuardProp
   const { user, _hasHydrated, isAuthenticated } = useAuthStore();
 
   const userRole = user?.role;
-  const isAuthorized = userRole ? allowedRoles.includes(userRole) : false;
+  const isAuthorized = userRole ? (allowedRoles as readonly UserRole[]).includes(userRole) : false;
 
   const defaultFallback = () => {
     switch (userRole) {
-      case 'KITCHEN':
-      case 'DAPUR':
+      case ROLE.KITCHEN:
+      case ROLE.DAPUR:
         return '/kitchen/orders';
-      case 'CASHIER':
-      case 'KASIR':
+      case ROLE.CASHIER:
+      case ROLE.KASIR:
         return '/cashier/tables';
-      case 'WAITER':
-      case 'PELAYAN':
+      case ROLE.WAITER:
+      case ROLE.PELAYAN:
         return '/waiter/tables';
-      case 'ADMIN':
+      case ROLE.ADMIN:
       default:
         return '/admin/dashboard';
     }

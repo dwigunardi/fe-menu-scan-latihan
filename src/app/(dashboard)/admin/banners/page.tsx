@@ -14,6 +14,7 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/common/role-guard';
+import { ROLE } from '@/lib/constants/roles';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { BannerCard } from '@/components/admin/banner-card';
 import { PromoCarousel } from '@/components/public/promo-carousel';
@@ -76,7 +77,7 @@ export default function AdminBannersPage() {
   };
 
   return (
-    <RoleGuard allowedRoles={['ADMIN']}>
+    <RoleGuard allowedRoles={[ROLE.ADMIN]}>
       <div className="space-y-8 pb-20">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200 dark:border-zinc-800">

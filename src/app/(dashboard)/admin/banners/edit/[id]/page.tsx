@@ -4,6 +4,7 @@ import { use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { RoleGuard } from '@/components/common/role-guard';
+import { ROLE } from '@/lib/constants/roles';
 import { BannerForm } from '@/components/admin/banner-form';
 import { useAdminBannerDetailQuery } from '@/hooks/queries/use-admin-banners';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,7 @@ export default function EditBannerPage({ params }: EditBannerPageProps) {
   const { data: banner, isLoading, error } = useAdminBannerDetailQuery(bannerId);
 
   return (
-    <RoleGuard allowedRoles={['ADMIN']}>
+    <RoleGuard allowedRoles={[ROLE.ADMIN]}>
       {isLoading ? (
         <div className="flex flex-col items-center justify-center min-h-[400px] space-y-3">
           <Loader2 className="h-8 w-8 animate-spin text-amber-600" />

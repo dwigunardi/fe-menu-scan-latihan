@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoleGuard } from '@/components/common/role-guard';
+import { ROLE } from '@/lib/constants/roles';
 import { formatRupiah } from '@/lib/utils/format-currency';
 import { AppImage } from '@/components/ui/app-image';
 import {
@@ -51,7 +52,7 @@ export default function MenuDetailPage() {
   };
 
   return (
-    <RoleGuard allowedRoles={['ADMIN']}>
+    <RoleGuard allowedRoles={[ROLE.ADMIN]}>
       {isLoading ? (
         <div className="space-y-6 max-w-5xl py-6">
           <Skeleton className="h-6 w-40" />

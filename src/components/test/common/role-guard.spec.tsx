@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { RoleGuard } from '@/components/common/role-guard';
-import { useAuthStore } from '@/store/use-auth-store';
+import { useAuthStore, ROLE } from '@/store/use-auth-store';
 
 const mockReplace = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -19,12 +19,12 @@ describe('RoleGuard Component', () => {
 
   it('renders children when user role matches allowed roles', () => {
     useAuthStore.getState().setAuth(
-      { id: '1', username: 'admin', name: 'Admin', role: 'ADMIN' },
+      { id: '1', username: 'admin', name: 'Admin', role: ROLE.ADMIN },
       'test-token'
     );
 
     render(
-      <RoleGuard allowedRoles={['ADMIN']}>
+      <RoleGuard allowedRoles={[ROLE.ADMIN]}>
         <div data-testid="allowed-content">Admin Secret Area</div>
       </RoleGuard>
     );
@@ -34,12 +34,12 @@ describe('RoleGuard Component', () => {
 
   it('renders Access Denied banner when user role is not authorized', () => {
     useAuthStore.getState().setAuth(
-      { id: '2', username: 'kitchen', name: 'Kitchen Staff', role: 'KITCHEN' },
+      { id: '2', username: 'kitchen', name: 'Kitchen Staff', role: ROLE.KITCHEN },
       'test-token'
     );
 
     render(
-      <RoleGuard allowedRoles={['ADMIN']}>
+      <RoleGuard allowedRoles={[ROLE.ADMIN]}>
         <div data-testid="allowed-content">Admin Secret Area</div>
       </RoleGuard>
     );

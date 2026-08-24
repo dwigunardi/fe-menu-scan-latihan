@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Tags } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { RoleGuard } from '@/components/common/role-guard';
+import { ROLE } from '@/lib/constants/roles';
 import { AdminMenuItem } from '@/lib/api/admin-menus-api';
 import {
   useAdminMenusPaginatedQuery,
@@ -87,7 +88,7 @@ export default function AdminMenusPage() {
   };
 
   return (
-    <RoleGuard allowedRoles={['ADMIN']}>
+    <RoleGuard allowedRoles={[ROLE.ADMIN]}>
       <div className="space-y-5 pb-16">
         {/* Page Title & Top Actions */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

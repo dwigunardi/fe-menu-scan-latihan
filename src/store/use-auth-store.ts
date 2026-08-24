@@ -1,14 +1,15 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import {
+  ROLE,
+  USER_ROLE,
+  UserRole,
+  ROLE_GROUPS,
+  ALL_ROLES,
+} from '@/lib/constants/roles';
 
-export type UserRole =
-  | 'ADMIN'
-  | 'CASHIER'
-  | 'KITCHEN'
-  | 'WAITER'
-  | 'KASIR'
-  | 'DAPUR'
-  | 'PELAYAN';
+export { ROLE, USER_ROLE, ROLE_GROUPS, ALL_ROLES };
+export type { UserRole };
 
 export interface StaffUser {
   id: string;
@@ -31,7 +32,7 @@ interface AuthState {
   openReauthModal: () => void;
   closeReauthModal: () => void;
   logout: () => void;
-  hasRole: (allowedRoles: UserRole[]) => boolean;
+  hasRole: (allowedRoles: UserRole[] | readonly UserRole[]) => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
