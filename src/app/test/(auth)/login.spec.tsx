@@ -26,28 +26,21 @@ describe('StaffLoginPage Component', () => {
     useAuthStore.getState().logout();
   });
 
-  it('renders login form and quick demo credentials pills', () => {
+  it('renders login form and 1-Click Quick Demo Login presets', () => {
     render(<StaffLoginPage />);
 
     expect(screen.getByText('Portal Staf Kumpul Cafe')).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Masukkan username staf/i)).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Masukkan kata sandi/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Masuk ke Portal/i })).toBeInTheDocument();
-    expect(screen.getByText('ADMIN')).toBeInTheDocument();
-    expect(screen.getByText('KITCHEN')).toBeInTheDocument();
+    expect(screen.getByText('1-Click Quick Demo Login')).toBeInTheDocument();
+    expect(screen.getByText('Super Admin')).toBeInTheDocument();
+    expect(screen.getByText('Kasir Meja')).toBeInTheDocument();
+    expect(screen.getByText('Barista Dapur')).toBeInTheDocument();
+    expect(screen.getByText('Pelayan')).toBeInTheDocument();
   });
 
-  it('autofills credentials when demo quick button is clicked', () => {
-    render(<StaffLoginPage />);
-
-    const kitchenPill = screen.getByText('kitchen');
-    fireEvent.click(kitchenPill);
-
-    expect(screen.getByPlaceholderText(/Masukkan username staf/i)).toHaveValue('kitchen');
-    expect(screen.getByPlaceholderText(/Masukkan kata sandi/i)).toHaveValue('KitchenPass123!');
-  });
-
-  it('successfully logs in and redirects KITCHEN staff to /kitchen/orders', async () => {
+  it('triggers 1-Click login when Barista Dapur card is clicked', async () => {
     vi.spyOn(authApi, 'loginStaff').mockResolvedValue(
       new Right({
         user: {
@@ -63,14 +56,8 @@ describe('StaffLoginPage Component', () => {
 
     render(<StaffLoginPage />);
 
-    const usernameInput = screen.getByPlaceholderText(/Masukkan username staf/i);
-    const passwordInput = screen.getByPlaceholderText(/Masukkan kata sandi/i);
-
-    fireEvent.change(usernameInput, { target: { value: 'kitchen' } });
-    fireEvent.change(passwordInput, { target: { value: 'KitchenPass123!' } });
-
-    const submitBtn = screen.getByRole('button', { name: /Masuk ke Portal/i });
-    fireEvent.click(submitBtn);
+    const baristaBtn = screen.getByRole('button', { name: /Barista Dapur/i });
+    fireEvent.click(baristaBtn);
 
     await waitFor(() => {
       expect(useAuthStore.getState().isAuthenticated).toBe(true);
@@ -94,14 +81,8 @@ describe('StaffLoginPage Component', () => {
 
     render(<StaffLoginPage />);
 
-    const usernameInput = screen.getByPlaceholderText(/Masukkan username staf/i);
-    const passwordInput = screen.getByPlaceholderText(/Masukkan kata sandi/i);
-
-    fireEvent.change(usernameInput, { target: { value: 'cashier' } });
-    fireEvent.change(passwordInput, { target: { value: 'CashierPass123!' } });
-
-    const submitBtn = screen.getByRole('button', { name: /Masuk ke Portal/i });
-    fireEvent.click(submitBtn);
+    const cashierBtn = screen.getByRole('button', { name: /Kasir Meja/i });
+    fireEvent.click(cashierBtn);
 
     await waitFor(() => {
       expect(useAuthStore.getState().isAuthenticated).toBe(true);

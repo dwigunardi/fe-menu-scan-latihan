@@ -2,14 +2,24 @@
 
 import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Lock, User, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import {
+  Sparkles,
+  Lock,
+  User,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  Crown,
+  Receipt,
+  Coffee,
+  ConciergeBell,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { loginStaff } from '@/lib/api/auth-api';
 import { useAuthStore, UserRole } from '@/store/use-auth-store';
 import { notifyApiError } from '@/lib/api/notify-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 
 export default function StaffLoginPage() {
   const router = useRouter();
@@ -49,15 +59,9 @@ export default function StaffLoginPage() {
     }
   };
 
-  const handleLogin = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!username || !password) {
-      toast.error('Mohon masukkan username / email dan password');
-      return;
-    }
-
+  const executeLogin = async (u: string, p: string) => {
     setIsLoading(true);
-    const result = await loginStaff({ usernameOrEmail: username, password });
+    const result = await loginStaff({ usernameOrEmail: u, password: p });
     setIsLoading(false);
 
     if (result.isLeft()) {
@@ -72,9 +76,20 @@ export default function StaffLoginPage() {
     handleRoleRedirect(loggedInUser.role);
   };
 
-  const handleQuickFill = (u: string, p: string) => {
+  const handleLogin = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!username || !password) {
+      toast.error('Mohon masukkan username / email dan password');
+      return;
+    }
+
+    await executeLogin(username, password);
+  };
+
+  const handleQuickLogin = (u: string, p: string) => {
     setUsername(u);
     setPassword(p);
+    executeLogin(u, p);
   };
 
   return (
@@ -155,59 +170,81 @@ export default function StaffLoginPage() {
           </Button>
         </form>
 
-        {/* Quick Fill Credentials for Dev/Demo */}
-        <div className="w-full mt-6 pt-5 border-t border-stone-100 dark:border-zinc-800 space-y-2.5">
-          <div className="flex items-center justify-between text-[11px] font-semibold text-stone-400 dark:text-zinc-500">
-            <span className="flex items-center gap-1">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Akun Demo Cepat:
-            </span>
+        {/* 1-Click Quick Demo Login Presets */}
+        <div className="w-full mt-6 pt-4 border-t border-stone-200/80 dark:border-zinc-800 space-y-3">
+          <div className="flex items-center gap-1.5 justify-center text-[11px] font-bold text-stone-500 dark:text-zinc-400 uppercase tracking-wider">
+            <ShieldCheck className="h-3.5 w-3.5 text-amber-600" />
+            <span>1-Click Quick Demo Login</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <button
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* Super Admin */}
+            <Button
               type="button"
-              onClick={() => handleQuickFill('admin', 'AdminPass123!')}
-              className="px-2.5 py-1.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 hover:border-amber-500 text-[11px] font-medium text-left truncate transition-colors cursor-pointer"
+              variant="outline"
+              disabled={isLoading}
+              onClick={() => handleQuickLogin('admin@menuscan.com', 'admin123')}
+              className="h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-left flex flex-col items-start justify-start gap-0.5 transition-all cursor-pointer group shadow-2xs w-full whitespace-normal"
             >
-              <Badge variant="outline" className="text-[9px] px-1 py-0 mr-1 bg-amber-50 dark:bg-amber-950 text-amber-600 border-amber-200">
-                ADMIN
-              </Badge>
-              admin
-            </button>
+              <div className="flex items-center gap-1.5 font-bold text-xs text-stone-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400">
+                <Crown className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                <span>Super Admin</span>
+              </div>
+              <span className="text-[10px] text-stone-500 dark:text-zinc-400 font-mono block">
+                admin / admin123
+              </span>
+            </Button>
 
-            <button
+            {/* Kasir Meja */}
+            <Button
               type="button"
-              onClick={() => handleQuickFill('kitchen', 'KitchenPass123!')}
-              className="px-2.5 py-1.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 hover:border-amber-500 text-[11px] font-medium text-left truncate transition-colors cursor-pointer"
+              variant="outline"
+              disabled={isLoading}
+              onClick={() => handleQuickLogin('cashier@menuscan.com', 'cashier123')}
+              className="h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-left flex flex-col items-start justify-start gap-0.5 transition-all cursor-pointer group shadow-2xs w-full whitespace-normal"
             >
-              <Badge variant="outline" className="text-[9px] px-1 py-0 mr-1 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 border-emerald-200">
-                KITCHEN
-              </Badge>
-              kitchen
-            </button>
+              <div className="flex items-center gap-1.5 font-bold text-xs text-stone-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400">
+                <Receipt className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                <span>Kasir Meja</span>
+              </div>
+              <span className="text-[10px] text-stone-500 dark:text-zinc-400 font-mono block">
+                cashier / cashier123
+              </span>
+            </Button>
 
-            <button
+            {/* Barista Dapur */}
+            <Button
               type="button"
-              onClick={() => handleQuickFill('cashier', 'CashierPass123!')}
-              className="px-2.5 py-1.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 hover:border-amber-500 text-[11px] font-medium text-left truncate transition-colors cursor-pointer"
+              variant="outline"
+              disabled={isLoading}
+              onClick={() => handleQuickLogin('kitchen@menuscan.com', 'kitchen123')}
+              className="h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-left flex flex-col items-start justify-start gap-0.5 transition-all cursor-pointer group shadow-2xs w-full whitespace-normal"
             >
-              <Badge variant="outline" className="text-[9px] px-1 py-0 mr-1 bg-blue-50 dark:bg-blue-950 text-blue-600 border-blue-200">
-                CASHIER
-              </Badge>
-              cashier
-            </button>
+              <div className="flex items-center gap-1.5 font-bold text-xs text-stone-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400">
+                <Coffee className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                <span>Barista Dapur</span>
+              </div>
+              <span className="text-[10px] text-stone-500 dark:text-zinc-400 font-mono block">
+                kitchen / kitchen123
+              </span>
+            </Button>
 
-            <button
+            {/* Pelayan */}
+            <Button
               type="button"
-              onClick={() => handleQuickFill('waiter', 'WaiterPass123!')}
-              className="px-2.5 py-1.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 hover:border-amber-500 text-[11px] font-medium text-left truncate transition-colors cursor-pointer"
+              variant="outline"
+              disabled={isLoading}
+              onClick={() => handleQuickLogin('waiter@menuscan.com', 'waiter123')}
+              className="h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-left flex flex-col items-start justify-start gap-0.5 transition-all cursor-pointer group shadow-2xs w-full whitespace-normal"
             >
-              <Badge variant="outline" className="text-[9px] px-1 py-0 mr-1 bg-purple-50 dark:bg-purple-950 text-purple-600 border-purple-200">
-                WAITER
-              </Badge>
-              waiter
-            </button>
+              <div className="flex items-center gap-1.5 font-bold text-xs text-stone-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400">
+                <ConciergeBell className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                <span>Pelayan</span>
+              </div>
+              <span className="text-[10px] text-stone-500 dark:text-zinc-400 font-mono block">
+                waiter / waiter123
+              </span>
+            </Button>
           </div>
         </div>
       </div>
