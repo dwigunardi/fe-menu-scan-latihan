@@ -13,6 +13,7 @@ import {
   Receipt,
   Coffee,
   ConciergeBell,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { loginStaff } from '@/lib/api/auth-api';
@@ -21,6 +22,8 @@ import { notifyApiError } from '@/lib/api/notify-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
+type LoginPresetType = 'form' | 'admin' | 'cashier' | 'kitchen' | 'waiter';
+
 export default function StaffLoginPage() {
   const router = useRouter();
   const { setAuth, isAuthenticated, _hasHydrated, user } = useAuthStore();
@@ -28,7 +31,9 @@ export default function StaffLoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingPreset, setLoadingPreset] = useState<LoginPresetType | null>(null);
+
+  const isLoading = loadingPreset !== null;
 
   // Auto redirect if already authenticated
   useEffect(() => {
@@ -59,10 +64,10 @@ export default function StaffLoginPage() {
     }
   };
 
-  const executeLogin = async (u: string, p: string) => {
-    setIsLoading(true);
+  const executeLogin = async (u: string, p: string, presetType: LoginPresetType) => {
+    setLoadingPreset(presetType);
     const result = await loginStaff({ usernameOrEmail: u, password: p });
-    setIsLoading(false);
+    setLoadingPreset(null);
 
     if (result.isLeft()) {
       notifyApiError(result.value);
@@ -83,13 +88,13 @@ export default function StaffLoginPage() {
       return;
     }
 
-    await executeLogin(username, password);
+    await executeLogin(username, password, 'form');
   };
 
-  const handleQuickLogin = (u: string, p: string) => {
+  const handleQuickLogin = (u: string, p: string, presetType: LoginPresetType) => {
     setUsername(u);
     setPassword(p);
-    executeLogin(u, p);
+    executeLogin(u, p, presetType);
   };
 
   return (
@@ -124,8 +129,9 @@ export default function StaffLoginPage() {
               type="text"
               placeholder="Masukkan username staf..."
               value={username}
+              disabled={isLoading}
               onChange={(e) => setUsername(e.target.value)}
-              className="h-11 rounded-2xl bg-stone-50/50 dark:bg-zinc-800/50 border-stone-200 dark:border-zinc-700/80"
+              className="h-11 rounded-2xl bg-stone-50/50 dark:bg-zinc-800/50 border-stone-200 dark:border-zinc-700/80 transition-all duration-200"
               required
               autoFocus
             />
@@ -141,14 +147,16 @@ export default function StaffLoginPage() {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Masukkan kata sandi..."
                 value={password}
+                disabled={isLoading}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-11 rounded-2xl pr-10 bg-stone-50/50 dark:bg-zinc-800/50 border-stone-200 dark:border-zinc-700/80"
+                className="h-11 rounded-2xl pr-10 bg-stone-50/50 dark:bg-zinc-800/50 border-stone-200 dark:border-zinc-700/80 transition-all duration-200"
                 required
               />
               <button
                 type="button"
+                disabled={isLoading}
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-3.5 text-stone-400 hover:text-stone-600 dark:hover:text-zinc-300"
+                className="absolute right-3.5 top-3.5 text-stone-400 hover:text-stone-600 dark:hover:text-zinc-300 disabled:opacity-50"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -164,9 +172,11 @@ export default function StaffLoginPage() {
             type="submit"
             size="lg"
             disabled={isLoading}
-            className="w-full h-11 rounded-2xl font-bold shadow-md shadow-amber-600/20 mt-2"
+            isLoading={loadingPreset === 'form'}
+            loadingText="Memverifikasi Akun..."
+            className="w-full h-11 rounded-2xl font-bold shadow-md shadow-amber-600/20 mt-2 transition-all duration-200 active:scale-[0.98]"
           >
-            {isLoading ? 'Memverifikasi...' : 'Masuk ke Portal'}
+            Masuk ke Portal
           </Button>
         </form>
 
@@ -183,15 +193,23 @@ export default function StaffLoginPage() {
               type="button"
               variant="outline"
               disabled={isLoading}
-              onClick={() => handleQuickLogin('admin@menuscan.com', 'admin123')}
-              className="h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-left flex flex-col items-start justify-start gap-0.5 transition-all cursor-pointer group shadow-2xs w-full whitespace-normal"
+              onClick={() => handleQuickLogin('admin@menuscan.com', 'admin123', 'admin')}
+              className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${
+                loadingPreset === 'admin'
+                  ? 'ring-2 ring-amber-500/40 border-amber-500 bg-amber-50/70 dark:bg-amber-950/30'
+                  : 'hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20'
+              }`}
             >
               <div className="flex items-center gap-1.5 font-bold text-xs text-stone-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400">
-                <Crown className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                {loadingPreset === 'admin' ? (
+                  <Loader2 className="h-3.5 w-3.5 text-amber-600 animate-spin shrink-0" />
+                ) : (
+                  <Crown className="h-3.5 w-3.5 text-amber-600 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                )}
                 <span>Super Admin</span>
               </div>
               <span className="text-[10px] text-stone-500 dark:text-zinc-400 font-mono block">
-                admin / admin123
+                {loadingPreset === 'admin' ? 'Memverifikasi...' : 'admin / admin123'}
               </span>
             </Button>
 
@@ -200,15 +218,23 @@ export default function StaffLoginPage() {
               type="button"
               variant="outline"
               disabled={isLoading}
-              onClick={() => handleQuickLogin('cashier@menuscan.com', 'cashier123')}
-              className="h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-left flex flex-col items-start justify-start gap-0.5 transition-all cursor-pointer group shadow-2xs w-full whitespace-normal"
+              onClick={() => handleQuickLogin('cashier@menuscan.com', 'cashier123', 'cashier')}
+              className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${
+                loadingPreset === 'cashier'
+                  ? 'ring-2 ring-emerald-500/40 border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30'
+                  : 'hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20'
+              }`}
             >
               <div className="flex items-center gap-1.5 font-bold text-xs text-stone-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400">
-                <Receipt className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                {loadingPreset === 'cashier' ? (
+                  <Loader2 className="h-3.5 w-3.5 text-emerald-600 animate-spin shrink-0" />
+                ) : (
+                  <Receipt className="h-3.5 w-3.5 text-emerald-600 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                )}
                 <span>Kasir Meja</span>
               </div>
               <span className="text-[10px] text-stone-500 dark:text-zinc-400 font-mono block">
-                cashier / cashier123
+                {loadingPreset === 'cashier' ? 'Memverifikasi...' : 'cashier / cashier123'}
               </span>
             </Button>
 
@@ -217,15 +243,23 @@ export default function StaffLoginPage() {
               type="button"
               variant="outline"
               disabled={isLoading}
-              onClick={() => handleQuickLogin('kitchen@menuscan.com', 'kitchen123')}
-              className="h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-left flex flex-col items-start justify-start gap-0.5 transition-all cursor-pointer group shadow-2xs w-full whitespace-normal"
+              onClick={() => handleQuickLogin('kitchen@menuscan.com', 'kitchen123', 'kitchen')}
+              className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${
+                loadingPreset === 'kitchen'
+                  ? 'ring-2 ring-amber-500/40 border-amber-500 bg-amber-50/70 dark:bg-amber-950/30'
+                  : 'hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20'
+              }`}
             >
               <div className="flex items-center gap-1.5 font-bold text-xs text-stone-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400">
-                <Coffee className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                {loadingPreset === 'kitchen' ? (
+                  <Loader2 className="h-3.5 w-3.5 text-amber-600 animate-spin shrink-0" />
+                ) : (
+                  <Coffee className="h-3.5 w-3.5 text-amber-600 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                )}
                 <span>Barista Dapur</span>
               </div>
               <span className="text-[10px] text-stone-500 dark:text-zinc-400 font-mono block">
-                kitchen / kitchen123
+                {loadingPreset === 'kitchen' ? 'Memverifikasi...' : 'kitchen / kitchen123'}
               </span>
             </Button>
 
@@ -234,15 +268,23 @@ export default function StaffLoginPage() {
               type="button"
               variant="outline"
               disabled={isLoading}
-              onClick={() => handleQuickLogin('waiter@menuscan.com', 'waiter123')}
-              className="h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 text-left flex flex-col items-start justify-start gap-0.5 transition-all cursor-pointer group shadow-2xs w-full whitespace-normal"
+              onClick={() => handleQuickLogin('waiter@menuscan.com', 'waiter123', 'waiter')}
+              className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${
+                loadingPreset === 'waiter'
+                  ? 'ring-2 ring-blue-500/40 border-blue-500 bg-blue-50/70 dark:bg-blue-950/30'
+                  : 'hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20'
+              }`}
             >
               <div className="flex items-center gap-1.5 font-bold text-xs text-stone-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400">
-                <ConciergeBell className="h-3.5 w-3.5 text-blue-600 shrink-0" />
+                {loadingPreset === 'waiter' ? (
+                  <Loader2 className="h-3.5 w-3.5 text-blue-600 animate-spin shrink-0" />
+                ) : (
+                  <ConciergeBell className="h-3.5 w-3.5 text-blue-600 shrink-0 transition-transform duration-200 group-hover:scale-110" />
+                )}
                 <span>Pelayan</span>
               </div>
               <span className="text-[10px] text-stone-500 dark:text-zinc-400 font-mono block">
-                waiter / waiter123
+                {loadingPreset === 'waiter' ? 'Memverifikasi...' : 'waiter / waiter123'}
               </span>
             </Button>
           </div>

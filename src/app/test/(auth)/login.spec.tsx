@@ -40,6 +40,37 @@ describe('StaffLoginPage Component', () => {
     expect(screen.getByText('Pelayan')).toBeInTheDocument();
   });
 
+  it('shows loading spinner when form is submitted and redirects to dashboard', async () => {
+    vi.spyOn(authApi, 'loginStaff').mockResolvedValue(
+      new Right({
+        user: {
+          id: 'a1',
+          username: 'admin',
+          name: 'Owner Admin',
+          role: 'ADMIN' as const,
+        },
+        accessToken: 'token-abc',
+        refreshToken: 'refresh-xyz',
+      })
+    );
+
+    render(<StaffLoginPage />);
+
+    const usernameInput = screen.getByPlaceholderText(/Masukkan username staf/i);
+    const passwordInput = screen.getByPlaceholderText(/Masukkan kata sandi/i);
+
+    fireEvent.change(usernameInput, { target: { value: 'admin' } });
+    fireEvent.change(passwordInput, { target: { value: 'admin123' } });
+
+    const submitBtn = screen.getByRole('button', { name: /Masuk ke Portal/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(useAuthStore.getState().isAuthenticated).toBe(true);
+      expect(mockReplace).toHaveBeenCalledWith('/admin/dashboard');
+    });
+  });
+
   it('triggers 1-Click login when Barista Dapur card is clicked', async () => {
     vi.spyOn(authApi, 'loginStaff').mockResolvedValue(
       new Right({
