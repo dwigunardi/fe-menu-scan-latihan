@@ -9,6 +9,7 @@ import {
   Grid2X2,
   BookOpen,
   Tags,
+  Image as ImageIcon,
   Sparkles,
   PanelLeftClose,
   PanelLeftOpen,
@@ -55,6 +56,12 @@ const defaultNavItems: CommonNavItem[] = [
     title: 'Kategori Menu',
     href: '/admin/categories',
     icon: Tags,
+    allowedRoles: ['ADMIN'],
+  },
+  {
+    title: 'Banner Promo',
+    href: '/admin/banners',
+    icon: ImageIcon,
     allowedRoles: ['ADMIN'],
   },
 

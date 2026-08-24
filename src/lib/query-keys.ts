@@ -5,6 +5,9 @@ export const adminQueryKeys = {
     ['admin', 'menus', 'paginated', params] as const,
   menuDetail: (id: string) => ['admin', 'menus', 'detail', id] as const,
   categories: () => ['admin', 'categories'] as const,
+  banners: (params: Record<string, unknown> = {}) => ['admin', 'banners', params] as const,
+  bannerDetail: (id: string) => ['admin', 'banners', 'detail', id] as const,
+  publicBanners: () => ['public', 'banners'] as const,
   tables: (status?: string) => ['admin', 'tables', status || 'ALL'] as const,
   tablesPaginated: (params: Record<string, unknown> = {}) =>
     ['admin', 'tables', 'paginated', params] as const,

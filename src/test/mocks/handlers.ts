@@ -788,4 +788,163 @@ export const handlers = [
       data: updated,
     });
   }),
+
+  // ==================== BANNERS & MEDIA HANDLERS ====================
+  http.get(`${API_BASE}/public/banners`, () => {
+    const active = mockBanners.filter((b) => b.isActive);
+    return HttpResponse.json({
+      statusCode: 200,
+      data: active,
+    });
+  }),
+
+  http.get(`${API_BASE}/admin/banners`, ({ request }) => {
+    const url = new URL(request.url);
+    const search = url.searchParams.get('search')?.toLowerCase();
+    const isActiveParam = url.searchParams.get('isActive');
+
+    let result = [...mockBanners];
+    if (isActiveParam !== null && isActiveParam !== undefined && isActiveParam !== '') {
+      const isAct = isActiveParam === 'true';
+      result = result.filter((b) => b.isActive === isAct);
+    }
+    if (search) {
+      result = result.filter((b) => b.title.toLowerCase().includes(search));
+    }
+
+    return HttpResponse.json({
+      statusCode: 200,
+      data: result,
+    });
+  }),
+
+  http.get(`${API_BASE}/admin/banners/:id`, ({ params }) => {
+    const { id } = params;
+    const found = mockBanners.find((b) => b.id === id);
+    if (!found) {
+      return HttpResponse.json(
+        { statusCode: 404, message: 'Banner tidak ditemukan' },
+        { status: 404 }
+      );
+    }
+    return HttpResponse.json({
+      statusCode: 200,
+      data: found,
+    });
+  }),
+
+  http.post(`${API_BASE}/admin/banners`, async ({ request }) => {
+    const body = await extractRequestBody(request);
+    const newBanner = {
+      id: `ban-${Date.now()}`,
+      title: body.title || 'Promo Baru',
+      description: body.description || null,
+      imageUrl:
+        body.imageUrl ||
+        'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&h=675&fit=crop',
+      targetUrl: body.targetUrl || null,
+      isActive: body.isActive ?? true,
+      sortOrder: body.sortOrder ?? 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    mockBanners.push(newBanner);
+    return HttpResponse.json(
+      {
+        statusCode: 201,
+        message: 'Banner berhasil dibuat',
+        data: newBanner,
+      },
+      { status: 201 }
+    );
+  }),
+
+  http.patch(`${API_BASE}/admin/banners/:id`, async ({ params, request }) => {
+    const { id } = params;
+    const body = await extractRequestBody(request);
+    const index = mockBanners.findIndex((b) => b.id === id);
+    if (index === -1) {
+      return HttpResponse.json(
+        { statusCode: 404, message: 'Banner tidak ditemukan' },
+        { status: 404 }
+      );
+    }
+    mockBanners[index] = {
+      ...mockBanners[index],
+      ...body,
+      updatedAt: new Date().toISOString(),
+    };
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Banner berhasil diperbarui',
+      data: mockBanners[index],
+    });
+  }),
+
+  http.delete(`${API_BASE}/admin/banners/:id`, ({ params }) => {
+    const { id } = params;
+    const index = mockBanners.findIndex((b) => b.id === id);
+    if (index !== -1) {
+      mockBanners.splice(index, 1);
+    }
+    return HttpResponse.json({
+      statusCode: 200,
+      message: 'Banner berhasil dihapus',
+      data: { success: true, id },
+    });
+  }),
+
+  http.post(`${API_BASE}/admin/uploads/image`, () => {
+    return HttpResponse.json(
+      {
+        statusCode: 201,
+        message: 'Foto berhasil diunggah',
+        data: {
+          url: '/uploads/menus/menu-mock-123.webp',
+          filename: 'menu-mock-123.webp',
+          size: 180000,
+          mimeType: 'image/webp',
+          width: 1200,
+          height: 675,
+        },
+      },
+      { status: 201 }
+    );
+  }),
+];
+
+export const mockBanners = [
+  {
+    id: 'ban-1',
+    title: 'Diskon Kopi 50% Weekend',
+    description: 'Beli 1 gratis 1 untuk semua varian espresso',
+    imageUrl: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&h=675&fit=crop',
+    targetUrl: '/menu?category=cat-2',
+    isActive: true,
+    sortOrder: 1,
+    createdAt: '2026-08-20T10:00:00Z',
+    updatedAt: '2026-08-20T10:00:00Z',
+  },
+  {
+    id: 'ban-2',
+    title: 'Sarapan Lezat Croissant',
+    description: 'Nikmati paket sarapan kopi + pastry hemat 30%',
+    imageUrl: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=1200&h=675&fit=crop',
+    targetUrl: '/menu?category=cat-1',
+    isActive: true,
+    sortOrder: 2,
+    createdAt: '2026-08-20T11:00:00Z',
+    updatedAt: '2026-08-20T11:00:00Z',
+  },
+  {
+    id: 'ban-3',
+    title: 'Cashback 30% QRIS',
+    description: 'Bayar non-tunai lebih praktis dan hemat',
+    imageUrl: 'https://images.unsplash.com/photo-1556742049-0a67e5572263?w=1200&h=675&fit=crop',
+    targetUrl: '/menu',
+    isActive: false,
+    sortOrder: 3,
+    createdAt: '2026-08-20T12:00:00Z',
+    updatedAt: '2026-08-20T12:00:00Z',
+  },
 ];
