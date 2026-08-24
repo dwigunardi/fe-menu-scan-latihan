@@ -17,7 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoleGuard } from '@/components/common/role-guard';
 import { formatRupiah } from '@/lib/utils/format-currency';
-import { formatImageUrl } from '@/lib/api/admin-menus-api';
+import { AppImage } from '@/components/ui/app-image';
 import {
   useAdminMenuDetailQuery,
   useToggleMenuAvailabilityMutation,
@@ -138,18 +138,14 @@ export default function MenuDetailPage() {
             <div className="md:col-span-5 space-y-6">
               <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-stone-200/80 dark:border-zinc-800 overflow-hidden shadow-xs">
                 <div className="h-60 w-full bg-stone-100 dark:bg-zinc-800 relative flex items-center justify-center overflow-hidden">
-                  {menu.imageUrl ? (
-                    <img
-                      src={formatImageUrl(menu.imageUrl)}
-                      alt={menu.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center gap-2 text-stone-400">
-                      <ImageOff className="h-10 w-10 opacity-40" />
-                      <span className="text-xs font-medium">Foto Menu Belum Tersedia</span>
-                    </div>
-                  )}
+                  <AppImage
+                    src={menu.imageUrl}
+                    alt={menu.name}
+                    fill
+                    priority
+                    sizes="(max-width: 768px) 100vw, 500px"
+                    className="object-cover"
+                  />
 
                   <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
                     {menu.isBestSeller && (

@@ -1,7 +1,5 @@
 import type { NextConfig } from 'next';
 
-const isDev = process.env.NODE_ENV === 'development';
-
 const nextConfig: NextConfig = {
   logging: {
     fetches: {
@@ -10,6 +8,8 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
+    // Allows Next.js image optimization to resolve local IPs (localhost / 127.0.0.1:5000) during development
+    dangerouslyAllowLocalIP: process.env.NODE_ENV === 'development',
     remotePatterns: [
       {
         protocol: 'https',
@@ -29,12 +29,21 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/**',
+      },
+      {
         protocol: 'https',
         hostname: 'images.unsplash.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
     ],
-    dangerouslyAllowLocalIP: isDev
   },
 };
 

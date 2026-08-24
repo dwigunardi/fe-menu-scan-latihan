@@ -62,8 +62,8 @@ import {
   updateAdminMenu,
   AdminMenuItem,
   uploadAdminMenuImage,
-  formatImageUrl,
 } from '@/lib/api/admin-menus-api';
+import { AppImage } from '@/components/ui/app-image';
 
 interface MenuFormProps {
   initialData?: AdminMenuItem | null;
@@ -492,11 +492,15 @@ export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
                         ) : watchedImageUrl ? (
                           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 w-full p-2 rounded-xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800">
                             <div className="flex items-center gap-2.5 min-w-0">
-                              <img
-                                src={formatImageUrl(watchedImageUrl)}
-                                alt="Thumbnail"
-                                className="h-12 w-12 rounded-lg object-cover border border-stone-200 shrink-0"
-                              />
+                              <div className="h-12 w-12 rounded-lg overflow-hidden relative border border-stone-200 shrink-0">
+                                <AppImage
+                                  src={watchedImageUrl}
+                                  alt="Thumbnail"
+                                  fill
+                                  sizes="48px"
+                                  className="object-cover"
+                                />
+                              </div>
                               <div className="text-left min-w-0">
                                 <div className="text-xs font-bold text-stone-900 dark:text-zinc-100 truncate">
                                   {uploadedFileName || 'Foto Berhasil Diunggah'}
@@ -752,10 +756,12 @@ export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
             {/* Image Preview */}
             <div className="h-48 w-full bg-stone-100 dark:bg-zinc-800 relative flex items-center justify-center overflow-hidden">
               {watchedImageUrl ? (
-                <img
-                  src={formatImageUrl(watchedImageUrl)}
+                <AppImage
+                  src={watchedImageUrl}
                   alt={watchedName || 'Preview'}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="320px"
+                  className="object-cover"
                 />
               ) : (
                 <div className="flex flex-col items-center gap-1.5 text-stone-400">

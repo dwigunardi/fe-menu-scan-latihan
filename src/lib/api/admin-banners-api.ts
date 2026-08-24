@@ -76,7 +76,7 @@ export async function updateAdminBanner(
   payload: Partial<BannerFormInput>
 ): Promise<Either<ApiError, BannerData>> {
   return hardenedFetch(`/admin/banners/${id}`, BannerSchema, {
-    method: 'PATCH',
+    method: 'PUT',
     body: payload,
   });
 }

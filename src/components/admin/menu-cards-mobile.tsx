@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { SimpleTooltip } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatRupiah } from '@/lib/utils/format-currency';
-import { AdminMenuItem, formatImageUrl } from '@/lib/api/admin-menus-api';
+import { AdminMenuItem } from '@/lib/api/admin-menus-api';
+import { AppImage } from '@/components/ui/app-image';
 
 export interface MenuCardsMobileProps {
   menus: AdminMenuItem[];
@@ -68,23 +69,14 @@ export function MenuCardsMobile({
           className="p-3.5 rounded-3xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-xs flex items-center gap-3 transition-all cursor-pointer hover:border-amber-400 dark:hover:border-amber-600/50"
         >
           {/* Thumbnail */}
-          <div className="h-16 w-16 rounded-2xl overflow-hidden bg-stone-100 dark:bg-zinc-800 shrink-0 border border-stone-200/60 dark:border-zinc-700/60 flex items-center justify-center relative">
-            {menu.imageUrl ? (
-              <img
-                src={formatImageUrl(menu.imageUrl)}
-                alt={menu.name}
-                className="h-full w-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  if (e.currentTarget.nextElementSibling) {
-                    (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
-                  }
-                }}
-              />
-            ) : null}
-            <div className={`h-full w-full flex items-center justify-center bg-stone-100 dark:bg-zinc-800 ${menu.imageUrl ? 'hidden' : ''}`}>
-              <ImageOff className="h-5 w-5 text-stone-300 dark:text-zinc-600" />
-            </div>
+          <div className="h-16 w-16 rounded-2xl overflow-hidden bg-stone-100 dark:bg-zinc-800 shrink-0 border border-stone-200/60 dark:border-zinc-700/60 relative">
+            <AppImage
+              src={menu.imageUrl}
+              alt={menu.name}
+              fill
+              sizes="80px"
+              className="object-cover"
+            />
           </div>
 
           {/* Info & Badges */}

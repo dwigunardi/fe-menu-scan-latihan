@@ -17,7 +17,8 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { formatRupiah } from '@/lib/utils/format-currency';
-import { AdminMenuItem, formatImageUrl } from '@/lib/api/admin-menus-api';
+import { AdminMenuItem } from '@/lib/api/admin-menus-api';
+import { AppImage } from '@/components/ui/app-image';
 
 export interface MenuTableProps {
   menus: AdminMenuItem[];
@@ -104,23 +105,14 @@ export function MenuTable({
                   {/* Regular Column: Item Name & Thumb */}
                   <TableCell className="py-3.5 px-4 min-w-[280px]">
                     <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-800 border border-stone-200/60 dark:border-zinc-700/60 shrink-0 flex items-center justify-center relative">
-                        {menu.imageUrl ? (
-                          <img
-                            src={formatImageUrl(menu.imageUrl)}
-                            alt={menu.name}
-                            className="h-full w-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                              if (e.currentTarget.nextElementSibling) {
-                                (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
-                              }
-                            }}
-                          />
-                        ) : null}
-                        <div className={`h-full w-full flex items-center justify-center bg-stone-100 dark:bg-zinc-800 ${menu.imageUrl ? 'hidden' : ''}`}>
-                          <ImageOff className="h-5 w-5 text-stone-300 dark:text-zinc-600" />
-                        </div>
+                      <div className="h-12 w-12 rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-800 border border-stone-200/60 dark:border-zinc-700/60 shrink-0 relative">
+                        <AppImage
+                          src={menu.imageUrl}
+                          alt={menu.name}
+                          fill
+                          sizes="48px"
+                          className="object-cover"
+                        />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">

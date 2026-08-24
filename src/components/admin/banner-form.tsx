@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { AppImage } from '@/components/ui/app-image';
 import {
   ArrowLeft,
   Sparkles,
@@ -301,13 +301,12 @@ export function BannerForm({ mode, initialData }: BannerFormProps) {
                 {/* The Simulated Live Banner */}
                 <div className="relative aspect-16/9 w-full rounded-2xl overflow-hidden shadow-md bg-stone-800">
                   {watchedValues.imageUrl ? (
-                    <Image
-                      src={formatImageUrl(watchedValues.imageUrl)}
+                    <AppImage
+                      src={watchedValues.imageUrl}
                       alt="Banner Preview"
                       fill
-                      objectFit='contain'
                       sizes="(max-width: 768px) 100vw, 340px"
-                    // className="object-contain"
+                      className="object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-stone-400 p-4 text-center">

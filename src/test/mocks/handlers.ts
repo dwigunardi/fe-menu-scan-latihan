@@ -859,7 +859,7 @@ export const handlers = [
     );
   }),
 
-  http.patch(`${API_BASE}/admin/banners/:id`, async ({ params, request }) => {
+  http.put(`${API_BASE}/admin/banners/:id`, async ({ params, request }) => {
     const { id } = params;
     const body = await extractRequestBody(request);
     const index = mockBanners.findIndex((b) => b.id === id);

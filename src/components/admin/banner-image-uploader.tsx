@@ -18,7 +18,7 @@ import {
   BannerDimensionResult,
 } from '@/lib/utils/banner-image-validator';
 import { uploadMediaImage } from '@/lib/api/media-api';
-import { formatImageUrl } from '@/lib/api/admin-menus-api';
+import { AppImage } from '@/components/ui/app-image';
 import { toast } from 'sonner';
 
 export interface BannerPreset {
@@ -262,10 +262,12 @@ export function BannerImageUploader({
                   }`}
               >
                 <div className="w-full h-14 rounded-lg overflow-hidden bg-stone-200 relative mb-1">
-                  <img
-                    src={formatImageUrl(preset.url)}
+                  <AppImage
+                    src={preset.url}
                     alt={preset.name}
-                    className="w-full h-full object-cover"
+                    fill
+                    sizes="120px"
+                    className="object-cover"
                   />
                 </div>
                 <span className="font-bold text-stone-900 dark:text-zinc-100 text-[11px] truncate">
@@ -318,10 +320,12 @@ export function BannerImageUploader({
       {value && (
         <div className="relative rounded-2xl overflow-hidden border border-stone-200 dark:border-zinc-800 bg-stone-100 dark:bg-zinc-900 group shadow-sm">
           <div className="aspect-16/9 w-full relative overflow-hidden">
-            <img
-              src={formatImageUrl(value)}
+            <AppImage
+              src={value}
               alt="Banner Preview"
-              className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+              fill
+              sizes="(max-width: 768px) 100vw, 600px"
+              className="object-contain transition-transform duration-300 group-hover:scale-105"
             />
             {/* Aspect Ratio Pill Overlay */}
             <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1">

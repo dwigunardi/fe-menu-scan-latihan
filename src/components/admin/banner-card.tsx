@@ -13,7 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { BannerData } from '@/lib/validations/banner.schema';
-import { formatImageUrl } from '@/lib/api/admin-menus-api';
+import { AppImage } from '@/components/ui/app-image';
 import { Button } from '@/components/ui/button';
 import { SimpleTooltip } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
@@ -56,10 +56,12 @@ export function BannerCard({
     >
       {/* 16:9 Thumbnail Image Container */}
       <div className="relative aspect-16/9 w-full bg-stone-100 dark:bg-zinc-800 overflow-hidden">
-        <img
-          src={formatImageUrl(banner.imageUrl)}
+        <AppImage
+          src={banner.imageUrl}
           alt={banner.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          fill
+          sizes="(max-width: 768px) 100vw, 33vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
 
         {/* Gradient Overlay */}
