@@ -196,7 +196,22 @@ export interface UploadImageResponse {
  */
 export function formatImageUrl(url?: string | null): string {
   if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+  if (
+    url.startsWith('http://') ||
+    url.startsWith('https://') ||
+    url.startsWith('data:') ||
+    url.startsWith('blob:')
+  ) {
+    return url;
+  }
+  // Frontend public static assets in /public folder
+  if (
+    url.startsWith('/banners/') ||
+    url.startsWith('/illustrations/') ||
+    url.startsWith('/icons/') ||
+    url.startsWith('/images/') ||
+    url.startsWith('/favicon')
+  ) {
     return url;
   }
   const apiBase =

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChevronLeft, ChevronRight, Sparkles, ExternalLink } from 'lucide-react';
 import { BannerData } from '@/lib/validations/banner.schema';
 import { usePublicBannersQuery } from '@/hooks/queries/use-admin-banners';
+import { formatImageUrl } from '@/lib/api/admin-menus-api';
 import { cn } from '@/lib/utils/cn';
 
 interface PromoCarouselProps {
@@ -99,7 +100,7 @@ export function PromoCarousel({
   const renderBannerContent = () => (
     <div className="relative w-full h-full">
       <img
-        src={currentBanner.imageUrl}
+        src={formatImageUrl(currentBanner.imageUrl)}
         alt={currentBanner.title}
         className="w-full h-full object-cover select-none"
         draggable={false}

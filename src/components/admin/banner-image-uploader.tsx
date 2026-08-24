@@ -18,6 +18,7 @@ import {
   BannerDimensionResult,
 } from '@/lib/utils/banner-image-validator';
 import { uploadMediaImage } from '@/lib/api/media-api';
+import { formatImageUrl } from '@/lib/api/admin-menus-api';
 import { toast } from 'sonner';
 
 export interface BannerPreset {
@@ -164,33 +165,30 @@ export function BannerImageUploader({
           <button
             type="button"
             onClick={() => setActiveTab('upload')}
-            className={`px-2.5 py-1 rounded-lg transition-all ${
-              activeTab === 'upload'
+            className={`px-2.5 py-1 rounded-lg transition-all ${activeTab === 'upload'
                 ? 'bg-white dark:bg-zinc-700 font-bold shadow-xs text-stone-900 dark:text-white'
                 : 'text-stone-500 hover:text-stone-800 dark:text-zinc-400'
-            }`}
+              }`}
           >
             Upload File
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('preset')}
-            className={`px-2.5 py-1 rounded-lg transition-all ${
-              activeTab === 'preset'
+            className={`px-2.5 py-1 rounded-lg transition-all ${activeTab === 'preset'
                 ? 'bg-white dark:bg-zinc-700 font-bold shadow-xs text-stone-900 dark:text-white'
                 : 'text-stone-500 hover:text-stone-800 dark:text-zinc-400'
-            }`}
+              }`}
           >
             Contoh Preset
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('url')}
-            className={`px-2.5 py-1 rounded-lg transition-all ${
-              activeTab === 'url'
+            className={`px-2.5 py-1 rounded-lg transition-all ${activeTab === 'url'
                 ? 'bg-white dark:bg-zinc-700 font-bold shadow-xs text-stone-900 dark:text-white'
                 : 'text-stone-500 hover:text-stone-800 dark:text-zinc-400'
-            }`}
+              }`}
           >
             Paste URL
           </button>
@@ -214,11 +212,10 @@ export function BannerImageUploader({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => !disabled && !isUploading && fileInputRef.current?.click()}
-          className={`relative rounded-2xl border-2 border-dashed p-6 text-center cursor-pointer transition-all duration-200 ${
-            isDragging
+          className={`relative rounded-2xl border-2 border-dashed p-6 text-center cursor-pointer transition-all duration-200 ${isDragging
               ? 'border-amber-500 bg-amber-50/60 dark:bg-amber-950/20'
               : 'border-stone-200 dark:border-zinc-800 hover:border-amber-500 dark:hover:border-amber-500 bg-stone-50/50 dark:bg-zinc-800/40'
-          } ${disabled || isUploading ? 'opacity-60 pointer-events-none' : ''}`}
+            } ${disabled || isUploading ? 'opacity-60 pointer-events-none' : ''}`}
         >
           {isUploading ? (
             <div className="flex flex-col items-center justify-center py-4 space-y-2">
@@ -259,15 +256,14 @@ export function BannerImageUploader({
                 key={preset.id}
                 type="button"
                 onClick={() => handleSelectPreset(preset)}
-                className={`p-2.5 rounded-xl border text-left transition-all text-xs flex flex-col gap-1 cursor-pointer ${
-                  value === preset.url
+                className={`p-2.5 rounded-xl border text-left transition-all text-xs flex flex-col gap-1 cursor-pointer ${value === preset.url
                     ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/40 shadow-xs'
                     : 'border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-amber-400'
-                }`}
+                  }`}
               >
                 <div className="w-full h-14 rounded-lg overflow-hidden bg-stone-200 relative mb-1">
                   <img
-                    src={preset.url}
+                    src={formatImageUrl(preset.url)}
                     alt={preset.name}
                     className="w-full h-full object-cover"
                   />
@@ -323,9 +319,9 @@ export function BannerImageUploader({
         <div className="relative rounded-2xl overflow-hidden border border-stone-200 dark:border-zinc-800 bg-stone-100 dark:bg-zinc-900 group shadow-sm">
           <div className="aspect-16/9 w-full relative overflow-hidden">
             <img
-              src={value}
+              src={formatImageUrl(value)}
               alt="Banner Preview"
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
             />
             {/* Aspect Ratio Pill Overlay */}
             <div className="absolute top-2.5 left-2.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold flex items-center gap-1">

@@ -13,6 +13,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { BannerData } from '@/lib/validations/banner.schema';
+import { formatImageUrl } from '@/lib/api/admin-menus-api';
 import { Button } from '@/components/ui/button';
 import { SimpleTooltip } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils/cn';
@@ -56,7 +57,7 @@ export function BannerCard({
       {/* 16:9 Thumbnail Image Container */}
       <div className="relative aspect-16/9 w-full bg-stone-100 dark:bg-zinc-800 overflow-hidden">
         <img
-          src={banner.imageUrl}
+          src={formatImageUrl(banner.imageUrl)}
           alt={banner.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
