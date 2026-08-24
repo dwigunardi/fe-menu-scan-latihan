@@ -2,21 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut, Sun, Moon, PanelLeftClose, PanelLeftOpen, AlertCircle } from 'lucide-react';
+import { LogOut, Sun, Moon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/use-auth-store';
 import { useSidebarStore } from '@/store/use-sidebar-store';
 import { Button } from '@/components/ui/button';
 import { SimpleTooltip } from '@/components/ui/tooltip';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 
 interface CommonHeaderProps {
   portalTitle?: string;
@@ -113,7 +106,7 @@ export function CommonHeader({
             variant="outline"
             size="sm"
             onClick={() => setIsLogoutModalOpen(true)}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border-red-200 dark:border-red-900 text-xs h-9 px-3 transition-colors active:scale-95"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 border-red-200 dark:border-red-900 text-xs h-9 px-3 transition-colors active:scale-95 cursor-pointer"
           >
             <LogOut className="h-3.5 w-3.5 mr-1" />
             <span>Keluar</span>
@@ -121,59 +114,34 @@ export function CommonHeader({
         </div>
       </header>
 
-      {/* Logout Confirmation Dialog Modal */}
-      <Dialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
-        <DialogContent className="max-w-md p-6 rounded-3xl">
-          <DialogHeader className="flex flex-col items-center text-center space-y-3">
-            <div className="h-12 w-12 rounded-2xl bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400 flex items-center justify-center shadow-inner">
-              <LogOut className="h-6 w-6" />
+      {/* Reusable Confirmation Dialog for Logout */}
+      <ConfirmationDialog
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleConfirmLogout}
+        variant="danger"
+        icon={LogOut}
+        title="Konfirmasi Keluar Akun"
+        description="Apakah Anda yakin ingin mengakhiri sesi kerja staf saat ini? Anda harus memasukkan kredensial login kembali untuk mengakses portal."
+        confirmText="Ya, Keluar Akun"
+        cancelText="Batal"
+      >
+        {user && (
+          <div className="p-3.5 rounded-2xl bg-stone-50 dark:bg-zinc-800/60 border border-stone-200/80 dark:border-zinc-800 flex items-center justify-between">
+            <div className="space-y-0.5 text-left">
+              <p className="text-xs font-bold text-stone-900 dark:text-zinc-100">
+                {user.name}
+              </p>
+              <p className="text-[11px] text-stone-500 dark:text-zinc-400 font-mono">
+                {user.username || user.email || 'user'}
+              </p>
             </div>
-            <DialogTitle className="text-xl font-bold text-stone-900 dark:text-zinc-100">
-              Konfirmasi Keluar Akun
-            </DialogTitle>
-            <DialogDescription className="text-sm text-stone-500 dark:text-zinc-400 max-w-xs">
-              Apakah Anda yakin ingin mengakhiri sesi kerja staf saat ini? Anda harus memasukkan kredensial login kembali untuk mengakses portal.
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Active User Summary Card */}
-          {user && (
-            <div className="my-2 p-3.5 rounded-2xl bg-stone-50 dark:bg-zinc-800/60 border border-stone-200/80 dark:border-zinc-800 flex items-center justify-between">
-              <div className="space-y-0.5">
-                <p className="text-xs font-bold text-stone-900 dark:text-zinc-100">
-                  {user.name}
-                </p>
-                <p className="text-[11px] text-stone-500 dark:text-zinc-400 font-mono">
-                  {user.username || user.email || 'user'}
-                </p>
-              </div>
-              <span className="text-[10px] font-bold text-amber-600 bg-amber-100/80 dark:bg-amber-950 px-2.5 py-1 rounded-full uppercase border border-amber-200 dark:border-amber-900">
-                {user.role}
-              </span>
-            </div>
-          )}
-
-          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsLogoutModalOpen(false)}
-              className="w-full sm:w-auto rounded-2xl border-stone-200 dark:border-zinc-700"
-            >
-              Batal
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleConfirmLogout}
-              className="w-full sm:w-auto rounded-2xl font-bold bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20"
-            >
-              <LogOut className="h-4 w-4 mr-1.5" />
-              Ya, Keluar Akun
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <span className="text-[10px] font-bold text-amber-600 bg-amber-100/80 dark:bg-amber-950 px-2.5 py-1 rounded-full uppercase border border-amber-200 dark:border-amber-900">
+              {user.role}
+            </span>
+          </div>
+        )}
+      </ConfirmationDialog>
     </>
   );
 }
