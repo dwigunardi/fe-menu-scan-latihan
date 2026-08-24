@@ -35,7 +35,7 @@ export const SAMPLE_BANNER_PRESETS: BannerPreset[] = [
     name: '☕ Buy 1 Get 1 Kopi',
     title: 'Buy 1 Get 1 Signature Espresso',
     description: 'Beli 1 gratis 1 untuk semua varian espresso setiap akhir pekan',
-    url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=1200&h=675&fit=crop',
+    url: '/banners/banner-coffee.jpg',
     targetUrl: '/menu?category=cat-coffee',
   },
   {
@@ -43,7 +43,7 @@ export const SAMPLE_BANNER_PRESETS: BannerPreset[] = [
     name: '🥐 Weekend Croissant',
     title: 'Sarapan Lezat Croissant & Pastry',
     description: 'Nikmati paket sarapan kopi + pastry hemat hingga 30%',
-    url: 'https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=1200&h=675&fit=crop',
+    url: '/banners/banner-pastry.jpg',
     targetUrl: '/menu?category=cat-pastry',
   },
   {
@@ -51,7 +51,7 @@ export const SAMPLE_BANNER_PRESETS: BannerPreset[] = [
     name: '💳 Cashback 30% QRIS',
     title: 'Cashback 30% Pembayaran QRIS',
     description: 'Bayar non-tunai lebih praktis, cepat, dan hemat',
-    url: 'https://images.unsplash.com/photo-1556742049-0a67e5572263?w=1200&h=675&fit=crop',
+    url: '/banners/banner-qris.jpg',
     targetUrl: '/menu',
   },
 ];
