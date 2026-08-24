@@ -25,7 +25,7 @@ export default function HomePage() {
               Buka Menu Publik (Meja 01)
             </Button>
           </Link>
-          <Link href="/admin/login" className="w-full">
+          <Link href="/login" className="w-full">
             <Button variant="outline" size="default" className="w-full">
               Portal Staf & Kasir
             </Button>
