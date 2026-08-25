@@ -3,6 +3,14 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MenuCardsMobile } from '@/components/menus/menu-cards-mobile';
 import { AdminMenuItem } from '@/lib/api/admin-menus-api';
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
 describe('MenuCardsMobile Component (Quick Sold-Out Switch)', () => {
   const mockMenus: AdminMenuItem[] = [
     {
