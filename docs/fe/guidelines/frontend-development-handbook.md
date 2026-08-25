@@ -230,6 +230,57 @@ describe('StaffTable Component', () => {
 });
 ```
 
+### 📖 Resep 6: Cara Membangun Form Input Standar (`react-hook-form` + `zodResolver`)
+
+Semua form input (baik halaman form lengkap maupun form di dalam Dialog/Modal) **DILARANG** menggunakan rentetan *ad-hoc* `useState` terpisah. Selalu gunakan `useForm` dari `react-hook-form` dengan `zodResolver` dan skema Zod sebagai *Single Source of Truth*.
+
+#### Langkah 1: Definisikan Skema Zod
+```typescript
+import { z } from 'zod';
+
+export const TableFormSchema = z.object({
+  tableNumber: z.string().min(1, 'Nomor meja wajib diisi'),
+  capacity: z.coerce.number().min(1, 'Kapasitas minimal 1 orang'),
+  zoneId: z.string().min(1, 'Zona wajib dipilih'),
+});
+
+export type TableFormInput = z.infer<typeof TableFormSchema>;
+```
+
+#### Langkah 2: Implementasikan `useForm` di Komponen Form
+```tsx
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { TableFormSchema, TableFormInput } from '@/lib/validations/table.schema';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+
+export function TableFormModal({ isOpen, onClose, onSubmit, initialData }) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<TableFormInput>({
+    resolver: zodResolver(TableFormSchema),
+    defaultValues: initialData || { tableNumber: '', capacity: 4, zoneId: '' },
+  });
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <div>
+        <label className="text-xs font-semibold">Nomor Meja</label>
+        <Input {...register('tableNumber')} placeholder="Contoh: A01" />
+        {errors.tableNumber && (
+          <p className="text-xs text-rose-500 mt-1">{errors.tableNumber.message}</p>
+        )}
+      </div>
+      <Button type="submit" disabled={isSubmitting}>Simpan</Button>
+    </form>
+  );
+}
+```
+
 ---
 
 ## 🚫 4. Anti-Patterns & Standar Penulisan Kode Bersih (*Clean Code*)
@@ -238,6 +289,7 @@ describe('StaffTable Component', () => {
 
 | ❌ DILARANG KERAS (Anti-Pattern) | ✅ CARA YANG BENAR (Standard Pattern) |
 | :--- | :--- |
+| **Multiple *Ad-Hoc* `useState` untuk Form Input**: <br>`const [name, setName] = useState('')`<br>`const [desc, setDesc] = useState('')` | **Wajib `useForm` + `zodResolver(schema)`**: <br>Kelola state & validasi form secara terpusat dengan `react-hook-form` & Zod. |
 | **Nested `if-else` / `if` di dalam `if` (*Pyramid of Doom*)**: <br>Kondisi bersarang yang membuat kode bergeser ke kanan dan sulit dibaca. | **Selalu Gunakan Early Return (*Guard Clauses*)**: <br>Keluar lebih awal jika kondisi tidak terpenuhi atau terjadi error. |
 | **Nested Loops (`for` di dalam `for`) ($O(N^2)$)**: <br>Looping bertingkat yang memperlambat performa dan sulit ditelusuri. | **Gunakan Lookup `Map`/`Set` atau Deklaratif Methods**: <br>Gunakan `map`, `filter`, `find`, `reduce`, atau indexed lookup $O(1)$. |
 | **Super Function / God Function**: <br>Fungsi raksasa (>50 baris) yang mengerjakan banyak hal sekaligus dan susah di-debug. | **Pecah ke Sub-Functions Kecil (*Single Responsibility*)**: <br>Setiap fungsi hanya melakukan 1 tugas spesifik dengan penamaan jelas. |

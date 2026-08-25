@@ -223,7 +223,27 @@ export const ROLE_GROUPS = {
 
 ---
 
-## 🔗 4. Dokumen Terkait
+## 📝 4. Standard Form & Validation Architecture (`react-hook-form` + `zodResolver`)
+
+Untuk menjaga stabilitas, modularitas, dan skalabilitas antarmuka pengguna, seluruh interaksi form input diatur oleh arsitektur standar:
+
+```mermaid
+flowchart LR
+    A[Zod Schema Definition<br/>src/lib/validations/*.schema.ts] --> B[zodResolver<br/>@hookform/resolvers/zod]
+    B --> C[useForm Hook<br/>react-hook-form]
+    C --> D[Controlled / Uncontrolled UI<br/>Input, Select, Switch, Dialog]
+    D -->|handleSubmit| E[Type-Safe API Mutation<br/>TanStack Query + hardenedFetch]
+```
+
+### Prinsip Utama Form Architecture:
+1. **Single Source of Truth**: Seluruh aturan validasi, default value, dan pesan kesalahan didefinisikan secara deklaratif di skema Zod (`src/lib/validations/`).
+2. **Zero Ad-Hoc `useState`**: Dilarang mengelola form input menggunakan banyak `useState` terpisah di dalam modal/halaman. Seluruh form wajib menggunakan `useForm<T>({ resolver: zodResolver(schema) })`.
+3. **Real-Time & Inline Error Feedback**: Pesan error validasi dirender secara presisi per field via `formState.errors.<fieldName>?.message`.
+4. **Resilient Reset & Populating**: Data form saat mode edit diisi secara deklaratif menggunakan `reset(initialData)` saat modal terbuka.
+
+---
+
+## 🔗 5. Dokumen Terkait
 
 - 📘 **Panduan Pengembang & Best Practices**: [frontend-development-handbook.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/guidelines/frontend-development-handbook.md)
 - 📄 Spesifikasi Interceptor & Hardened Pipeline: [interceptor-pipeline-architecture.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/architecture/interceptor-pipeline-architecture.md)
