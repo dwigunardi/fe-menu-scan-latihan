@@ -30,6 +30,12 @@ export const RefreshTokenResponseSchema = z.object({
   refreshToken: z.string().optional().nullable(),
 });
 
+export const LoginInputSchema = z.object({
+  username: z.string().min(1, 'Username / Email wajib diisi'),
+  password: z.string().min(6, 'Password minimal 6 karakter'),
+});
+
 export type StaffUserType = z.infer<typeof StaffUserSchema>;
 export type LoginResponseType = z.infer<typeof LoginResponseSchema>;
 export type RefreshTokenResponseType = z.infer<typeof RefreshTokenResponseSchema>;
+export type LoginInput = z.infer<typeof LoginInputSchema>;

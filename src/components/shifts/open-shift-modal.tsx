@@ -1,8 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
-import { Clock, Coins, Sparkles } from 'lucide-react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Coins, Sparkles } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +18,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { formatRupiah } from '@/lib/utils/format-currency';
 import { useOpenShiftMutation } from '@/hooks/queries/use-admin-shifts';
+import {
+  OpenShiftInput,
+  OpenShiftInputSchema,
+} from '@/lib/validations/shift.schema';
 
 export interface OpenShiftModalProps {
   isOpen: boolean;
@@ -26,30 +32,49 @@ export interface OpenShiftModalProps {
 const CASH_PRESETS = [100000, 200000, 300000, 500000];
 
 export function OpenShiftModal({ isOpen, onClose, onSuccess }: OpenShiftModalProps) {
-  const [openingCash, setOpeningCash] = useState<number>(200000);
-  const [notes, setNotes] = useState<string>('');
-  const [rawInput, setRawInput] = useState<string>('200000');
-
   const openMutation = useOpenShiftMutation();
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<OpenShiftInput>({
+    resolver: zodResolver(OpenShiftInputSchema),
+    defaultValues: {
+      openingCash: 200000,
+      notes: '',
+    },
+  });
+
+  const openingCashValue = watch('openingCash') ?? 200000;
+
+  useEffect(() => {
+    if (isOpen) {
+      reset({
+        openingCash: 200000,
+        notes: '',
+      });
+    }
+  }, [isOpen, reset]);
 
   const handleCashChange = (val: string) => {
     const cleaned = val.replace(/\D/g, '');
-    setRawInput(cleaned);
-    setOpeningCash(cleaned ? parseInt(cleaned, 10) : 0);
+    setValue('openingCash', cleaned ? parseInt(cleaned, 10) : 0, {
+      shouldValidate: true,
+    });
   };
 
   const handlePresetClick = (amount: number) => {
-    setOpeningCash(amount);
-    setRawInput(String(amount));
+    setValue('openingCash', amount, { shouldValidate: true });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (openingCash < 0) return;
-
+  const onFormSubmit = async (data: OpenShiftInput) => {
     await openMutation.mutateAsync({
-      openingCash,
-      notes: notes.trim() || undefined,
+      openingCash: Number(data.openingCash),
+      notes: data.notes?.trim() || undefined,
     });
 
     onClose();
@@ -61,7 +86,7 @@ export function OpenShiftModal({ isOpen, onClose, onSuccess }: OpenShiftModalPro
       <DialogContent className="sm:max-w-md rounded-3xl p-6 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 shadow-2xl">
         <DialogHeader className="space-y-2">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
               <Coins className="w-6 h-6" />
             </div>
             <div>
@@ -75,7 +100,7 @@ export function OpenShiftModal({ isOpen, onClose, onSuccess }: OpenShiftModalPro
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
+        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 py-2">
           {/* Opening Cash Input */}
           <div className="space-y-2">
             <label className="text-xs font-semibold text-stone-700 dark:text-zinc-300">
@@ -88,13 +113,16 @@ export function OpenShiftModal({ isOpen, onClose, onSuccess }: OpenShiftModalPro
               <Input
                 type="text"
                 inputMode="numeric"
-                value={rawInput ? Number(rawInput).toLocaleString('id-ID') : ''}
+                value={openingCashValue ? Number(openingCashValue).toLocaleString('id-ID') : ''}
                 onChange={(e) => handleCashChange(e.target.value)}
                 placeholder="200.000"
                 className="pl-11 font-mono font-bold text-lg rounded-2xl h-12 bg-stone-50/60 dark:bg-zinc-800/60 border-stone-200 dark:border-zinc-700 focus-visible:ring-amber-500"
-                required
+                autoFocus
               />
             </div>
+            {errors.openingCash && (
+              <p className="text-xs font-medium text-rose-500">{errors.openingCash.message}</p>
+            )}
 
             {/* Quick Presets */}
             <div className="flex flex-wrap gap-1.5 pt-1">
@@ -103,8 +131,8 @@ export function OpenShiftModal({ isOpen, onClose, onSuccess }: OpenShiftModalPro
                   key={preset}
                   type="button"
                   onClick={() => handlePresetClick(preset)}
-                  className={`text-xs px-2.5 py-1 rounded-xl font-semibold transition-all border ${
-                    openingCash === preset
+                  className={`text-xs px-2.5 py-1 rounded-xl font-semibold transition-all border cursor-pointer ${
+                    openingCashValue === preset
                       ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
                       : 'bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 border-stone-200/60 dark:border-zinc-700 hover:border-amber-400'
                   }`}
@@ -121,30 +149,28 @@ export function OpenShiftModal({ isOpen, onClose, onSuccess }: OpenShiftModalPro
               Catatan Pembukaan (Opsional)
             </label>
             <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Contoh: Pecahan 10rb x 10, 5rb x 20..."
-              className="resize-none text-xs rounded-2xl min-h-[70px] bg-stone-50/60 dark:bg-zinc-800/60 border-stone-200 dark:border-zinc-700"
+              {...register('notes')}
+              placeholder="Contoh: Tambahan uang receh Rp 50.000 pecahan Rp 2.000..."
+              className="resize-none rounded-2xl text-xs bg-stone-50/60 dark:bg-zinc-800/60 border-stone-200 dark:border-zinc-700 h-20"
             />
           </div>
 
-          <DialogFooter className="gap-2 pt-2 sm:justify-end">
+          <DialogFooter className="pt-2 gap-2">
             <Button
               type="button"
               variant="outline"
               onClick={onClose}
-              className="rounded-2xl text-xs h-10"
               disabled={openMutation.isPending}
+              className="rounded-2xl h-11"
             >
               Batal
             </Button>
             <Button
               type="submit"
-              disabled={openMutation.isPending || openingCash < 0}
-              className="rounded-2xl text-xs h-10 bg-amber-600 hover:bg-amber-700 text-white font-semibold flex items-center gap-1.5"
+              disabled={openMutation.isPending || openingCashValue < 0}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-2xl h-11 px-6 shadow-md shadow-amber-600/20"
             >
-              <Clock className="w-4 h-4" />
-              <span>{openMutation.isPending ? 'Membuka Shift...' : 'Buka Shift Sekarang'}</span>
+              {openMutation.isPending ? 'Membuka Shift...' : 'Buka Shift Sekarang'}
             </Button>
           </DialogFooter>
         </form>

@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
   DialogContent,
@@ -17,8 +19,12 @@ import {
   useUpdateTableZoneMutation,
   useDeleteTableZoneMutation,
 } from '@/hooks/queries/use-admin-tables';
-import { TableZoneData } from '@/lib/validations/table.schema';
-import { MapPin, Plus, Edit2, Trash2, Check, X, Loader2, Armchair } from 'lucide-react';
+import {
+  TableZoneData,
+  TableZoneFormInput,
+  TableZoneFormSchema,
+} from '@/lib/validations/table.schema';
+import { MapPin, Plus, Edit2, Trash2, Check, Loader2, Armchair } from 'lucide-react';
 
 interface ZoneManagerModalProps {
   isOpen: boolean;
@@ -31,52 +37,73 @@ export function ZoneManagerModal({ isOpen, onClose }: ZoneManagerModalProps) {
   const updateMutation = useUpdateTableZoneMutation();
   const deleteMutation = useDeleteTableZoneMutation();
 
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [color, setColor] = useState('amber');
   const [editingZone, setEditingZone] = useState<TableZoneData | null>(null);
 
   const isPending =
     createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
 
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<TableZoneFormInput>({
+    resolver: zodResolver(TableZoneFormSchema) as any,
+    defaultValues: {
+      name: '',
+      description: '',
+      color: 'amber',
+      sortOrder: 0,
+    },
+  });
+
+  const zoneNameValue = watch('name') || '';
+
   const handleStartEdit = (zone: TableZoneData) => {
     setEditingZone(zone);
-    setName(zone.name);
-    setDescription(zone.description || '');
-    setColor(zone.color || 'amber');
+    reset({
+      name: zone.name,
+      description: zone.description || '',
+      color: zone.color || 'amber',
+      sortOrder: zone.sortOrder || 0,
+    });
   };
 
   const handleCancelEdit = () => {
     setEditingZone(null);
-    setName('');
-    setDescription('');
-    setColor('amber');
+    reset({
+      name: '',
+      description: '',
+      color: 'amber',
+      sortOrder: 0,
+    });
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-
+  const onFormSubmit = async (data: TableZoneFormInput) => {
     if (editingZone) {
       await updateMutation.mutateAsync({
         id: editingZone.id,
         payload: {
-          name: name.trim(),
-          description: description.trim() || undefined,
-          color,
+          name: data.name.trim(),
+          description: data.description?.trim() || undefined,
+          color: data.color,
         },
       });
       handleCancelEdit();
     } else {
       await createMutation.mutateAsync({
-        name: name.trim(),
-        description: description.trim() || undefined,
-        color,
+        name: data.name.trim(),
+        description: data.description?.trim() || undefined,
+        color: data.color,
         sortOrder: zones.length + 1,
       });
-      setName('');
-      setDescription('');
-      setColor('amber');
+      reset({
+        name: '',
+        description: '',
+        color: 'amber',
+        sortOrder: 0,
+      });
     }
   };
 
@@ -114,7 +141,7 @@ export function ZoneManagerModal({ isOpen, onClose }: ZoneManagerModalProps) {
         {/* Scrollable Body */}
         <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           {/* Form Tambah / Edit Zona */}
-          <form onSubmit={handleSubmit} className="p-3.5 sm:p-4 rounded-2xl bg-stone-50 dark:bg-zinc-800/60 border border-stone-200/80 dark:border-zinc-700/60 space-y-3">
+          <form onSubmit={handleSubmit(onFormSubmit)} className="p-3.5 sm:p-4 rounded-2xl bg-stone-50 dark:bg-zinc-800/60 border border-stone-200/80 dark:border-zinc-700/60 space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold text-stone-900 dark:text-zinc-100 flex items-center gap-1.5">
                 {editingZone ? (
@@ -146,12 +173,14 @@ export function ZoneManagerModal({ isOpen, onClose }: ZoneManagerModalProps) {
                   Nama Zona *
                 </label>
                 <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  {...register('name')}
                   placeholder="Misal: Outdoor Garden, VIP Room"
                   className="h-9 text-xs rounded-xl"
-                  required
+                  autoFocus
                 />
+                {errors.name && (
+                  <p className="text-xs font-medium text-rose-500 mt-1">{errors.name.message}</p>
+                )}
               </div>
 
               <div>
@@ -159,8 +188,7 @@ export function ZoneManagerModal({ isOpen, onClose }: ZoneManagerModalProps) {
                   Keterangan / Fasilitas Singkat
                 </label>
                 <Input
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  {...register('description')}
                   placeholder="Misal: Area merokok, asri"
                   className="h-9 text-xs rounded-xl"
                 />
@@ -171,7 +199,7 @@ export function ZoneManagerModal({ isOpen, onClose }: ZoneManagerModalProps) {
               <Button
                 type="submit"
                 size="sm"
-                disabled={isPending || !name.trim()}
+                disabled={isPending || !zoneNameValue.trim()}
                 className="h-8.5 px-4 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-xs cursor-pointer"
               >
                 {isPending ? (

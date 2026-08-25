@@ -1,6 +1,7 @@
 'use client';
 
-import { SubmitEvent, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2 } from 'lucide-react';
 import {
   Dialog,
@@ -17,7 +18,11 @@ import {
   useCreateCategoryMutation,
   useDeleteCategoryMutation,
 } from '@/hooks/queries/use-admin-categories';
-import { CategoryData } from '@/lib/validations/admin-menu.schema';
+import {
+  CategoryData,
+  CreateCategoryInput,
+  CreateCategoryInputSchema,
+} from '@/lib/validations/admin-menu.schema';
 
 interface CategoryManagerModalProps {
   isOpen: boolean;
@@ -32,20 +37,30 @@ export function CategoryManagerModal({
   categories,
   onRefresh,
 }: CategoryManagerModalProps) {
-  const [newCategoryName, setNewCategoryName] = useState('');
-
   const createMutation = useCreateCategoryMutation();
   const deleteMutation = useDeleteCategoryMutation();
 
-  const handleCreate = async (e: SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!newCategoryName.trim()) return;
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<CreateCategoryInput>({
+    resolver: zodResolver(CreateCategoryInputSchema),
+    defaultValues: {
+      name: '',
+    },
+  });
 
+  const categoryNameValue = watch('name') || '';
+
+  const handleCreate = async (data: CreateCategoryInput) => {
     await createMutation.mutateAsync({
-      name: newCategoryName.trim(),
+      name: data.name.trim(),
       sortOrder: (categories.length || 0) + 1,
     });
-    setNewCategoryName('');
+    reset({ name: '' });
     onRefresh?.();
   };
 
@@ -58,7 +73,7 @@ export function CategoryManagerModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-stone-200 dark:border-zinc-800">
+      <DialogContent className="max-w-md bg-white dark:bg-zinc-900 rounded-3xl p-6 border border-stone-200 dark:border-zinc-800 shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-stone-900 dark:text-zinc-100">
             Kelola Kategori Menu
@@ -69,20 +84,26 @@ export function CategoryManagerModal({
         </DialogHeader>
 
         {/* Create Category Form */}
-        <form onSubmit={handleCreate} className="flex gap-2 mt-3">
-          <Input
-            placeholder="Nama Kategori Baru..."
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-          />
-          <Button
-            type="submit"
-            isLoading={createMutation.isPending}
-            disabled={!newCategoryName.trim()}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Tambah
-          </Button>
+        <form onSubmit={handleSubmit(handleCreate)} className="mt-3 space-y-1.5">
+          <div className="flex gap-2">
+            <Input
+              placeholder="Nama Kategori Baru..."
+              {...register('name')}
+              className="rounded-xl bg-stone-50 dark:bg-zinc-800/80 border-stone-200 dark:border-zinc-700"
+            />
+            <Button
+              type="submit"
+              isLoading={createMutation.isPending}
+              disabled={!categoryNameValue.trim()}
+              className="rounded-xl bg-amber-600 hover:bg-amber-700 text-white shrink-0"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Tambah
+            </Button>
+          </div>
+          {errors.name && (
+            <p className="text-xs font-medium text-rose-500">{errors.name.message}</p>
+          )}
         </form>
 
         {/* Existing Categories List */}

@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Sparkles,
   Lock,
@@ -13,7 +15,6 @@ import {
   Receipt,
   Coffee,
   ConciergeBell,
-  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { loginStaff } from '@/lib/api/auth-api';
@@ -21,6 +22,10 @@ import { useAuthStore, UserRole, ROLE } from '@/store/use-auth-store';
 import { notifyApiError } from '@/lib/api/notify-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  LoginInput,
+  LoginInputSchema,
+} from '@/lib/validations/auth.schema';
 
 type LoginPresetType = 'form' | 'admin' | 'cashier' | 'kitchen' | 'waiter';
 
@@ -28,12 +33,23 @@ export default function StaffLoginPage() {
   const router = useRouter();
   const { setAuth, isAuthenticated, _hasHydrated, user } = useAuthStore();
 
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loadingPreset, setLoadingPreset] = useState<LoginPresetType | null>(null);
 
   const isLoading = loadingPreset !== null;
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(LoginInputSchema),
+    defaultValues: {
+      username: '',
+      password: '',
+    },
+  });
 
   // Auto redirect if already authenticated
   useEffect(() => {
@@ -81,19 +97,13 @@ export default function StaffLoginPage() {
     handleRoleRedirect(loggedInUser.role);
   };
 
-  const handleLogin = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!username || !password) {
-      toast.error('Mohon masukkan username / email dan password');
-      return;
-    }
-
-    await executeLogin(username, password, 'form');
+  const onFormSubmit = async (data: LoginInput) => {
+    await executeLogin(data.username, data.password, 'form');
   };
 
   const handleQuickLogin = (u: string, p: string, presetType: LoginPresetType) => {
-    setUsername(u);
-    setPassword(p);
+    setValue('username', u);
+    setValue('password', p);
     executeLogin(u, p, presetType);
   };
 
@@ -119,26 +129,27 @@ export default function StaffLoginPage() {
         </div>
 
         {/* Login Form */}
-        <form onSubmit={handleLogin} className="w-full space-y-4">
+        <form onSubmit={handleSubmit(onFormSubmit)} className="w-full space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-stone-700 dark:text-zinc-300 flex items-center gap-1.5">
+            <label className="text-xs font-bold text-stone-700 dark:text-zinc-300 flex items-center gap-1.5">
               <User className="h-3.5 w-3.5 text-amber-600" />
               Username / Email
             </label>
             <Input
               type="text"
               placeholder="Masukkan username staf..."
-              value={username}
               disabled={isLoading}
-              onChange={(e) => setUsername(e.target.value)}
+              {...register('username')}
               className="h-11 rounded-2xl bg-stone-50/50 dark:bg-zinc-800/50 border-stone-200 dark:border-zinc-700/80 transition-all duration-200"
-              required
               autoFocus
             />
+            {errors.username && (
+              <p className="text-xs font-medium text-rose-500">{errors.username.message}</p>
+            )}
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-stone-700 dark:text-zinc-300 flex items-center gap-1.5">
+            <label className="text-xs font-bold text-stone-700 dark:text-zinc-300 flex items-center gap-1.5">
               <Lock className="h-3.5 w-3.5 text-amber-600" />
               Kata Sandi
             </label>
@@ -146,11 +157,9 @@ export default function StaffLoginPage() {
               <Input
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Masukkan kata sandi..."
-                value={password}
                 disabled={isLoading}
-                onChange={(e) => setPassword(e.target.value)}
+                {...register('password')}
                 className="h-11 rounded-2xl pr-10 bg-stone-50/50 dark:bg-zinc-800/50 border-stone-200 dark:border-zinc-700/80 transition-all duration-200"
-                required
               />
               <button
                 type="button"
@@ -166,6 +175,9 @@ export default function StaffLoginPage() {
                 )}
               </button>
             </div>
+            {errors.password && (
+              <p className="text-xs font-medium text-rose-500">{errors.password.message}</p>
+            )}
           </div>
 
           <Button
@@ -174,7 +186,7 @@ export default function StaffLoginPage() {
             disabled={isLoading}
             isLoading={loadingPreset === 'form'}
             loadingText="Memverifikasi Akun..."
-            className="w-full h-11 rounded-2xl font-bold shadow-md shadow-amber-600/20 mt-2 transition-all duration-200 active:scale-[0.98]"
+            className="w-full h-11 rounded-2xl font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-md shadow-amber-600/20 mt-2 transition-all duration-200 active:scale-[0.98]"
           >
             Masuk ke Portal
           </Button>
@@ -200,20 +212,14 @@ export default function StaffLoginPage() {
                   : 'hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20'
               }`}
             >
-              <div className="flex items-center gap-1.5 font-bold text-xs text-stone-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400">
-                {loadingPreset === 'admin' ? (
-                  <Loader2 className="h-3.5 w-3.5 text-amber-600 animate-spin shrink-0" />
-                ) : (
-                  <Crown className="h-3.5 w-3.5 text-amber-600 shrink-0 transition-transform duration-200 group-hover:scale-110" />
-                )}
-                <span>Super Admin</span>
+              <div className="flex items-center gap-1.5 w-full">
+                <Crown className="h-4 w-4 text-purple-600 shrink-0" />
+                <span className="font-bold text-xs text-stone-900 dark:text-zinc-100">Super Admin</span>
               </div>
-              <span className="text-[10px] text-stone-500 dark:text-zinc-400 font-mono block">
-                {loadingPreset === 'admin' ? 'Memverifikasi...' : 'admin / admin123'}
-              </span>
+              <span className="text-[10px] text-stone-400 dark:text-zinc-500 font-mono">admin@menuscan.com</span>
             </Button>
 
-            {/* Kasir Meja */}
+            {/* Kasir POS */}
             <Button
               type="button"
               variant="outline"
@@ -222,23 +228,17 @@ export default function StaffLoginPage() {
               className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${
                 loadingPreset === 'cashier'
                   ? 'ring-2 ring-emerald-500/40 border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30'
-                  : 'hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20'
+                  : 'hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20'
               }`}
             >
-              <div className="flex items-center gap-1.5 font-bold text-xs text-stone-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400">
-                {loadingPreset === 'cashier' ? (
-                  <Loader2 className="h-3.5 w-3.5 text-emerald-600 animate-spin shrink-0" />
-                ) : (
-                  <Receipt className="h-3.5 w-3.5 text-emerald-600 shrink-0 transition-transform duration-200 group-hover:scale-110" />
-                )}
-                <span>Kasir Meja</span>
+              <div className="flex items-center gap-1.5 w-full">
+                <Receipt className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span className="font-bold text-xs text-stone-900 dark:text-zinc-100">Kasir Front POS</span>
               </div>
-              <span className="text-[10px] text-stone-500 dark:text-zinc-400 font-mono block">
-                {loadingPreset === 'cashier' ? 'Memverifikasi...' : 'cashier / cashier123'}
-              </span>
+              <span className="text-[10px] text-stone-400 dark:text-zinc-500 font-mono">cashier@menuscan.com</span>
             </Button>
 
-            {/* Barista Dapur */}
+            {/* Dapur KDS */}
             <Button
               type="button"
               variant="outline"
@@ -250,20 +250,14 @@ export default function StaffLoginPage() {
                   : 'hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20'
               }`}
             >
-              <div className="flex items-center gap-1.5 font-bold text-xs text-stone-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400">
-                {loadingPreset === 'kitchen' ? (
-                  <Loader2 className="h-3.5 w-3.5 text-amber-600 animate-spin shrink-0" />
-                ) : (
-                  <Coffee className="h-3.5 w-3.5 text-amber-600 shrink-0 transition-transform duration-200 group-hover:scale-110" />
-                )}
-                <span>Barista Dapur</span>
+              <div className="flex items-center gap-1.5 w-full">
+                <Coffee className="h-4 w-4 text-amber-600 shrink-0" />
+                <span className="font-bold text-xs text-stone-900 dark:text-zinc-100">Kitchen & Bar</span>
               </div>
-              <span className="text-[10px] text-stone-500 dark:text-zinc-400 font-mono block">
-                {loadingPreset === 'kitchen' ? 'Memverifikasi...' : 'kitchen / kitchen123'}
-              </span>
+              <span className="text-[10px] text-stone-400 dark:text-zinc-500 font-mono">kitchen@menuscan.com</span>
             </Button>
 
-            {/* Pelayan */}
+            {/* Pelayan / Waiter */}
             <Button
               type="button"
               variant="outline"
@@ -271,21 +265,15 @@ export default function StaffLoginPage() {
               onClick={() => handleQuickLogin('waiter@menuscan.com', 'waiter123', 'waiter')}
               className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${
                 loadingPreset === 'waiter'
-                  ? 'ring-2 ring-blue-500/40 border-blue-500 bg-blue-50/70 dark:bg-blue-950/30'
-                  : 'hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20'
+                  ? 'ring-2 ring-sky-500/40 border-sky-500 bg-sky-50/70 dark:bg-sky-950/30'
+                  : 'hover:border-sky-500 dark:hover:border-sky-500 hover:bg-sky-50/50 dark:hover:bg-sky-950/20'
               }`}
             >
-              <div className="flex items-center gap-1.5 font-bold text-xs text-stone-900 dark:text-zinc-100 group-hover:text-amber-600 dark:group-hover:text-amber-400">
-                {loadingPreset === 'waiter' ? (
-                  <Loader2 className="h-3.5 w-3.5 text-blue-600 animate-spin shrink-0" />
-                ) : (
-                  <ConciergeBell className="h-3.5 w-3.5 text-blue-600 shrink-0 transition-transform duration-200 group-hover:scale-110" />
-                )}
-                <span>Pelayan</span>
+              <div className="flex items-center gap-1.5 w-full">
+                <ConciergeBell className="h-4 w-4 text-sky-600 shrink-0" />
+                <span className="font-bold text-xs text-stone-900 dark:text-zinc-100">Pelayan (Floor)</span>
               </div>
-              <span className="text-[10px] text-stone-500 dark:text-zinc-400 font-mono block">
-                {loadingPreset === 'waiter' ? 'Memverifikasi...' : 'waiter / waiter123'}
-              </span>
+              <span className="text-[10px] text-stone-400 dark:text-zinc-500 font-mono">waiter@menuscan.com</span>
             </Button>
           </div>
         </div>

@@ -1,14 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
   CheckCircle2,
   AlertTriangle,
   Receipt,
   Coins,
-  QrCode,
-  DollarSign,
   Calculator,
 } from 'lucide-react';
 import {
@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { formatRupiah } from '@/lib/utils/format-currency';
-import { ShiftItem } from '@/lib/validations/shift.schema';
+import { ShiftItem, CloseShiftInput, CloseShiftInputSchema } from '@/lib/validations/shift.schema';
 import { useCloseShiftMutation } from '@/hooks/queries/use-admin-shifts';
 
 export interface CloseShiftModalProps {
@@ -39,29 +39,48 @@ export function CloseShiftModal({
   shift,
   onShiftClosed,
 }: CloseShiftModalProps) {
-  const [actualCash, setActualCash] = useState<number>(shift.expectedCash);
-  const [rawInput, setRawInput] = useState<string>(String(shift.expectedCash));
-  const [notes, setNotes] = useState<string>('');
-
   const closeMutation = useCloseShiftMutation();
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<CloseShiftInput>({
+    resolver: zodResolver(CloseShiftInputSchema),
+    defaultValues: {
+      actualCash: shift.expectedCash,
+      notes: '',
+    },
+  });
+
+  const actualCashValue = watch('actualCash') ?? shift.expectedCash;
+  const variance = actualCashValue - shift.expectedCash;
+
+  useEffect(() => {
+    if (isOpen) {
+      reset({
+        actualCash: shift.expectedCash,
+        notes: '',
+      });
+    }
+  }, [isOpen, shift.expectedCash, reset]);
 
   const handleCashChange = (val: string) => {
     const cleaned = val.replace(/\D/g, '');
-    setRawInput(cleaned);
-    setActualCash(cleaned ? parseInt(cleaned, 10) : 0);
+    setValue('actualCash', cleaned ? parseInt(cleaned, 10) : 0, {
+      shouldValidate: true,
+    });
   };
 
-  const variance = actualCash - shift.expectedCash;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (actualCash < 0) return;
-
+  const onFormSubmit = async (data: CloseShiftInput) => {
     const result = await closeMutation.mutateAsync({
       shiftId: shift.id,
       payload: {
-        actualCash,
-        notes: notes.trim() || undefined,
+        actualCash: Number(data.actualCash),
+        notes: data.notes?.trim() || undefined,
       },
     });
 
@@ -73,7 +92,7 @@ export function CloseShiftModal({
       <DialogContent className="sm:max-w-lg rounded-3xl p-6 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 shadow-2xl">
         <DialogHeader className="space-y-2">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
+            <div className="p-2.5 rounded-2xl bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
               <Receipt className="w-6 h-6" />
             </div>
             <div>
@@ -126,7 +145,7 @@ export function CloseShiftModal({
           </span>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+        <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4 pt-1">
           {/* Actual Cash Input */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-stone-700 dark:text-zinc-300 flex items-center justify-between">
@@ -140,12 +159,15 @@ export function CloseShiftModal({
               <Input
                 type="text"
                 inputMode="numeric"
-                value={rawInput ? Number(rawInput).toLocaleString('id-ID') : ''}
+                value={actualCashValue ? Number(actualCashValue).toLocaleString('id-ID') : ''}
                 onChange={(e) => handleCashChange(e.target.value)}
                 className="pl-11 font-mono font-bold text-lg rounded-2xl h-12 bg-white dark:bg-zinc-800 border-stone-200 dark:border-zinc-700 focus-visible:ring-amber-500"
-                required
+                autoFocus
               />
             </div>
+            {errors.actualCash && (
+              <p className="text-xs font-medium text-rose-500">{errors.actualCash.message}</p>
+            )}
           </div>
 
           {/* Variance Status Feedback Badge */}
@@ -183,8 +205,7 @@ export function CloseShiftModal({
               Catatan Penutupan (Opsional)
             </label>
             <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              {...register('notes')}
               placeholder="Catatan kendala atau rincian selisih jika ada..."
               className="resize-none text-xs rounded-2xl min-h-[60px] bg-stone-50/60 dark:bg-zinc-800/60 border-stone-200 dark:border-zinc-700"
             />
@@ -202,8 +223,8 @@ export function CloseShiftModal({
             </Button>
             <Button
               type="submit"
-              disabled={closeMutation.isPending || actualCash < 0}
-              className="rounded-2xl text-xs h-10 bg-rose-600 hover:bg-rose-700 text-white font-semibold flex items-center gap-1.5"
+              disabled={closeMutation.isPending || actualCashValue < 0}
+              className="rounded-2xl text-xs h-10 bg-rose-600 hover:bg-rose-700 text-white font-semibold flex items-center gap-1.5 cursor-pointer"
             >
               <Receipt className="w-4 h-4" />
               <span>{closeMutation.isPending ? 'Memproses...' : 'Tutup Shift & Cetak Z-Report'}</span>

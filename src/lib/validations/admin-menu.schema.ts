@@ -73,8 +73,13 @@ export const MenuFormSchema = z.object({
   variantGroups: z.array(VariantGroupSchema).default([]),
 });
 
+export const CreateCategoryInputSchema = z.object({
+  name: z.string().min(2, 'Nama kategori minimal 2 karakter'),
+});
+
 export type VariantOptionInput = z.infer<typeof VariantOptionSchema>;
 export type VariantGroupInput = z.infer<typeof VariantGroupSchema>;
 export type MenuFormInput = z.infer<typeof MenuFormSchema>;
 export type CategoryData = z.infer<typeof CategorySchema>;
+export type CreateCategoryInput = z.infer<typeof CreateCategoryInputSchema>;
 export type AdminMenuItemType = z.infer<typeof AdminMenuItemSchema>;
