@@ -27,6 +27,7 @@ describe('CommonSidebar Component', () => {
     );
 
     expect(screen.getByText('Dashboard Omset')).toBeInTheDocument();
+    expect(screen.getByText('Laporan Penjualan')).toBeInTheDocument();
     expect(screen.getByText('Katalog Menu')).toBeInTheDocument();
     expect(screen.getByText('Kategori Menu')).toBeInTheDocument();
     expect(screen.getByText('Denah Meja & Kasir')).toBeInTheDocument();

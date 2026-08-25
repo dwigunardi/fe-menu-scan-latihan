@@ -16,4 +16,9 @@ export const adminQueryKeys = {
   ordersPaginated: (params: Record<string, unknown> = {}) =>
     ['admin', 'orders', 'paginated', params] as const,
   dashboardStats: () => ['admin', 'dashboard', 'stats'] as const,
+  reportsOverview: () => ['admin', 'reports', 'overview'] as const,
+  reportsRevenue: (params: Record<string, unknown> = {}) =>
+    ['admin', 'reports', 'revenue', params] as const,
+  reportsTopSelling: (params: Record<string, unknown> = {}) =>
+    ['admin', 'reports', 'top-selling', params] as const,
 };

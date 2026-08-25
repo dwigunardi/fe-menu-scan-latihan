@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
+  BarChart3,
   UtensilsCrossed,
   Grid2X2,
   BookOpen,
@@ -32,6 +33,12 @@ const defaultNavItems: CommonNavItem[] = [
     title: 'Dashboard Omset',
     href: '/admin/dashboard',
     icon: LayoutDashboard,
+    allowedRoles: [ROLE.ADMIN],
+  },
+  {
+    title: 'Laporan Penjualan',
+    href: '/admin/reports',
+    icon: BarChart3,
     allowedRoles: [ROLE.ADMIN],
   },
   {
