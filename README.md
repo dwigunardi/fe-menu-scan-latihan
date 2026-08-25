@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ☕ Kumpul Cafe – Frontend Application
 
-## Getting Started
+Sistem Digital QR Code Menu, Multi-Role POS, Kitchen Display System (KDS), dan Analytics Hub untuk **Kumpul Cafe**.
 
-First, run the development server:
+---
 
+## 🚀 Tech Stack
+
+- **Framework**: Next.js 16 (App Router, TypeScript)
+- **Styling & Motion**: Tailwind CSS v4 + Framer Motion (`motion` v12)
+- **State Management**: Zustand (Auth, Handshake Session, Cart, Sidebar)
+- **Data Fetching & Cache**: TanStack React Query v5 + Native `hardenedFetch`
+- **Security**: WebCrypto API (P-256 ECDH + AES-256-GCM Zero-Trust Interceptor Pipeline)
+- **Validation**: Zod (Runtime Contract Validation)
+- **Testing**: Vitest + React Testing Library (52 test suites, 294 unit tests)
+
+---
+
+## 📖 Developer Documentation & Guidelines
+
+Sebelum mulai menulis kode, seluruh frontend engineer **wajib** membaca panduan dan resep arsitektur berikut:
+
+| Dokumen | Lokasi | Deskripsi |
+| :--- | :--- | :--- |
+| 📘 **Frontend Developer Handbook** | [`docs/fe/guidelines/frontend-development-handbook.md`](file:///d:/code/fe-menu-scan-latihan/docs/fe/guidelines/frontend-development-handbook.md) | **Wajib Baca**: Aturan baku, resep kode (*recipes*), anti-patterns, dan cara membuat fitur baru. |
+| 🏛️ **Frontend Architecture Design** | [`docs/fe/architecture/architecture-design.md`](file:///d:/code/fe-menu-scan-latihan/docs/fe/architecture/architecture-design.md) | Arsitektur domain-first, route groups, dan struktur modul. |
+| 🧅 **Interceptor Pipeline Architecture** | [`docs/fe/architecture/interceptor-pipeline-architecture.md`](file:///d:/code/fe-menu-scan-latihan/docs/fe/architecture/interceptor-pipeline-architecture.md) | Detail onion middleware pipeline & mutex token refresh. |
+| ☕ **Cafe Branch Operational Blueprint** | [`docs/fe/architecture/cafe-branch-operational-blueprint.md`](file:///d:/code/fe-menu-scan-latihan/docs/fe/architecture/cafe-branch-operational-blueprint.md) | Analisis kebutuhan operasional cabang kafe (*POV Kasir, Barista, Kitchen, Manager*). |
+| 🗺️ **Milestones & Roadmap** | [`docs/fe/roadmap/implementation-milestones.md`](file:///d:/code/fe-menu-scan-latihan/docs/fe/roadmap/implementation-milestones.md) | Status pengerjaan fitur dan target milestone. |
+
+---
+
+## ⚡ Quick Start
+
+### 1. Jalankan Development Server
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+Aplikasi berjalan di [http://localhost:3000](http://localhost:3000).
+
+### 2. Jalankan TypeScript Compiler Check
+```bash
+npx tsc --noEmit
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 3. Jalankan Test Suite (Vitest)
+```bash
+npm test -- --run
+```

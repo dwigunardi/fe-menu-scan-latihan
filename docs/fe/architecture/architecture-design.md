@@ -225,6 +225,7 @@ export const ROLE_GROUPS = {
 
 ## 🔗 4. Dokumen Terkait
 
+- 📘 **Panduan Pengembang & Best Practices**: [frontend-development-handbook.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/guidelines/frontend-development-handbook.md)
 - 📄 Spesifikasi Interceptor & Hardened Pipeline: [interceptor-pipeline-architecture.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/architecture/interceptor-pipeline-architecture.md)
 - 📄 Blueprint Operasional Cabang Kafe: [cafe-branch-operational-blueprint.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/architecture/cafe-branch-operational-blueprint.md)
 - 📄 Spesifikasi Enkripsi Kriptografi Client: [client-crypto-strategy.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/security/client-crypto-strategy.md)
