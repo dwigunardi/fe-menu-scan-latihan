@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { OrderCard } from '@/components/admin/order-card';
-import { OrderReceiptModal } from '@/components/admin/order-receipt-modal';
+import { OrderCard, OrderReceiptModal } from '@/components/orders';
 import { OrderData } from '@/lib/validations/order.schema';
 
 const mockOrder: OrderData = {

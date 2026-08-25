@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { RevenueSummaryCards } from '@/components/admin/reports/revenue-summary-cards';
-import { TopSellingTable } from '@/components/admin/reports/top-selling-table';
-import { OrdersStatusBreakdown } from '@/components/admin/reports/orders-status-breakdown';
-import { ReportDateFilter } from '@/components/admin/reports/report-date-filter';
-import { ExportReportButton } from '@/components/admin/reports/export-report-button';
+import {
+  RevenueSummaryCards,
+  TopSellingTable,
+  OrdersStatusBreakdown,
+  ReportDateFilter,
+  ExportReportButton,
+} from '@/components/reports';
 
 describe('Reports UI Components', () => {
   beforeEach(() => {

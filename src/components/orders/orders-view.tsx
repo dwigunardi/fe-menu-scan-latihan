@@ -8,8 +8,8 @@ import {
 import { OrderData, OrderStatus } from '@/lib/validations/order.schema';
 import { formatCurrency } from '@/lib/utils/format-currency';
 import { playOrderChime } from '@/lib/utils/audio-chime';
-import { OrderCard } from '@/components/admin/order-card';
-import { OrderReceiptModal } from '@/components/admin/order-receipt-modal';
+import { OrderCard } from './order-card';
+import { OrderReceiptModal } from './order-receipt-modal';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { SimpleTooltip } from '@/components/ui/tooltip';

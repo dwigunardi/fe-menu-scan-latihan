@@ -7,11 +7,11 @@ import { ROLE } from '@/lib/constants/roles';
 import {
   ReportDateFilter,
   DateFilterValue,
-} from '@/components/admin/reports/report-date-filter';
-import { RevenueSummaryCards } from '@/components/admin/reports/revenue-summary-cards';
-import { TopSellingTable } from '@/components/admin/reports/top-selling-table';
-import { OrdersStatusBreakdown } from '@/components/admin/reports/orders-status-breakdown';
-import { ExportReportButton } from '@/components/admin/reports/export-report-button';
+  RevenueSummaryCards,
+  TopSellingTable,
+  OrdersStatusBreakdown,
+  ExportReportButton,
+} from '@/components/reports';
 import {
   useAdminRevenueReportQuery,
   useAdminTopSellingQuery,

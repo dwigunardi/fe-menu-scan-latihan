@@ -28,7 +28,7 @@ import {
 import {
   BannerImageUploader,
   BannerPreset,
-} from '@/components/admin/banner-image-uploader';
+} from './banner-image-uploader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';

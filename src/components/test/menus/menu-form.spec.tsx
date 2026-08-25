@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MenuForm } from '@/components/admin/menu-form';
+import { MenuForm } from '@/components/menus';
 import { renderWithProviders } from '@/test/test-utils';
 import { CategoryData } from '@/lib/validations/admin-menu.schema';
 import { toast } from 'sonner';

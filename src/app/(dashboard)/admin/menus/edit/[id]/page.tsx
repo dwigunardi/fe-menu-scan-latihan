@@ -3,7 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useAdminMenuDetailQuery } from '@/hooks/queries/use-admin-menus';
 import { useAdminCategoriesQuery } from '@/hooks/queries/use-admin-categories';
-import { MenuForm } from '@/components/admin/menu-form';
+import { MenuForm } from '@/components/menus';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { RoleGuard } from '@/components/common/role-guard';
 import { ROLE } from '@/lib/constants/roles';
-import { BannerForm } from '@/components/admin/banner-form';
+import { BannerForm } from '@/components/banners';
 import { useAdminBannerDetailQuery } from '@/hooks/queries/use-admin-banners';
 import { Button } from '@/components/ui/button';
 

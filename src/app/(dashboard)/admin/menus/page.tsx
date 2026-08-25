@@ -13,10 +13,12 @@ import {
   useDeleteMenuMutation,
 } from '@/hooks/queries/use-admin-menus';
 import { useAdminCategoriesQuery } from '@/hooks/queries/use-admin-categories';
-import { CategoryManagerModal } from '@/components/admin/category-manager-modal';
-import { MenuFilterBar } from '@/components/admin/menu-filter-bar';
-import { MenuTable } from '@/components/admin/menu-table';
-import { MenuCardsMobile } from '@/components/admin/menu-cards-mobile';
+import {
+  CategoryManagerModal,
+  MenuFilterBar,
+  MenuTable,
+  MenuCardsMobile,
+} from '@/components/menus';
 import { Pagination } from '@/components/common/pagination';
 
 export default function AdminMenusPage() {

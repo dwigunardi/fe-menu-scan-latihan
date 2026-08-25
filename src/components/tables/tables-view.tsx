@@ -26,11 +26,11 @@ import {
   useDeleteTableMutation,
 } from '@/hooks/queries/use-admin-tables';
 import { TableData, TableStatus, TableZoneData } from '@/lib/validations/table.schema';
-import { TableFormModal } from '@/components/admin/table-form-modal';
-import { TableQrModal } from '@/components/admin/table-qr-modal';
-import { TableResetModal } from '@/components/admin/table-reset-modal';
-import { TableDeleteModal } from '@/components/admin/table-delete-modal';
-import { ZoneManagerModal } from '@/components/admin/zone-manager-modal';
+import { TableFormModal } from './table-form-modal';
+import { TableQrModal } from './table-qr-modal';
+import { TableResetModal } from './table-reset-modal';
+import { TableDeleteModal } from './table-delete-modal';
+import { ZoneManagerModal } from './zone-manager-modal';
 
 const SEATING_ICONS: Record<string, string> = {
   DINING: '🍽️',

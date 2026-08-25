@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { TableFormModal } from '@/components/admin/table-form-modal';
-import { TableQrModal } from '@/components/admin/table-qr-modal';
-import { TableResetModal } from '@/components/admin/table-reset-modal';
-import { TableDeleteModal } from '@/components/admin/table-delete-modal';
-import { ZoneManagerModal } from '@/components/admin/zone-manager-modal';
+import {
+  TableFormModal,
+  TableQrModal,
+  TableResetModal,
+  TableDeleteModal,
+  ZoneManagerModal,
+} from '@/components/tables';
 import { createQueryWrapper } from '@/test/test-utils';
 import { TableData } from '@/lib/validations/table.schema';
 import { toast } from 'sonner';

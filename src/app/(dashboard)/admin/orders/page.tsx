@@ -1,6 +1,6 @@
 'use client';
 
-import { OrdersView } from '@/components/admin/orders-view';
+import { OrdersView } from '@/components/orders';
 import { RoleGuard } from '@/components/common/role-guard';
 import { ROLE } from '@/lib/constants/roles';
 

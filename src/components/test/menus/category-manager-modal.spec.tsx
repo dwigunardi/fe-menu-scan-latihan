@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { CategoryManagerModal } from '@/components/admin/category-manager-modal';
+import { CategoryManagerModal } from '@/components/menus';
 import { renderWithProviders } from '@/test/test-utils';
 import { CategoryData } from '@/lib/validations/admin-menu.schema';
 

@@ -16,8 +16,7 @@ import {
 import { RoleGuard } from '@/components/common/role-guard';
 import { ROLE } from '@/lib/constants/roles';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
-import { BannerCard } from '@/components/admin/banner-card';
-import { PromoCarousel } from '@/components/public/promo-carousel';
+import { BannerCard, PromoCarousel } from '@/components/banners';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {

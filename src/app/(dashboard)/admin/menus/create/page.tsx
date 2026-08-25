@@ -1,7 +1,7 @@
 'use client';
 
 import { useAdminCategoriesQuery } from '@/hooks/queries/use-admin-categories';
-import { MenuForm } from '@/components/admin/menu-form';
+import { MenuForm } from '@/components/menus';
 import { Skeleton } from '@/components/ui/skeleton';
 import { RoleGuard } from '@/components/common/role-guard';
 import { ROLE } from '@/lib/constants/roles';

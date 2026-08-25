@@ -1,6 +1,6 @@
 'use client';
 
-import { TablesView } from '@/components/admin/tables-view';
+import { TablesView } from '@/components/tables';
 import { RoleGuard } from '@/components/common/role-guard';
 import { ROLE_GROUPS } from '@/lib/constants/roles';
 
