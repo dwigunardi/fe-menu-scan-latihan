@@ -11,6 +11,7 @@ import {
   BookOpen,
   Tags,
   Image as ImageIcon,
+  Clock,
   Sparkles,
   PanelLeftClose,
   PanelLeftOpen,
@@ -64,6 +65,12 @@ const defaultNavItems: CommonNavItem[] = [
     href: '/admin/categories',
     icon: Tags,
     allowedRoles: [ROLE.ADMIN],
+  },
+  {
+    title: 'Shift & Kasir',
+    href: '/admin/shifts',
+    icon: Clock,
+    allowedRoles: [ROLE.ADMIN, ROLE.CASHIER, ROLE.KASIR],
   },
   {
     title: 'Banner Promo',

@@ -62,16 +62,17 @@
   - KPI Cards (Omset, Transaksi, AOV), Tabel Menu Terlaris (*Top Selling*), Distribusi Status Pesanan, Date Filter Presets, 1-Click Ekspor CSV & Cetak Laporan.
 - [x] **4C.2. Integrasi Live Analytics Dashboard Admin (`/admin/dashboard`)**
   - Mengganti data dummy dengan endpoint live backend `GET /admin/reports/dashboard-overview`.
+- [x] **4C.4. Quick "Sold-Out" Switch Barista**
+  - Saklar 1-tap ketersediaan menu langsung pada tabel `MenuTable` dan `MenuCardsMobile` dengan feedback optimistik.
+- [x] **4C.5. Manajemen Shift Kasir & Z-Report (`/admin/shifts`)**
+  - Modal input kas modal awal, monitoring arus kas berjalan, rekonsiliasi kas fisik & selisih (*variance*), serta struk thermal Z-Report siap cetak.
 - [ ] **4C.3. Payment Method Breakdown (Rekonsiliasi QRIS vs Tunai)**
   - Pemisahan omset uang digital (QRIS) dan kas fisik (Cash) pada Laporan dan Dashboard.
-- [ ] **4C.4. Quick "Sold-Out" Switch Barista**
-  - Saklar 1-tap ketersediaan menu langsung pada tabel `MenuTable` tanpa membuka modal edit form.
-- [ ] **4C.5. Manajemen Shift Kasir & Z-Report (`/cashier/shifts`)**
-  - Modal input kas awal, pencatatan transaksi shift, hitung selisih kas (*cash variance*), dan cetak struk tutup shift.
 - [ ] **4C.6. Manajemen Akun Staf Cabang (`/admin/staff`)**
   - CRUD staf kasir, chef dapur, dan pelayan dengan role badge dan reset password mandiri.
 - [ ] **4C.7. Pengaturan Pajak PB1 & Profil Struk (`/admin/settings`)**
   - Konfigurasi tarif PB1, service charge, WiFi kafe, dan footer catatan struk.
+
 
 ---
 

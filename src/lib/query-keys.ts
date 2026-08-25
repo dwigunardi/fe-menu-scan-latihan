@@ -21,4 +21,8 @@ export const adminQueryKeys = {
     ['admin', 'reports', 'revenue', params] as const,
   reportsTopSelling: (params: Record<string, unknown> = {}) =>
     ['admin', 'reports', 'top-selling', params] as const,
+  shiftsCurrent: () => ['admin', 'shifts', 'current'] as const,
+  shiftsHistory: (params: Record<string, unknown> = {}) =>
+    ['admin', 'shifts', 'history', params] as const,
 };
+
