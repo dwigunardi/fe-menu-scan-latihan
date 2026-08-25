@@ -136,76 +136,90 @@ export default function AdminStaffPage() {
   return (
     <RoleGuard allowedRoles={[ROLE.ADMIN]}>
       <div className="space-y-6 max-w-7xl mx-auto pb-12">
-        {/* Header Title & Action */}
+        {/* Header Title & Action Button */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-              <Users className="w-7 h-7 text-primary" />
+            <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-zinc-50 flex items-center gap-2.5">
+              <div className="p-2 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shadow-xs">
+                <Users className="w-6 h-6" />
+              </div>
               Manajemen Karyawan Cabang
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Kelola data profil staf, penugasan hak akses role, nomor WhatsApp, dan PIN clock-in
+            <p className="text-sm text-stone-500 dark:text-zinc-400 mt-1">
+              Kelola akun staf, penugasan role, kontak WhatsApp, dan PIN clock-in workstation
             </p>
           </div>
           <Button
             onClick={handleOpenCreateModal}
-            className="h-10 font-semibold gap-2 shadow-xs shrink-0"
+            className="h-11 font-bold gap-2 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white shadow-xs shrink-0 px-5 transition-all"
           >
             <UserPlus className="w-4 h-4" />
             Tambah Karyawan
           </Button>
         </div>
 
-        {/* Quick KPI Stats */}
+        {/* Quick KPI Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-xs">
-            <div className="flex items-center justify-between text-muted-foreground mb-1.5">
-              <span className="text-xs font-medium uppercase tracking-wider">Total Karyawan</span>
-              <Users className="w-4 h-4 text-primary" />
+          {/* Total Karyawan */}
+          <div className="rounded-3xl border border-stone-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs transition-all hover:shadow-sm">
+            <div className="flex items-center justify-between text-stone-500 dark:text-zinc-400 mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Total Karyawan</span>
+              <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400">
+                <Users className="w-4 h-4" />
+              </div>
             </div>
-            <div className="text-2xl font-bold text-foreground font-mono">{meta.totalItems}</div>
-            <p className="text-[11px] text-muted-foreground mt-1">Terdaftar di cabang kafe</p>
+            <div className="text-2xl font-black text-stone-900 dark:text-zinc-50 font-mono">{meta.totalItems}</div>
+            <p className="text-[11px] text-stone-500 dark:text-zinc-400 mt-1">Terdaftar di cabang kafe</p>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-xs">
-            <div className="flex items-center justify-between text-muted-foreground mb-1.5">
-              <span className="text-xs font-medium uppercase tracking-wider">Kasir Aktif</span>
-              <Coffee className="w-4 h-4 text-emerald-500" />
+          {/* Kasir Aktif */}
+          <div className="rounded-3xl border border-stone-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs transition-all hover:shadow-sm">
+            <div className="flex items-center justify-between text-stone-500 dark:text-zinc-400 mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Kasir Front POS</span>
+              <div className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
+                <Coffee className="w-4 h-4" />
+              </div>
             </div>
-            <div className="text-2xl font-bold text-foreground font-mono">
+            <div className="text-2xl font-black text-stone-900 dark:text-zinc-50 font-mono">
               {staff.filter((s) => s.role === ROLE.CASHIER && s.isActive).length}
             </div>
-            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1">Siap operasional kasir</p>
+            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">Siap operasional kasir</p>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-xs">
-            <div className="flex items-center justify-between text-muted-foreground mb-1.5">
-              <span className="text-xs font-medium uppercase tracking-wider">Kitchen & Barista</span>
-              <ChefHat className="w-4 h-4 text-amber-500" />
+          {/* Kitchen & Barista */}
+          <div className="rounded-3xl border border-stone-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs transition-all hover:shadow-sm">
+            <div className="flex items-center justify-between text-stone-500 dark:text-zinc-400 mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider">Kitchen & Barista</span>
+              <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+                <ChefHat className="w-4 h-4" />
+              </div>
             </div>
-            <div className="text-2xl font-bold text-foreground font-mono">
+            <div className="text-2xl font-black text-stone-900 dark:text-zinc-50 font-mono">
               {staff.filter((s) => s.role === ROLE.KITCHEN && s.isActive).length}
             </div>
-            <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">Siap di dapur & bar</p>
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold mt-1">Siap di dapur & bar</p>
           </div>
 
-          <div className="bg-card border border-border rounded-2xl p-4 shadow-xs">
-            <div className="flex items-center justify-between text-muted-foreground mb-1.5">
-              <span className="text-xs font-medium uppercase tracking-wider">PIN Terpasang</span>
-              <KeyRound className="w-4 h-4 text-sky-500" />
+          {/* PIN Terpasang */}
+          <div className="rounded-3xl border border-stone-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 shadow-xs transition-all hover:shadow-sm">
+            <div className="flex items-center justify-between text-stone-500 dark:text-zinc-400 mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider">PIN Terpasang</span>
+              <div className="p-2 rounded-xl bg-sky-50 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400">
+                <KeyRound className="w-4 h-4" />
+              </div>
             </div>
-            <div className="text-2xl font-bold text-foreground font-mono">
+            <div className="text-2xl font-black text-stone-900 dark:text-zinc-50 font-mono">
               {staff.filter((s) => s.pinCodeSet).length}
             </div>
-            <p className="text-[11px] text-sky-600 dark:text-sky-400 mt-1">Siap Smart Clock-In</p>
+            <p className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold mt-1">Siap Smart Clock-In</p>
           </div>
         </div>
 
-        {/* Filter & Search Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-card p-3 rounded-2xl border border-border">
+        {/* Filter & Search Bar Container */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-zinc-900 p-3 rounded-2xl border border-stone-200/80 dark:border-zinc-800 shadow-xs">
           {/* Search Input */}
           <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 dark:text-zinc-500" />
             <Input
               value={search}
               onChange={(e) => {
@@ -213,39 +227,42 @@ export default function AdminStaffPage() {
                 setPage(1);
               }}
               placeholder="Cari nama, email, atau no. WA..."
-              className="pl-9 h-9 text-xs bg-background"
+              className="pl-9 h-10 text-xs rounded-xl bg-stone-50 dark:bg-zinc-800/80 border-stone-200/80 dark:border-zinc-700/80 focus:ring-amber-500"
             />
           </div>
 
           {/* Role Filter Tabs */}
-          <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+          <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
             {[
               { id: 'ALL', label: 'Semua Role' },
               { id: ROLE.CASHIER, label: 'Kasir' },
               { id: ROLE.KITCHEN, label: 'Kitchen' },
               { id: ROLE.WAITER, label: 'Pelayan' },
               { id: ROLE.ADMIN, label: 'Manager' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => {
-                  setSelectedRole(tab.id);
-                  setPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 ${
-                  selectedRole === tab.id
-                    ? 'bg-primary text-primary-foreground shadow-xs'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+            ].map((tab) => {
+              const isSelected = selectedRole === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedRole(tab.id);
+                    setPage(1);
+                  }}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                    isSelected
+                      ? 'bg-amber-600 dark:bg-amber-600 text-white shadow-xs'
+                      : 'text-stone-600 dark:text-zinc-400 hover:text-stone-900 dark:hover:text-zinc-100 hover:bg-stone-100 dark:hover:bg-zinc-800'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Staff Table */}
+        {/* Staff Table Component */}
         <StaffTable
           staff={staff}
           isLoading={isLoading}
@@ -255,7 +272,7 @@ export default function AdminStaffPage() {
           onDeleteStaff={(item) => setStaffToDelete(item)}
         />
 
-        {/* Pagination */}
+        {/* Pagination Controls */}
         {meta.totalPages > 1 && (
           <div className="pt-2">
             <Pagination
@@ -310,4 +327,3 @@ export default function AdminStaffPage() {
     </RoleGuard>
   );
 }
-

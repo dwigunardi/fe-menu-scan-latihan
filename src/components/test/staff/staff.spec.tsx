@@ -53,19 +53,19 @@ describe('Staff Domain Components', () => {
         />
       );
 
-      expect(screen.getByText('Ahmad Syahripudin')).toBeInTheDocument();
-      expect(screen.getByText('ahmad@kumpulcafe.com')).toBeInTheDocument();
-      expect(screen.getByText('Kitchen / Barista')).toBeInTheDocument();
-      expect(screen.getByText('+6281234567890')).toBeInTheDocument();
-      expect(screen.getByText('PIN Aktif')).toBeInTheDocument();
+      expect(screen.getAllByText('Ahmad Syahripudin').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('ahmad@kumpulcafe.com').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Kitchen & Barista').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('+6281234567890').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('PIN Aktif').length).toBeGreaterThanOrEqual(1);
 
-      expect(screen.getByText('Siti Rahmawati')).toBeInTheDocument();
-      expect(screen.getByText('Kasir')).toBeInTheDocument();
-      expect(screen.getByText('Belum Ada')).toBeInTheDocument();
+      expect(screen.getAllByText('Siti Rahmawati').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Kasir Front POS').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Belum Ada').length).toBeGreaterThanOrEqual(1);
     });
 
-    it('renders loading state properly', () => {
-      render(
+    it('renders loading state properly with table skeletons', () => {
+      const { container } = render(
         <StaffTable
           staff={[]}
           isLoading={true}
@@ -76,7 +76,7 @@ describe('Staff Domain Components', () => {
         />
       );
 
-      expect(screen.getByText('Memuat data karyawan...')).toBeInTheDocument();
+      expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
     });
 
     it('renders empty state when staff array is empty', () => {

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { KeyRound, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { getInitials } from '@/lib/utils/get-initials';
 
 interface StaffPinModalProps {
   isOpen: boolean;
@@ -78,7 +79,7 @@ export function StaffPinModal({
           {/* Info Karyawan */}
           <div className="p-3 bg-muted/30 rounded-xl border border-border flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-xs flex items-center justify-center">
-              {staff.name.substring(0, 2).toUpperCase()}
+              {getInitials(staff.name)}
             </div>
             <div className="overflow-hidden">
               <div className="text-xs font-semibold text-foreground truncate">{staff.name}</div>
