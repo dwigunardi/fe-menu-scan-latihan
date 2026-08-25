@@ -232,16 +232,106 @@ describe('StaffTable Component', () => {
 
 ---
 
-## 🚫 4. Anti-Patterns & Hal yang Dilarang Keras
+## 🚫 4. Anti-Patterns & Standar Penulisan Kode Bersih (*Clean Code*)
+
+### 📊 Tabel Anti-Pattern vs Standar Baku
 
 | ❌ DILARANG KERAS (Anti-Pattern) | ✅ CARA YANG BENAR (Standard Pattern) |
 | :--- | :--- |
+| **Nested `if-else` / `if` di dalam `if` (*Pyramid of Doom*)**: <br>Kondisi bersarang yang membuat kode bergeser ke kanan dan sulit dibaca. | **Selalu Gunakan Early Return (*Guard Clauses*)**: <br>Keluar lebih awal jika kondisi tidak terpenuhi atau terjadi error. |
+| **Nested Loops (`for` di dalam `for`) ($O(N^2)$)**: <br>Looping bertingkat yang memperlambat performa dan sulit ditelusuri. | **Gunakan Lookup `Map`/`Set` atau Deklaratif Methods**: <br>Gunakan `map`, `filter`, `find`, `reduce`, atau indexed lookup $O(1)$. |
+| **Super Function / God Function**: <br>Fungsi raksasa (>50 baris) yang mengerjakan banyak hal sekaligus dan susah di-debug. | **Pecah ke Sub-Functions Kecil (*Single Responsibility*)**: <br>Setiap fungsi hanya melakukan 1 tugas spesifik dengan penamaan jelas. |
 | **Hardcoding role string manual**:  <br>`allowedRoles={['ADMIN', 'CASHIER']}` | **Gunakan Enum / Konstanta Terpusat**: <br>`allowedRoles={[ROLE.ADMIN, ROLE.CASHIER]}` atau `ROLE_GROUPS.CASHIER_OR_ADMIN` |
 | **Memanggil `fetch()` atau `axios` langsung**: <br>`const res = await fetch('/api/menus')` | **Gunakan `hardenedFetch()`**: <br>`hardenedFetch('/admin/menus', MenuSchema)` |
 | **Menelan Error tanpa notifikasi**: <br>`catch (err) { console.log(err) }` | **Gunakan `notifyApiError()`**: <br>`if (res.isLeft()) notifyApiError(res.value)` |
 | **Tag HTML `<img>` mentah**: <br>`<img src={url} />` | **Gunakan `<AppImage />`**: <br>`<AppImage src={url} alt={name} fill />` |
 | **Membuat komponen flat di luar domain**: <br>`src/components/admin/my-table.tsx` | **Kelompokkan ke Domain**: <br>`src/components/tables/my-table.tsx` + `index.ts` |
 | **Import path relatif berantakan**: <br>`import { Btn } from '../../../components/ui/button'` | **Gunakan Alias Path & Barrel**: <br>`import { Button } from '@/components/ui'` |
+
+---
+
+### 💡 Contoh Praktis Standar Penulisan:
+
+#### A. Wajib Early Return (Hindari *Pyramid of Doom*)
+```typescript
+// ❌ BURUK: Nested if-else berjenjang
+function handleProcessOrder(order: Order | null, user: User | null) {
+  if (user) {
+    if (user.role === ROLE.CASHIER) {
+      if (order) {
+        if (order.status === 'PENDING') {
+          // Logika baru dijalankan di kedalaman 4 tab indentasi
+          return confirmPayment(order);
+        } else {
+          toast.error('Pesanan bukan pending');
+        }
+      } else {
+        toast.error('Pesanan tidak ditemukan');
+      }
+    } else {
+      toast.error('Akses ditolak');
+    }
+  } else {
+    toast.error('User belum login');
+  }
+}
+
+// ✅ BENAR: Early return bersih dan linear (Guard Clauses)
+function handleProcessOrder(order: Order | null, user: User | null) {
+  if (!user) return toast.error('User belum login');
+  if (user.role !== ROLE.CASHIER) return toast.error('Akses ditolak');
+  if (!order) return toast.error('Pesanan tidak ditemukan');
+  if (order.status !== 'PENDING') return toast.error('Pesanan bukan pending');
+
+  // Logika utama langsung dieksekusi di root level tanpa indentasi bertingkat
+  return confirmPayment(order);
+}
+```
+
+#### B. Hindari Nested Loops (`for` dalam `for`)
+```typescript
+// ❌ BURUK: O(N * M) Nested Loop berulang
+function matchOrderItems(orders: Order[], activeItems: Item[]) {
+  const result = [];
+  for (let i = 0; i < orders.length; i++) {
+    for (let j = 0; j < activeItems.length; j++) {
+      if (orders[i].itemId === activeItems[j].id) {
+        result.push({ order: orders[i], item: activeItems[j] });
+      }
+    }
+  }
+  return result;
+}
+
+// ✅ BENAR: Gunakan Lookup Map untuk O(N + M) yang cepat & readable
+function matchOrderItems(orders: Order[], activeItems: Item[]) {
+  const itemMap = new Map(activeItems.map((item) => [item.id, item]));
+
+  return orders
+    .filter((order) => itemMap.has(order.itemId))
+    .map((order) => ({
+      order,
+      item: itemMap.get(order.itemId)!,
+    }));
+}
+```
+
+#### C. Hindari "Super Function" (Pecah Berdasarkan Tanggung Jawab)
+```typescript
+// ❌ BURUK: Super Function 100 baris yang validasi, hitung diskon, format rupiah, dan kirim API sekaligus
+async function handleCheckoutSuperFunction(cart: Cart) { /* ...100 baris kode rumit... */ }
+
+// ✅ BENAR: Modular, Teruji, dan Mudah di-Debug
+function validateCartItems(items: CartItem[]): boolean { /* ... */ }
+function calculateOrderTotals(items: CartItem[], taxRate: number) { /* ... */ }
+async function submitOrderPayload(payload: OrderPayload) { /* ... */ }
+
+async function handleCheckout(cart: Cart) {
+  if (!validateCartItems(cart.items)) return;
+  const totals = calculateOrderTotals(cart.items, 0.1);
+  return submitOrderPayload({ items: cart.items, totals });
+}
+```
 
 ---
 
