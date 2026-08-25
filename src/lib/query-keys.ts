@@ -24,5 +24,9 @@ export const adminQueryKeys = {
   shiftsCurrent: () => ['admin', 'shifts', 'current'] as const,
   shiftsHistory: (params: Record<string, unknown> = {}) =>
     ['admin', 'shifts', 'history', params] as const,
+  staff: () => ['admin', 'staff'] as const,
+  staffPaginated: (params: Record<string, unknown> = {}) =>
+    ['admin', 'staff', 'paginated', params] as const,
 };
+
 

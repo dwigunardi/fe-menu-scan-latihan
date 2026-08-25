@@ -12,10 +12,12 @@ import {
   Tags,
   Image as ImageIcon,
   Clock,
+  Users,
   Sparkles,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
+
 import { useAuthStore, UserRole, ROLE } from '@/store/use-auth-store';
 import { useSidebarStore } from '@/store/use-sidebar-store';
 import { cn } from '@/lib/utils/cn';
@@ -73,11 +75,18 @@ const defaultNavItems: CommonNavItem[] = [
     allowedRoles: [ROLE.ADMIN, ROLE.CASHIER, ROLE.KASIR],
   },
   {
+    title: 'Manajemen Staf',
+    href: '/admin/staff',
+    icon: Users,
+    allowedRoles: [ROLE.ADMIN],
+  },
+  {
     title: 'Banner Promo',
     href: '/admin/banners',
     icon: ImageIcon,
     allowedRoles: [ROLE.ADMIN],
   },
+
 
   // Kitchen Specific
   {

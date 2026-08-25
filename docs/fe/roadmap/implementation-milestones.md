@@ -68,8 +68,9 @@
   - Modal input kas modal awal, monitoring arus kas berjalan, rekonsiliasi kas fisik & selisih (*variance*), serta struk thermal Z-Report siap cetak.
 - [ ] **4C.3. Payment Method Breakdown (Rekonsiliasi QRIS vs Tunai)**
   - Pemisahan omset uang digital (QRIS) dan kas fisik (Cash) pada Laporan dan Dashboard.
-- [ ] **4C.6. Manajemen Akun Staf Cabang (`/admin/staff`)**
-  - CRUD staf kasir, chef dapur, dan pelayan dengan role badge dan reset password mandiri.
+- [x] **4C.6. Manajemen Akun Staf Cabang (`/admin/staff`)**
+  - CRUD staf kasir, chef dapur, pelayan, dan manager dengan role badge, PIN 4-digit untuk clock-in, kontak WhatsApp, dan reset password mandiri.
+
 - [ ] **4C.7. Pengaturan Pajak PB1 & Profil Struk (`/admin/settings`)**
   - Konfigurasi tarif PB1, service charge, WiFi kafe, dan footer catatan struk.
 

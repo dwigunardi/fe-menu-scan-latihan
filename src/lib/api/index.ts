@@ -19,4 +19,6 @@ export * from './admin-tables-api';
 export * from './admin-banners-api';
 export * from './admin-reports-api';
 export * from './admin-shifts-api';
+export * from './admin-staff-api';
 export * from './media-api';
+
