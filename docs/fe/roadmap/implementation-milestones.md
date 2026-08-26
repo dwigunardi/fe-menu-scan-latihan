@@ -70,8 +70,13 @@
   - Pemisahan omset uang digital (QRIS) dan kas fisik (Cash) pada Laporan dan Dashboard.
 - [x] **4C.6. Manajemen Akun Staf Cabang (`/admin/staff`)**
   - CRUD staf kasir, chef dapur, pelayan, dan manager dengan role badge, PIN 4-digit untuk clock-in, kontak WhatsApp, dan reset password mandiri.
-
-- [ ] **4C.7. Pengaturan Pajak PB1 & Profil Struk (`/admin/settings`)**
+- [ ] **4C.7. Pengaturan Lokasi Cabang, Geofence 100m, Jam Operasional & Mesin Kontingensi (`/admin/settings`)** (ACTIVE)
+  - 3-Way Hybrid Geolocation (1-Tap GPS, Google Maps Link Extractor, Leaflet Interactive Map Picker), Slider Radius Geofence 50m - 500m, Jadwal Operasional Mingguan, Delegasi Shift Sementara, dan Alert Ketidakhadiran Kasir 3-Opsi.
+- [ ] **4C.8. Smart Absensi Geofencing + PIN 4-Digit (`/admin/attendance` & Workstation Clock-In)**
+  - Validasi jarak fisik $\le 100$m via rumus Haversine, input PIN Clock-In/Out, pengajuan Ijin/Sakit/Cuti, dan rekapitulasi kehadiran staf.
+- [ ] **4C.9. Verifikasi Kontak (Email Link & WhatsApp OTP) & Emergency Broadcast Engine**
+  - Verifikasi identitas kontak ganda dan broadcast pengumuman darurat multi-channel.
+- [ ] **4C.10. Pengaturan Pajak PB1 & Profil Struk (`/admin/settings`)**
   - Konfigurasi tarif PB1, service charge, WiFi kafe, dan footer catatan struk.
 
 
