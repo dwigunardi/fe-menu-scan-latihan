@@ -206,11 +206,10 @@ export default function StaffLoginPage() {
               variant="outline"
               disabled={isLoading}
               onClick={() => handleQuickLogin('admin@menuscan.com', 'admin123', 'admin')}
-              className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${
-                loadingPreset === 'admin'
+              className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${loadingPreset === 'admin'
                   ? 'ring-2 ring-amber-500/40 border-amber-500 bg-amber-50/70 dark:bg-amber-950/30'
                   : 'hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-1.5 w-full">
                 <Crown className="h-4 w-4 text-purple-600 shrink-0" />
@@ -225,11 +224,10 @@ export default function StaffLoginPage() {
               variant="outline"
               disabled={isLoading}
               onClick={() => handleQuickLogin('cashier@menuscan.com', 'cashier123', 'cashier')}
-              className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${
-                loadingPreset === 'cashier'
+              className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${loadingPreset === 'cashier'
                   ? 'ring-2 ring-emerald-500/40 border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30'
                   : 'hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-1.5 w-full">
                 <Receipt className="h-4 w-4 text-emerald-600 shrink-0" />
@@ -244,11 +242,10 @@ export default function StaffLoginPage() {
               variant="outline"
               disabled={isLoading}
               onClick={() => handleQuickLogin('kitchen@menuscan.com', 'kitchen123', 'kitchen')}
-              className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${
-                loadingPreset === 'kitchen'
+              className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${loadingPreset === 'kitchen'
                   ? 'ring-2 ring-amber-500/40 border-amber-500 bg-amber-50/70 dark:bg-amber-950/30'
                   : 'hover:border-amber-500 dark:hover:border-amber-500 hover:bg-amber-50/50 dark:hover:bg-amber-950/20'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-1.5 w-full">
                 <Coffee className="h-4 w-4 text-amber-600 shrink-0" />
@@ -263,11 +260,10 @@ export default function StaffLoginPage() {
               variant="outline"
               disabled={isLoading}
               onClick={() => handleQuickLogin('waiter@menuscan.com', 'waiter123', 'waiter')}
-              className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${
-                loadingPreset === 'waiter'
+              className={`h-auto p-3 rounded-2xl border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/60 text-left flex flex-col items-start justify-start gap-0.5 transition-all duration-200 cursor-pointer group shadow-2xs w-full whitespace-normal active:scale-[0.97] ${loadingPreset === 'waiter'
                   ? 'ring-2 ring-sky-500/40 border-sky-500 bg-sky-50/70 dark:bg-sky-950/30'
                   : 'hover:border-sky-500 dark:hover:border-sky-500 hover:bg-sky-50/50 dark:hover:bg-sky-950/20'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-1.5 w-full">
                 <ConciergeBell className="h-4 w-4 text-sky-600 shrink-0" />
