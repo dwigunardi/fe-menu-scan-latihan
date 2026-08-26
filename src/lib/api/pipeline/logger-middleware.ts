@@ -105,9 +105,11 @@ export const loggerMiddleware: Middleware = async (ctx, next) => {
       method,
       url,
       status,
+      title: error?.errorTitle || 'API Error',
+      code: error?.code || 'UNKNOWN_ERROR',
       error: error?.message || 'Unknown network/pipeline error',
       durationMs: duration,
-      details: error?.details,
+      details: error?.details || undefined,
     };
 
     if (queryParams) logPayload.params = queryParams;

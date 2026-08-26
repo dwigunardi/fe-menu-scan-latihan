@@ -23,7 +23,10 @@ export function notifyApiError(
 
   const friendly = translateErrorToFriendlyMessage(apiError, options?.fallbackMessage);
 
+  const toastId = `${friendly.title}:${friendly.description}`;
+
   toast.error(friendly.title, {
+    id: toastId,
     description: friendly.description,
     duration: 4500,
     action:

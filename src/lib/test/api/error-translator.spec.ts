@@ -93,8 +93,15 @@ describe('Error Translator', () => {
   it('translates NETWORK_OFFLINE into connection alert', () => {
     const error = ApiError.networkError();
     const friendly = translateErrorToFriendlyMessage(error);
-    expect(friendly.title).toBe('Koneksi Terputus');
+    expect(friendly.title).toBe('Server Tidak Terjangkau / Offline');
     expect(friendly.actionLabel).toBe('Coba Lagi');
+  });
+
+  it('translates HANDSHAKE_FAILED into security negotiation alert', () => {
+    const error = ApiError.handshakeFailed();
+    const friendly = translateErrorToFriendlyMessage(error);
+    expect(friendly.title).toBe('Gagal Negosiasi Keamanan');
+    expect(friendly.actionLabel).toBe('Muat Ulang');
   });
 
   it('translates INTERNAL_SERVER_ERROR or unknown ErrorCode to default', () => {

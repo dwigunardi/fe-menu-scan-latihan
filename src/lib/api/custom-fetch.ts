@@ -93,9 +93,24 @@ export async function performHandshake(): Promise<
     return right({ sessionKey, handshakeToken });
   } catch (err: any) {
     handshakeStore.clearHandshake();
+
+    const isNetworkError =
+      err?.name === 'TypeError' ||
+      err?.message?.toLowerCase().includes('failed to fetch') ||
+      err?.message?.toLowerCase().includes('network') ||
+      err?.message?.toLowerCase().includes('connection');
+
+    if (isNetworkError) {
+      return left(
+        ApiError.networkError(
+          'Tidak dapat terhubung ke server. Pastikan server sedang aktif dan memiliki koneksi internet.'
+        )
+      );
+    }
+
     return left(
       ApiError.handshakeFailed(
-        err.message || 'Terjadi kesalahan saat memproses negosiasi kunci.'
+        err.message || 'Terjadi kesalahan saat memproses negosiasi kunci enkripsi.'
       )
     );
   }

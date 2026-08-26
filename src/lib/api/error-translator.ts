@@ -26,9 +26,20 @@ export function translateErrorToFriendlyMessage(
   switch (error.code) {
     case ErrorCode.NETWORK_OFFLINE:
       return {
-        title: 'Koneksi Terputus',
-        description: 'Periksa sambungan internet atau WiFi kafe Anda.',
+        title: 'Server Tidak Terjangkau / Offline',
+        description:
+          error.message ||
+          'Tidak dapat terhubung ke server. Periksa koneksi internet atau status server.',
         actionLabel: 'Coba Lagi',
+      };
+
+    case ErrorCode.HANDSHAKE_FAILED:
+      return {
+        title: 'Gagal Negosiasi Keamanan',
+        description:
+          error.message ||
+          'Gagal melakukan pertukaran kunci enkripsi dengan server. Silakan muat ulang halaman.',
+        actionLabel: 'Muat Ulang',
       };
 
     case ErrorCode.TABLE_OCCUPIED:
