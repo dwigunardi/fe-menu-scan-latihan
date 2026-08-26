@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   Clock,
   Users,
+  Settings,
   Sparkles,
   PanelLeftClose,
   PanelLeftOpen,
@@ -84,6 +85,12 @@ const defaultNavItems: CommonNavItem[] = [
     title: 'Banner Promo',
     href: '/admin/banners',
     icon: ImageIcon,
+    allowedRoles: [ROLE.ADMIN],
+  },
+  {
+    title: 'Pengaturan Cabang',
+    href: '/admin/settings',
+    icon: Settings,
     allowedRoles: [ROLE.ADMIN],
   },
 
