@@ -16,7 +16,7 @@ vi.mock('@/lib/api/pipeline/pipeline-runner', () => ({
 
 describe('Admin Settings API Client', () => {
   const mockSettingData = {
-    id: 'b1234567-0000-0000-0000-000000000000',
+    id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'Kumpul Cafe - Cabang Pusat',
     address: 'Jl. Tebet Raya No. 45, Jakarta Selatan',
     latitude: -6.2297465,

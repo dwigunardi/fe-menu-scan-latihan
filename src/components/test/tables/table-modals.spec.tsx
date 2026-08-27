@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {
   TableFormModal,
   TableQrModal,
@@ -8,14 +9,29 @@ import {
   ZoneManagerModal,
 } from '@/components/tables';
 import { createQueryWrapper } from '@/test/test-utils';
-import { TableData } from '@/lib/validations/table.schema';
+import { TableData, TableZoneData } from '@/lib/validations/table.schema';
 import { toast } from 'sonner';
+import * as tablesApi from '@/lib/api/admin-tables-api';
+import { right } from '@/lib/api/either';
 
 vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
     error: vi.fn(),
   },
+}));
+
+vi.mock('@/lib/api/admin-tables-api', () => ({
+  getAdminTables: vi.fn(),
+  getAdminTablesPaginated: vi.fn(),
+  getAdminTableZones: vi.fn(),
+  createAdminTable: vi.fn(),
+  updateAdminTable: vi.fn(),
+  resetAdminTable: vi.fn(),
+  deleteAdminTable: vi.fn(),
+  createAdminTableZone: vi.fn(),
+  updateAdminTableZone: vi.fn(),
+  deleteAdminTableZone: vi.fn(),
 }));
 
 const mockTable: TableData = {
@@ -32,13 +48,42 @@ const mockTable: TableData = {
   updatedAt: '2026-01-01',
 };
 
+const mockZones: TableZoneData[] = [
+  {
+    id: 'zone-1',
+    name: 'Indoor (AC Non-Smoking)',
+    description: 'Lantai 1 Utama',
+    color: 'amber',
+    sortOrder: 1,
+    tableCount: 8,
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
+  },
+  {
+    id: 'zone-2',
+    name: 'Outdoor Garden',
+    description: 'Area taman luar',
+    color: 'emerald',
+    sortOrder: 2,
+    tableCount: 4,
+    createdAt: '2026-01-01',
+    updatedAt: '2026-01-01',
+  },
+];
+
 describe('Table Modals', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(tablesApi.getAdminTableZones).mockResolvedValue(right(mockZones));
+    vi.mocked(tablesApi.createAdminTable).mockResolvedValue(right(mockTable));
+    vi.mocked(tablesApi.updateAdminTable).mockResolvedValue(right(mockTable));
+    vi.mocked(tablesApi.createAdminTableZone).mockResolvedValue(right(mockZones[0]));
+    vi.mocked(tablesApi.updateAdminTableZone).mockResolvedValue(right(mockZones[0]));
+    vi.mocked(tablesApi.deleteAdminTableZone).mockResolvedValue(right({ success: true }));
   });
 
   describe('TableFormModal', () => {
-    it('renders in Create mode with empty initial fields and default capacity 4', () => {
+    it('renders in Create mode with empty initial fields and default capacity 4', async () => {
       const wrapper = createQueryWrapper();
       render(
         <TableFormModal
@@ -54,7 +99,7 @@ describe('Table Modals', () => {
       expect(screen.getByPlaceholderText('Contoh: 4')).toHaveValue(4);
     });
 
-    it('allows clearing capacity input and typing new number without leading zero bug', () => {
+    it('allows clearing capacity input and typing new number without leading zero bug', async () => {
       const wrapper = createQueryWrapper();
       render(
         <TableFormModal
@@ -76,7 +121,7 @@ describe('Table Modals', () => {
       expect(capacityInput).toHaveValue(2);
     });
 
-    it('renders in Edit mode with pre-filled table data', () => {
+    it('renders in Edit mode with pre-filled table data', async () => {
       const wrapper = createQueryWrapper();
       render(
         <TableFormModal
@@ -150,7 +195,6 @@ describe('Table Modals', () => {
     });
 
     it('triggers PNG download when Download PNG is clicked', () => {
-      // Mock HTMLCanvasElement toDataURL
       HTMLCanvasElement.prototype.toDataURL = vi.fn(() => 'data:image/png;base64,fake');
 
       render(
@@ -170,6 +214,58 @@ describe('Table Modals', () => {
     });
   });
 
+  describe('TableResetModal', () => {
+    it('renders confirmation text with table number and triggers confirm callback', async () => {
+      const onConfirm = vi.fn();
+      const onClose = vi.fn();
+
+      render(
+        <TableResetModal
+          isOpen={true}
+          onClose={onClose}
+          table={mockTable}
+          onConfirm={onConfirm}
+        />
+      );
+
+      expect(screen.getByText(/Reset Sesi MEJA T-01\?/i)).toBeInTheDocument();
+
+      const confirmBtn = screen.getByRole('button', { name: /Ya, Kosongkan Meja/i });
+      fireEvent.click(confirmBtn);
+
+      await waitFor(() => {
+        expect(onConfirm).toHaveBeenCalledWith(mockTable);
+        expect(onClose).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('TableDeleteModal', () => {
+    it('renders delete warning and triggers delete confirmation callback', async () => {
+      const onConfirm = vi.fn();
+      const onClose = vi.fn();
+
+      render(
+        <TableDeleteModal
+          isOpen={true}
+          onClose={onClose}
+          table={mockTable}
+          onConfirm={onConfirm}
+        />
+      );
+
+      expect(screen.getByText(/Hapus MEJA T-01\?/i)).toBeInTheDocument();
+
+      const deleteBtn = screen.getByRole('button', { name: /Hapus Meja/i });
+      fireEvent.click(deleteBtn);
+
+      await waitFor(() => {
+        expect(onConfirm).toHaveBeenCalledWith(mockTable);
+        expect(onClose).toHaveBeenCalled();
+      });
+    });
+  });
+
   describe('ZoneManagerModal', () => {
     it('renders zone manager with list of active zones', async () => {
       const wrapper = createQueryWrapper();
@@ -182,9 +278,7 @@ describe('Table Modals', () => {
       );
 
       expect(screen.getByText('Kelola Zona & Area Kafe')).toBeInTheDocument();
-      await waitFor(() => {
-        expect(screen.getByText('Indoor (AC Non-Smoking)')).toBeInTheDocument();
-      });
+      expect(await screen.findByText('Indoor (AC Non-Smoking)')).toBeInTheDocument();
     });
 
     it('allows typing new zone name and submitting form', async () => {

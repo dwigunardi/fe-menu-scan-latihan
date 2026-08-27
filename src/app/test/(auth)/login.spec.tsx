@@ -35,9 +35,9 @@ describe('StaffLoginPage Component', () => {
     expect(screen.getByRole('button', { name: /Masuk ke Portal/i })).toBeInTheDocument();
     expect(screen.getByText('1-Click Quick Demo Login')).toBeInTheDocument();
     expect(screen.getByText('Super Admin')).toBeInTheDocument();
-    expect(screen.getByText('Kasir Meja')).toBeInTheDocument();
-    expect(screen.getByText('Barista Dapur')).toBeInTheDocument();
-    expect(screen.getByText('Pelayan')).toBeInTheDocument();
+    expect(screen.getByText('Kasir Front POS')).toBeInTheDocument();
+    expect(screen.getByText('Kitchen & Bar')).toBeInTheDocument();
+    expect(screen.getByText('Pelayan (Floor)')).toBeInTheDocument();
   });
 
   it('shows loading spinner when form is submitted and redirects to dashboard', async () => {
@@ -87,7 +87,7 @@ describe('StaffLoginPage Component', () => {
 
     render(<StaffLoginPage />);
 
-    const baristaBtn = screen.getByRole('button', { name: /Barista Dapur/i });
+    const baristaBtn = screen.getByRole('button', { name: /Kitchen & Bar/i });
     fireEvent.click(baristaBtn);
 
     await waitFor(() => {
@@ -112,7 +112,7 @@ describe('StaffLoginPage Component', () => {
 
     render(<StaffLoginPage />);
 
-    const cashierBtn = screen.getByRole('button', { name: /Kasir Meja/i });
+    const cashierBtn = screen.getByRole('button', { name: /Kasir Front POS/i });
     fireEvent.click(cashierBtn);
 
     await waitFor(() => {

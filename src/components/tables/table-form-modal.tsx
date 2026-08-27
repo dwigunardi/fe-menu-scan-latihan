@@ -103,16 +103,17 @@ export function TableFormModal({
         seatingType: tableToEdit.seatingType || 'DINING',
         tags: tableToEdit.tags || [],
       });
-    } else {
-      reset({
-        tableNumber: '',
-        capacity: 4,
-        zoneId: zones[0]?.id || '',
-        seatingType: 'DINING',
-        tags: [],
-      });
+      return;
     }
-  }, [isOpen, tableToEdit, zones, reset]);
+
+    reset({
+      tableNumber: '',
+      capacity: 4,
+      zoneId: zones[0]?.id || '',
+      seatingType: 'DINING',
+      tags: [],
+    });
+  }, [isOpen, tableToEdit, reset]);
 
   const toggleTag = (tagId: string) => {
     const current = selectedTags;
