@@ -79,18 +79,15 @@ describe('Admin Reports API Client', () => {
 
   describe('getAdminTopSellingReport', () => {
     it('fetches top selling items report', async () => {
-      const mockTopSelling = {
-        items: [
-          {
-            menuItemId: 'item-1',
-            name: 'Kopi Susu Gula Aren',
-            totalQuantitySold: 120,
-            totalRevenue: 2400000,
-            categoryName: 'Coffee',
-          },
-        ],
-        totalUniqueItemsSold: 1,
-      };
+      const mockTopSelling = [
+        {
+          menuItemId: 'item-1',
+          name: 'Kopi Susu Gula Aren',
+          totalQuantitySold: 120,
+          totalRevenue: 2400000,
+          categoryName: 'Coffee',
+        },
+      ];
 
       vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockTopSelling));
 
@@ -98,7 +95,7 @@ describe('Admin Reports API Client', () => {
 
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
-        expect(result.value.items[0].name).toBe('Kopi Susu Gula Aren');
+        expect(result.value[0].name).toBe('Kopi Susu Gula Aren');
       }
     });
   });

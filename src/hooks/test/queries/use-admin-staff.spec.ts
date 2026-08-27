@@ -11,6 +11,7 @@ import { createQueryWrapper } from '@/test/test-utils';
 import * as staffApi from '@/lib/api/admin-staff-api';
 import { right, left } from '@/lib/api/either';
 import { ApiError } from '@/lib/api/api-error';
+import { StaffItem } from '@/lib/validations/staff.schema';
 import { ROLE } from '@/lib/constants/roles';
 import { toast } from 'sonner';
 
@@ -30,7 +31,7 @@ vi.mock('sonner', () => ({
 }));
 
 describe('use-admin-staff query hooks', () => {
-  const mockStaff = {
+  const mockStaff: StaffItem = {
     id: 'staff-1',
     name: 'Ahmad Barista',
     email: 'ahmad@kumpulcafe.com',
@@ -54,10 +55,14 @@ describe('use-admin-staff query hooks', () => {
       vi.mocked(staffApi.getAdminStaffPaginated).mockResolvedValue(
         right({
           items: [mockStaff],
-          total: 1,
-          page: 1,
-          limit: 10,
-          totalPages: 1,
+          meta: {
+            page: 1,
+            limit: 10,
+            totalItems: 1,
+            totalPages: 1,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
         })
       );
 
@@ -95,6 +100,7 @@ describe('use-admin-staff query hooks', () => {
         email: 'ahmad@kumpulcafe.com',
         phone: '+6281234567890',
         role: ROLE.KITCHEN,
+        password: 'password123',
         dailyShiftHours: 8,
       });
 
@@ -113,7 +119,13 @@ describe('use-admin-staff query hooks', () => {
 
       await result.current.mutateAsync({
         id: 'staff-1',
-        payload: { name: 'Ahmad Barista Senior' },
+        payload: {
+          name: 'Ahmad Barista Senior',
+          email: 'ahmad@kumpulcafe.com',
+          role: ROLE.KITCHEN,
+          isActive: true,
+          dailyShiftHours: 8,
+        },
       });
 
       expect(toast.success).toHaveBeenCalledWith(
@@ -142,7 +154,7 @@ describe('use-admin-staff query hooks', () => {
 
   describe('useDeleteStaffMutation', () => {
     it('deletes staff account and shows toast', async () => {
-      vi.mocked(staffApi.deleteAdminStaff).mockResolvedValue(right({ success: true }));
+      vi.mocked(staffApi.deleteAdminStaff).mockResolvedValue(right({ success: true, message: 'Deleted' }));
 
       const wrapper = createQueryWrapper();
       const { result } = renderHook(() => useDeleteStaffMutation(), { wrapper });

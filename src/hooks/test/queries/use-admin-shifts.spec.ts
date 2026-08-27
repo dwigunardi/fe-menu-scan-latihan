@@ -10,6 +10,7 @@ import { createQueryWrapper } from '@/test/test-utils';
 import * as shiftsApi from '@/lib/api/admin-shifts-api';
 import { right, left } from '@/lib/api/either';
 import { ApiError } from '@/lib/api/api-error';
+import { ShiftItem } from '@/lib/validations/shift.schema';
 import { toast } from 'sonner';
 
 vi.mock('@/lib/api/admin-shifts-api', () => ({
@@ -27,24 +28,24 @@ vi.mock('sonner', () => ({
 }));
 
 describe('use-admin-shifts query hooks', () => {
-  const mockCurrentShift = {
-    id: 'shift-1',
+  const mockCurrentShift: ShiftItem = {
+    id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+    branchId: 'branch-1',
     staffId: 'staff-101',
     staffName: 'Budi Kasir',
-    staffRole: 'CASHIER',
-    initialCash: 100000,
-    currentCashExpected: 350000,
-    cashDifference: null,
-    status: 'ACTIVE' as const,
+    openingCash: 100000,
+    expectedCash: 350000,
+    actualCash: null,
+    cashVariance: null,
+    totalCashOrders: 5,
+    totalQrisOrders: 7,
+    totalCashRevenue: 250000,
+    totalQrisRevenue: 500000,
+    totalRevenue: 750000,
+    status: 'OPEN',
+    notes: 'Shift pagi',
     openedAt: '2026-01-01T08:00:00.000Z',
     closedAt: null,
-    summary: {
-      totalTransactions: 12,
-      totalCashRevenue: 250000,
-      totalQrisRevenue: 500000,
-      totalDiscounts: 0,
-      totalNetSales: 750000,
-    },
   };
 
   beforeEach(() => {
@@ -63,7 +64,7 @@ describe('use-admin-shifts query hooks', () => {
       });
 
       expect(result.current.data?.staffName).toBe('Budi Kasir');
-      expect(result.current.data?.status).toBe('ACTIVE');
+      expect(result.current.data?.status).toBe('OPEN');
     });
 
     it('throws error when getCurrentShift fails', async () => {
@@ -86,7 +87,7 @@ describe('use-admin-shifts query hooks', () => {
       const { result } = renderHook(() => useOpenShiftMutation(), { wrapper });
 
       await result.current.mutateAsync({
-        initialCash: 100000,
+        openingCash: 100000,
       });
 
       expect(toast.success).toHaveBeenCalledWith(
@@ -97,9 +98,11 @@ describe('use-admin-shifts query hooks', () => {
 
   describe('useCloseShiftMutation', () => {
     it('closes shift and shows success toast', async () => {
-      const closedShift = {
+      const closedShift: ShiftItem = {
         ...mockCurrentShift,
-        status: 'CLOSED' as const,
+        status: 'CLOSED',
+        actualCash: 350000,
+        cashVariance: 0,
         closedAt: '2026-01-01T16:00:00.000Z',
       };
       vi.mocked(shiftsApi.closeShift).mockResolvedValue(right(closedShift));
@@ -108,10 +111,10 @@ describe('use-admin-shifts query hooks', () => {
       const { result } = renderHook(() => useCloseShiftMutation(), { wrapper });
 
       await result.current.mutateAsync({
-        shiftId: 'shift-1',
+        shiftId: mockCurrentShift.id,
         payload: {
-          physicalCash: 350000,
-          closingNotes: 'Selesai shift tanpa kendala',
+          actualCash: 350000,
+          notes: 'Selesai shift tanpa kendala',
         },
       });
 
@@ -125,10 +128,14 @@ describe('use-admin-shifts query hooks', () => {
     it('fetches paginated shift history', async () => {
       const mockHistory = {
         items: [mockCurrentShift],
-        total: 1,
-        page: 1,
-        limit: 10,
-        totalPages: 1,
+        meta: {
+          page: 1,
+          limit: 10,
+          totalItems: 1,
+          totalPages: 1,
+          hasNextPage: false,
+          hasPrevPage: false,
+        },
       };
       vi.mocked(shiftsApi.getShiftHistory).mockResolvedValue(right(mockHistory));
 
@@ -140,7 +147,7 @@ describe('use-admin-shifts query hooks', () => {
       });
 
       expect(result.current.data?.items).toHaveLength(1);
-      expect(result.current.data?.total).toBe(1);
+      expect(result.current.data?.meta.totalItems).toBe(1);
     });
   });
 });
