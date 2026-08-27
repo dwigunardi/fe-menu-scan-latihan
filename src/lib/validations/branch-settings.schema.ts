@@ -40,7 +40,7 @@ export const StoreModeEnum = z.enum([
 ]);
 
 export const BranchSettingSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.uuid().optional(),
   name: z.string().min(2, 'Nama cabang minimal 2 karakter').default('Kumpul Cafe - Cabang Pusat'),
   address: z
     .string()
@@ -71,7 +71,7 @@ export const BranchSettingSchema = z.object({
   emergencyReason: z.string().nullable().optional(),
   timezone: z.string().default('Asia/Jakarta'),
   phone: z.string().nullable().optional(),
-  email: z.string().email('Format email tidak valid').nullable().optional(),
+  email: z.email('Format email tidak valid').nullable().optional(),
   schedules: z.array(DayScheduleSchema).optional().nullable(),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
@@ -101,7 +101,7 @@ export const UpdateBranchSettingInputSchema = z.object({
   storeMode: StoreModeEnum,
   timezone: z.string().default('Asia/Jakarta'),
   phone: z.string().optional().nullable(),
-  email: z.string().email('Format email tidak valid').optional().nullable().or(z.literal('')),
+  email: z.email('Format email tidak valid').optional().nullable().or(z.literal('')),
   schedules: z.array(DayScheduleSchema).optional().nullable(),
 });
 

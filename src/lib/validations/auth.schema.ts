@@ -15,7 +15,7 @@ export const StaffUserSchema = z.object({
   id: z.string(),
   name: z.string(),
   username: z.string().optional().nullable(),
-  email: z.string().email().optional().nullable(),
+  email: z.email().optional().nullable(),
   role: UserRoleSchema,
 });
 

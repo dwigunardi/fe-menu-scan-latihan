@@ -13,7 +13,7 @@ export type StaffRole = z.infer<typeof StaffRoleSchema>;
 export const StaffItemSchema = z.object({
   id: z.string(),
   name: z.string().min(1, 'Nama wajib diisi'),
-  email: z.string().email('Format email tidak valid'),
+  email: z.email('Format email tidak valid'),
   phone: z.string().nullable().optional(),
   role: StaffRoleSchema,
   pinCodeSet: z.boolean().default(false),
@@ -31,7 +31,7 @@ export type StaffItem = z.infer<typeof StaffItemSchema>;
 
 export const CreateStaffInputSchema = z.object({
   name: z.string().min(2, 'Nama lengkap minimal 2 karakter'),
-  email: z.string().email('Format email tidak valid'),
+  email: z.email('Format email tidak valid'),
   phone: z
     .string()
     .min(10, 'Nomor WhatsApp minimal 10 digit')
@@ -53,7 +53,7 @@ export type CreateStaffInput = z.infer<typeof CreateStaffInputSchema>;
 
 export const UpdateStaffInputSchema = z.object({
   name: z.string().min(2, 'Nama lengkap minimal 2 karakter'),
-  email: z.string().email('Format email tidak valid'),
+  email: z.email('Format email tidak valid'),
   phone: z
     .string()
     .min(10, 'Nomor WhatsApp minimal 10 digit')

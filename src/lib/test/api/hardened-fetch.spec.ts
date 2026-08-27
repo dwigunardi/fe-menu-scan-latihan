@@ -10,7 +10,7 @@ describe('hardenedFetch', () => {
   const UserSchema = z.object({
     id: z.string(),
     name: z.string(),
-    email: z.string().email(),
+    email: z.email(),
   });
 
   it('returns Right with parsed data when response matches schema', async () => {

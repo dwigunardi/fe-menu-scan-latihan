@@ -4,7 +4,7 @@ export const ShiftStatusEnum = z.enum(['OPEN', 'CLOSED']);
 export type ShiftStatus = z.infer<typeof ShiftStatusEnum>;
 
 export const ShiftItemSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   branchId: z.string().default('default-branch'),
   staffId: z.string(),
   staffName: z.string(),
