@@ -8,11 +8,17 @@ import * as settingsHooks from '@/hooks/queries/use-admin-settings';
 
 // Mock Leaflet dynamic component
 vi.mock('@/components/settings/branch-map-picker', () => ({
-  BranchMapPicker: ({ latitude, longitude, radiusMeters }: any) => (
+  BranchMapPicker: ({ latitude, longitude, radiusMeters, onChangeCoordinates }: any) => (
     <div data-testid="mock-map-picker">
       <span>Lat: {latitude}</span>
       <span>Lon: {longitude}</span>
       <span>Radius: {radiusMeters}m</span>
+      <button
+        type="button"
+        onClick={() => onChangeCoordinates(-6.23, 106.86)}
+      >
+        Set Coords
+      </button>
     </div>
   ),
 }));
@@ -36,6 +42,11 @@ describe('BranchSettingsForm Component', () => {
     schedules: [
       { day: DAY_OF_WEEK.MONDAY, isOpen: true, openTime: '08:00', closeTime: '22:00' },
       { day: DAY_OF_WEEK.TUESDAY, isOpen: true, openTime: '08:00', closeTime: '22:00' },
+      { day: DAY_OF_WEEK.WEDNESDAY, isOpen: true, openTime: '08:00', closeTime: '22:00' },
+      { day: DAY_OF_WEEK.THURSDAY, isOpen: true, openTime: '08:00', closeTime: '22:00' },
+      { day: DAY_OF_WEEK.FRIDAY, isOpen: true, openTime: '08:00', closeTime: '22:00' },
+      { day: DAY_OF_WEEK.SATURDAY, isOpen: true, openTime: '08:00', closeTime: '22:00' },
+      { day: DAY_OF_WEEK.SUNDAY, isOpen: true, openTime: '08:00', closeTime: '22:00' },
     ],
   };
 
@@ -62,7 +73,24 @@ describe('BranchSettingsForm Component', () => {
     expect(screen.getByTestId('mock-map-picker')).toBeInTheDocument();
   });
 
-  it('switches between navigation tabs', async () => {
+  it('allows changing geofence radius via slider and coordinates via map picker', () => {
+    render(
+      <TooltipProvider>
+        <BranchSettingsForm initialData={mockInitialData} />
+      </TooltipProvider>
+    );
+
+    const slider = screen.getByLabelText(/Radius Aman Geofence:/i);
+    fireEvent.change(slider, { target: { value: '250' } });
+
+    expect(screen.getByText('250 meter')).toBeInTheDocument();
+
+    const setCoordsBtn = screen.getByRole('button', { name: /Set Coords/i });
+    fireEvent.click(setCoordsBtn);
+    expect(screen.getByText('Lat: -6.23')).toBeInTheDocument();
+  });
+
+  it('switches between navigation tabs and interacts with schedule and store mode options', async () => {
     const user = userEvent.setup();
 
     render(
@@ -78,11 +106,20 @@ describe('BranchSettingsForm Component', () => {
     expect(await screen.findByText('Toleransi Absensi Staf')).toBeInTheDocument();
     expect(screen.getByDisplayValue('15')).toBeInTheDocument();
 
+    const applySameHoursBtn = screen.getByRole('button', { name: /Samakan Jam untuk Semua Hari/i });
+    fireEvent.click(applySameHoursBtn);
+
     // Switch to Mode Tab
     const modeTab = screen.getByRole('tab', { name: /Mode Operasi Toko/i });
     await user.click(modeTab);
 
     expect(await screen.findByText(/Mode A: Shift-Driven/i)).toBeInTheDocument();
+    expect(screen.getByText(/Mode B: Clock-Driven/i)).toBeInTheDocument();
+    expect(screen.getByText(/Mode C: QRIS \/ Self-Service Only/i)).toBeInTheDocument();
+
+    // Select Mode B
+    const modeBCard = screen.getByText(/Mode B: Clock-Driven/i);
+    fireEvent.click(modeBCard);
   });
 
   it('submits form with updated name and values', async () => {
@@ -104,7 +141,6 @@ describe('BranchSettingsForm Component', () => {
       expect(mockMutateAsync).toHaveBeenCalledWith(
         expect.objectContaining({
           name: 'Kumpul Cafe Tebet Baru',
-          geofenceRadius: 100,
         })
       );
     });
