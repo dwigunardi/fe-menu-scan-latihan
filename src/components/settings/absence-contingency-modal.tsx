@@ -31,6 +31,12 @@ import { useUpdateStoreStatusMutation } from '@/hooks/queries/use-admin-settings
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { StaffItem } from '@/lib/validations/staff.schema';
+import {
+  ABSENCE_CONTINGENCY_OPTION,
+  AbsenceContingencyOption,
+  STORE_MODE,
+} from '@/lib/constants/branch-settings';
+import { ROLE } from '@/lib/constants/roles';
 
 export interface AbsenceContingencyModalProps {
   isOpen: boolean;
@@ -50,11 +56,13 @@ export function AbsenceContingencyModal({
   const staffList: StaffItem[] = staffData?.items || [];
   const updateStatusMutation = useUpdateStoreStatusMutation();
 
-  const [selectedOption, setSelectedOption] = useState<'ACTING_CASHIER' | 'QRIS_ONLY' | 'EMERGENCY_CLOSE'>('ACTING_CASHIER');
+  const [selectedOption, setSelectedOption] = useState<AbsenceContingencyOption>(
+    ABSENCE_CONTINGENCY_OPTION.ACTING_CASHIER
+  );
   const [selectedStaffId, setSelectedStaffId] = useState<string>('');
   const [emergencyReason, setEmergencyReason] = useState<string>('');
 
-  const availableStaff = staffList.filter((s: StaffItem) => s.isActive && s.role !== 'ADMIN');
+  const availableStaff = staffList.filter((s: StaffItem) => s.isActive && s.role !== ROLE.ADMIN);
 
   const handleAssignActingCashier = () => {
     if (!selectedStaffId) {
@@ -73,7 +81,7 @@ export function AbsenceContingencyModal({
   const handleOpenQrisOnly = async () => {
     await updateStatusMutation.mutateAsync({
       isStoreOpen: true,
-      storeMode: 'QRIS_ONLY',
+      storeMode: STORE_MODE.QRIS_ONLY,
     });
     onClose();
   };
@@ -81,24 +89,24 @@ export function AbsenceContingencyModal({
   const handleEmergencyClose = async () => {
     await updateStatusMutation.mutateAsync({
       isStoreOpen: false,
-      storeMode: 'EMERGENCY_CLOSED',
+      storeMode: STORE_MODE.EMERGENCY_CLOSED,
       emergencyReason: emergencyReason.trim() || 'Tutup sementara untuk pemeliharaan operasional',
     });
     onClose();
   };
 
   const handleExecuteAction = async () => {
-    if (selectedOption === 'ACTING_CASHIER') {
+    if (selectedOption === ABSENCE_CONTINGENCY_OPTION.ACTING_CASHIER) {
       handleAssignActingCashier();
       return;
     }
 
-    if (selectedOption === 'QRIS_ONLY') {
+    if (selectedOption === ABSENCE_CONTINGENCY_OPTION.QRIS_ONLY) {
       await handleOpenQrisOnly();
       return;
     }
 
-    if (selectedOption === 'EMERGENCY_CLOSE') {
+    if (selectedOption === ABSENCE_CONTINGENCY_OPTION.EMERGENCY_CLOSE) {
       await handleEmergencyClose();
       return;
     }
@@ -131,9 +139,9 @@ export function AbsenceContingencyModal({
           <div className="space-y-2.5">
             {/* Option A: Assign Acting Cashier */}
             <div
-              onClick={() => setSelectedOption('ACTING_CASHIER')}
+              onClick={() => setSelectedOption(ABSENCE_CONTINGENCY_OPTION.ACTING_CASHIER)}
               className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                selectedOption === 'ACTING_CASHIER'
+                selectedOption === ABSENCE_CONTINGENCY_OPTION.ACTING_CASHIER
                   ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30 ring-2 ring-amber-500/20'
                   : 'border-stone-200/80 dark:border-zinc-800 hover:border-stone-300 bg-white dark:bg-zinc-800/40'
               }`}
@@ -155,7 +163,7 @@ export function AbsenceContingencyModal({
                     Delegasikan hak kasir sementara ke Barista/Waiter yang sudah di lokasi. Role asli tidak berubah di database.
                   </p>
 
-                  {selectedOption === 'ACTING_CASHIER' && (
+                  {selectedOption === ABSENCE_CONTINGENCY_OPTION.ACTING_CASHIER && (
                     <div className="pt-2.5 space-y-1.5" onClick={(e) => e.stopPropagation()}>
                       <Label className="text-[11px] font-semibold text-stone-700 dark:text-zinc-300 block">
                         Pilih Staf di Lokasi:
@@ -180,9 +188,9 @@ export function AbsenceContingencyModal({
 
             {/* Option B: Open as QRIS / Self-Service Only */}
             <div
-              onClick={() => setSelectedOption('QRIS_ONLY')}
+              onClick={() => setSelectedOption(ABSENCE_CONTINGENCY_OPTION.QRIS_ONLY)}
               className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                selectedOption === 'QRIS_ONLY'
+                selectedOption === ABSENCE_CONTINGENCY_OPTION.QRIS_ONLY
                   ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/30 ring-2 ring-blue-500/20'
                   : 'border-stone-200/80 dark:border-zinc-800 hover:border-stone-300 bg-white dark:bg-zinc-800/40'
               }`}
@@ -204,9 +212,9 @@ export function AbsenceContingencyModal({
 
             {/* Option C: Emergency Close */}
             <div
-              onClick={() => setSelectedOption('EMERGENCY_CLOSE')}
+              onClick={() => setSelectedOption(ABSENCE_CONTINGENCY_OPTION.EMERGENCY_CLOSE)}
               className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
-                selectedOption === 'EMERGENCY_CLOSE'
+                selectedOption === ABSENCE_CONTINGENCY_OPTION.EMERGENCY_CLOSE
                   ? 'border-rose-500 bg-rose-50/70 dark:bg-rose-950/30 ring-2 ring-rose-500/20'
                   : 'border-stone-200/80 dark:border-zinc-800 hover:border-stone-300 bg-white dark:bg-zinc-800/40'
               }`}
@@ -223,7 +231,7 @@ export function AbsenceContingencyModal({
                     Tandai toko tutup sementara dan tampilkan banner permohonan maaf ramah di menu digital pelanggan.
                   </p>
 
-                  {selectedOption === 'EMERGENCY_CLOSE' && (
+                  {selectedOption === ABSENCE_CONTINGENCY_OPTION.EMERGENCY_CLOSE && (
                     <div className="pt-2.5 space-y-1.5" onClick={(e) => e.stopPropagation()}>
                       <Label className="text-[11px] font-semibold text-stone-700 dark:text-zinc-300 block">
                         Pesan untuk Pelanggan (Opsional):

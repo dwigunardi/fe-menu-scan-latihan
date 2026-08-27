@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BranchSettingsForm } from '@/components/settings/branch-settings-form';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { BranchSetting } from '@/lib/validations/branch-settings.schema';
+import { BranchSetting, STORE_MODE, DAY_OF_WEEK } from '@/lib/validations/branch-settings.schema';
 import * as settingsHooks from '@/hooks/queries/use-admin-settings';
 
 // Mock Leaflet dynamic component
@@ -29,13 +29,13 @@ describe('BranchSettingsForm Component', () => {
     closeTime: '22:00',
     lateGracePeriod: 15,
     isStoreOpen: true,
-    storeMode: 'SHIFT_DRIVEN',
+    storeMode: STORE_MODE.SHIFT_DRIVEN,
     timezone: 'Asia/Jakarta',
     phone: '081234567890',
     email: 'admin@menuscan.com',
     schedules: [
-      { day: 'MONDAY', isOpen: true, openTime: '08:00', closeTime: '22:00' },
-      { day: 'TUESDAY', isOpen: true, openTime: '08:00', closeTime: '22:00' },
+      { day: DAY_OF_WEEK.MONDAY, isOpen: true, openTime: '08:00', closeTime: '22:00' },
+      { day: DAY_OF_WEEK.TUESDAY, isOpen: true, openTime: '08:00', closeTime: '22:00' },
     ],
   };
 

@@ -8,6 +8,7 @@ import {
 import * as pipeline from '@/lib/api/pipeline/pipeline-runner';
 import { right, left } from '@/lib/api/either';
 import { ApiError } from '@/lib/api/api-error';
+import { STORE_MODE } from '@/lib/constants/branch-settings';
 
 vi.mock('@/lib/api/pipeline/pipeline-runner', () => ({
   executePipeline: vi.fn(),
@@ -25,7 +26,7 @@ describe('Admin Settings API Client', () => {
     closeTime: '22:00',
     lateGracePeriod: 15,
     isStoreOpen: true,
-    storeMode: 'SHIFT_DRIVEN' as const,
+    storeMode: STORE_MODE.SHIFT_DRIVEN,
     timezone: 'Asia/Jakarta',
   };
 
@@ -66,7 +67,7 @@ describe('Admin Settings API Client', () => {
         openTime: '08:00',
         closeTime: '22:00',
         lateGracePeriod: 15,
-        storeMode: 'SHIFT_DRIVEN' as const,
+        storeMode: STORE_MODE.SHIFT_DRIVEN,
         timezone: 'Asia/Jakarta',
       };
 
@@ -87,12 +88,12 @@ describe('Admin Settings API Client', () => {
   describe('updateStoreStatus', () => {
     it('updates store open/closed status', async () => {
       vi.mocked(pipeline.executePipeline).mockResolvedValue(
-        right({ ...mockSettingData, isStoreOpen: false, storeMode: 'EMERGENCY_CLOSED' })
+        right({ ...mockSettingData, isStoreOpen: false, storeMode: STORE_MODE.EMERGENCY_CLOSED })
       );
 
       const result = await updateStoreStatus({
         isStoreOpen: false,
-        storeMode: 'EMERGENCY_CLOSED',
+        storeMode: STORE_MODE.EMERGENCY_CLOSED,
         emergencyReason: 'Mati Lampu',
       });
 
@@ -113,7 +114,7 @@ describe('Admin Settings API Client', () => {
           longitude: 106.8557342,
           geofenceRadius: 100,
           isStoreOpen: true,
-          storeMode: 'SHIFT_DRIVEN',
+          storeMode: STORE_MODE.SHIFT_DRIVEN,
           openTime: '08:00',
           closeTime: '22:00',
           timezone: 'Asia/Jakarta',

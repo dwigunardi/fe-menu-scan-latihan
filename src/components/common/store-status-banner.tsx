@@ -12,6 +12,7 @@ import {
 import { useAdminBranchSettingQuery } from '@/hooks/queries/use-admin-settings';
 import { AbsenceContingencyModal } from '@/components/settings/absence-contingency-modal';
 import { Button } from '@/components/ui/button';
+import { STORE_MODE } from '@/lib/constants/branch-settings';
 
 export function StoreStatusBanner() {
   const { data: setting } = useAdminBranchSettingQuery();
@@ -20,8 +21,8 @@ export function StoreStatusBanner() {
   if (!setting) return null;
 
   // Render emergency alert if closed due to emergency or closed in shift mode
-  const isEmergency = setting.storeMode === 'EMERGENCY_CLOSED';
-  const isQrisOnly = setting.storeMode === 'QRIS_ONLY';
+  const isEmergency = setting.storeMode === STORE_MODE.EMERGENCY_CLOSED;
+  const isQrisOnly = setting.storeMode === STORE_MODE.QRIS_ONLY;
 
   return (
     <>

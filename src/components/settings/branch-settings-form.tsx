@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -28,24 +28,26 @@ import {
   UpdateBranchSettingInput,
   UpdateBranchSettingInputSchema,
   DaySchedule,
+  STORE_MODE,
+  DAY_OF_WEEK,
 } from '@/lib/validations/branch-settings.schema';
 import { useUpdateBranchSettingMutation } from '@/hooks/queries/use-admin-settings';
 
 const DAYS_OF_WEEK: { key: DaySchedule['day']; label: string }[] = [
-  { key: 'MONDAY', label: 'Senin' },
-  { key: 'TUESDAY', label: 'Selasa' },
-  { key: 'WEDNESDAY', label: 'Rabu' },
-  { key: 'THURSDAY', label: 'Kamis' },
-  { key: 'FRIDAY', label: 'Jumat' },
-  { key: 'SATURDAY', label: 'Sabtu' },
-  { key: 'SUNDAY', label: 'Minggu' },
+  { key: DAY_OF_WEEK.MONDAY, label: 'Senin' },
+  { key: DAY_OF_WEEK.TUESDAY, label: 'Selasa' },
+  { key: DAY_OF_WEEK.WEDNESDAY, label: 'Rabu' },
+  { key: DAY_OF_WEEK.THURSDAY, label: 'Kamis' },
+  { key: DAY_OF_WEEK.FRIDAY, label: 'Jumat' },
+  { key: DAY_OF_WEEK.SATURDAY, label: 'Sabtu' },
+  { key: DAY_OF_WEEK.SUNDAY, label: 'Minggu' },
 ];
 
 const DEFAULT_SCHEDULES: DaySchedule[] = DAYS_OF_WEEK.map((d) => ({
   day: d.key,
   isOpen: true,
-  openTime: d.key === 'FRIDAY' || d.key === 'SATURDAY' ? '08:00' : '08:00',
-  closeTime: d.key === 'FRIDAY' || d.key === 'SATURDAY' ? '23:00' : '22:00',
+  openTime: d.key === DAY_OF_WEEK.FRIDAY || d.key === DAY_OF_WEEK.SATURDAY ? '08:00' : '08:00',
+  closeTime: d.key === DAY_OF_WEEK.FRIDAY || d.key === DAY_OF_WEEK.SATURDAY ? '23:00' : '22:00',
 }));
 
 interface BranchSettingsFormProps {
@@ -111,7 +113,7 @@ export function BranchSettingsForm({ initialData }: BranchSettingsFormProps) {
   };
 
   const handleApplySameHours = () => {
-    const monday = currentSchedules.find((s) => s.day === 'MONDAY') || {
+    const monday = currentSchedules.find((s) => s.day === DAY_OF_WEEK.MONDAY) || {
       openTime: '08:00',
       closeTime: '22:00',
     };
@@ -463,9 +465,9 @@ export function BranchSettingsForm({ initialData }: BranchSettingsFormProps) {
             <div className="space-y-3">
               {/* Mode A: Shift Driven */}
               <div
-                onClick={() => setValue('storeMode', 'SHIFT_DRIVEN', { shouldDirty: true })}
+                onClick={() => setValue('storeMode', STORE_MODE.SHIFT_DRIVEN, { shouldDirty: true })}
                 className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                  currentStoreMode === 'SHIFT_DRIVEN'
+                  currentStoreMode === STORE_MODE.SHIFT_DRIVEN
                     ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30 ring-2 ring-amber-500/20'
                     : 'border-stone-200/80 dark:border-zinc-800 hover:border-stone-300'
                 }`}
@@ -489,9 +491,9 @@ export function BranchSettingsForm({ initialData }: BranchSettingsFormProps) {
 
               {/* Mode B: Clock Driven */}
               <div
-                onClick={() => setValue('storeMode', 'CLOCK_DRIVEN', { shouldDirty: true })}
+                onClick={() => setValue('storeMode', STORE_MODE.CLOCK_DRIVEN, { shouldDirty: true })}
                 className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                  currentStoreMode === 'CLOCK_DRIVEN'
+                  currentStoreMode === STORE_MODE.CLOCK_DRIVEN
                     ? 'border-amber-500 bg-amber-50/70 dark:bg-amber-950/30 ring-2 ring-amber-500/20'
                     : 'border-stone-200/80 dark:border-zinc-800 hover:border-stone-300'
                 }`}
@@ -508,9 +510,9 @@ export function BranchSettingsForm({ initialData }: BranchSettingsFormProps) {
 
               {/* Mode C: QRIS Only */}
               <div
-                onClick={() => setValue('storeMode', 'QRIS_ONLY', { shouldDirty: true })}
+                onClick={() => setValue('storeMode', STORE_MODE.QRIS_ONLY, { shouldDirty: true })}
                 className={`p-4 rounded-2xl border transition-all cursor-pointer ${
-                  currentStoreMode === 'QRIS_ONLY'
+                  currentStoreMode === STORE_MODE.QRIS_ONLY
                     ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-950/30 ring-2 ring-blue-500/20'
                     : 'border-stone-200/80 dark:border-zinc-800 hover:border-stone-300'
                 }`}

@@ -1,14 +1,25 @@
 import { z } from 'zod';
+import {
+  STORE_MODE,
+  StoreMode,
+  DAY_OF_WEEK,
+  DayOfWeek,
+  ALL_STORE_MODES,
+  ALL_DAYS_OF_WEEK,
+} from '@/lib/constants/branch-settings';
+
+export { STORE_MODE, DAY_OF_WEEK, ALL_STORE_MODES, ALL_DAYS_OF_WEEK };
+export type { StoreMode, DayOfWeek };
 
 export const DayScheduleSchema = z.object({
   day: z.enum([
-    'MONDAY',
-    'TUESDAY',
-    'WEDNESDAY',
-    'THURSDAY',
-    'FRIDAY',
-    'SATURDAY',
-    'SUNDAY',
+    DAY_OF_WEEK.MONDAY,
+    DAY_OF_WEEK.TUESDAY,
+    DAY_OF_WEEK.WEDNESDAY,
+    DAY_OF_WEEK.THURSDAY,
+    DAY_OF_WEEK.FRIDAY,
+    DAY_OF_WEEK.SATURDAY,
+    DAY_OF_WEEK.SUNDAY,
   ]),
   isOpen: z.boolean().default(true),
   openTime: z
@@ -22,13 +33,11 @@ export const DayScheduleSchema = z.object({
 export type DaySchedule = z.infer<typeof DayScheduleSchema>;
 
 export const StoreModeEnum = z.enum([
-  'SHIFT_DRIVEN',
-  'CLOCK_DRIVEN',
-  'QRIS_ONLY',
-  'EMERGENCY_CLOSED',
+  STORE_MODE.SHIFT_DRIVEN,
+  STORE_MODE.CLOCK_DRIVEN,
+  STORE_MODE.QRIS_ONLY,
+  STORE_MODE.EMERGENCY_CLOSED,
 ]);
-
-export type StoreMode = z.infer<typeof StoreModeEnum>;
 
 export const BranchSettingSchema = z.object({
   id: z.string().uuid().optional(),
@@ -58,7 +67,7 @@ export const BranchSettingSchema = z.object({
     .max(120, 'Toleransi maksimal 120 menit')
     .default(15),
   isStoreOpen: z.boolean().default(true),
-  storeMode: StoreModeEnum.default('SHIFT_DRIVEN'),
+  storeMode: StoreModeEnum.default(STORE_MODE.SHIFT_DRIVEN),
   emergencyReason: z.string().nullable().optional(),
   timezone: z.string().default('Asia/Jakarta'),
   phone: z.string().nullable().optional(),
