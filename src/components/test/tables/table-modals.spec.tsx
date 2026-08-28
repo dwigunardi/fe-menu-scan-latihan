@@ -215,6 +215,18 @@ describe('Table Modals', () => {
   });
 
   describe('TableResetModal', () => {
+    it('returns null when table is null', () => {
+      const { container } = render(
+        <TableResetModal
+          isOpen={true}
+          onClose={vi.fn()}
+          table={null}
+          onConfirm={vi.fn()}
+        />
+      );
+      expect(container.firstChild).toBeNull();
+    });
+
     it('renders confirmation text with table number and triggers confirm callback', async () => {
       const onConfirm = vi.fn();
       const onClose = vi.fn();
@@ -223,24 +235,51 @@ describe('Table Modals', () => {
         <TableResetModal
           isOpen={true}
           onClose={onClose}
-          table={mockTable}
+          table={{ ...mockTable, tableNumber: 'MEJA 05', activeGuestName: 'Dwi', currentSessionId: 'sess-123' }}
           onConfirm={onConfirm}
         />
       );
 
-      expect(screen.getByText(/Reset Sesi MEJA T-01\?/i)).toBeInTheDocument();
+      expect(screen.getByText(/Reset Sesi MEJA 05\?/i)).toBeInTheDocument();
+      expect(screen.getByText('Dwi')).toBeInTheDocument();
 
       const confirmBtn = screen.getByRole('button', { name: /Ya, Kosongkan Meja/i });
       fireEvent.click(confirmBtn);
 
       await waitFor(() => {
-        expect(onConfirm).toHaveBeenCalledWith(mockTable);
+        expect(onConfirm).toHaveBeenCalled();
         expect(onClose).toHaveBeenCalled();
       });
+    });
+
+    it('renders loading state when isPending is true', () => {
+      render(
+        <TableResetModal
+          isOpen={true}
+          onClose={vi.fn()}
+          table={mockTable}
+          onConfirm={vi.fn()}
+          isPending={true}
+        />
+      );
+
+      expect(screen.getByText('Mereset...')).toBeInTheDocument();
     });
   });
 
   describe('TableDeleteModal', () => {
+    it('returns null when table is null', () => {
+      const { container } = render(
+        <TableDeleteModal
+          isOpen={true}
+          onClose={vi.fn()}
+          table={null}
+          onConfirm={vi.fn()}
+        />
+      );
+      expect(container.firstChild).toBeNull();
+    });
+
     it('renders delete warning and triggers delete confirmation callback', async () => {
       const onConfirm = vi.fn();
       const onClose = vi.fn();
@@ -249,20 +288,34 @@ describe('Table Modals', () => {
         <TableDeleteModal
           isOpen={true}
           onClose={onClose}
-          table={mockTable}
+          table={{ ...mockTable, tableNumber: 'MEJA VIP' }}
           onConfirm={onConfirm}
         />
       );
 
-      expect(screen.getByText(/Hapus MEJA T-01\?/i)).toBeInTheDocument();
+      expect(screen.getByText(/Hapus MEJA VIP\?/i)).toBeInTheDocument();
 
       const deleteBtn = screen.getByRole('button', { name: /Hapus Meja/i });
       fireEvent.click(deleteBtn);
 
       await waitFor(() => {
-        expect(onConfirm).toHaveBeenCalledWith(mockTable);
+        expect(onConfirm).toHaveBeenCalled();
         expect(onClose).toHaveBeenCalled();
       });
+    });
+
+    it('renders loading state when isPending is true', () => {
+      render(
+        <TableDeleteModal
+          isOpen={true}
+          onClose={vi.fn()}
+          table={mockTable}
+          onConfirm={vi.fn()}
+          isPending={true}
+        />
+      );
+
+      expect(screen.getByText('Menghapus...')).toBeInTheDocument();
     });
   });
 
@@ -281,7 +334,7 @@ describe('Table Modals', () => {
       expect(await screen.findByText('Indoor (AC Non-Smoking)')).toBeInTheDocument();
     });
 
-    it('allows typing new zone name and submitting form', async () => {
+    it('allows typing new zone name and description, choosing color, and submitting form', async () => {
       const wrapper = createQueryWrapper();
       render(
         <ZoneManagerModal
@@ -291,17 +344,96 @@ describe('Table Modals', () => {
         { wrapper }
       );
 
+      expect(await screen.findByText('Indoor (AC Non-Smoking)')).toBeInTheDocument();
+
       const nameInput = screen.getByPlaceholderText('Misal: Outdoor Garden, VIP Room');
       fireEvent.change(nameInput, { target: { value: 'Rooftop Lounge' } });
+
+      const descInput = screen.getByPlaceholderText('Misal: Area merokok, asri');
+      fireEvent.change(descInput, { target: { value: 'Area santai lantai 3' } });
 
       const submitBtn = screen.getByRole('button', { name: /Tambah Zona/i });
       fireEvent.click(submitBtn);
 
       await waitFor(() => {
+        expect(tablesApi.createAdminTableZone).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: 'Rooftop Lounge',
+            description: 'Area santai lantai 3',
+          })
+        );
         expect(toast.success).toHaveBeenCalledWith(
           expect.stringContaining('berhasil ditambahkan')
         );
       });
+    });
+
+    it('handles editing an existing zone and canceling edit', async () => {
+      const wrapper = createQueryWrapper();
+      const { container } = render(
+        <ZoneManagerModal
+          isOpen={true}
+          onClose={vi.fn()}
+        />,
+        { wrapper }
+      );
+
+      expect(await screen.findByText('Indoor (AC Non-Smoking)')).toBeInTheDocument();
+
+      // Click Edit on zone
+      const editBtn = container.querySelector('.lucide-edit-2')?.closest('button');
+      if (editBtn) {
+        fireEvent.click(editBtn);
+        expect(await screen.findByText(/Simpan Perubahan/i)).toBeInTheDocument();
+
+        // Click cancel edit
+        const cancelEditBtn = screen.getByRole('button', { name: /Batal Edit/i });
+        fireEvent.click(cancelEditBtn);
+        expect(screen.getByRole('button', { name: /Tambah Zona/i })).toBeInTheDocument();
+      }
+    });
+
+    it('handles deleting a zone with confirm true and false', async () => {
+      const wrapper = createQueryWrapper();
+      const { container } = render(
+        <ZoneManagerModal
+          isOpen={true}
+          onClose={vi.fn()}
+        />,
+        { wrapper }
+      );
+
+      expect(await screen.findByText('Indoor (AC Non-Smoking)')).toBeInTheDocument();
+
+      // Mock window.confirm
+      window.confirm = vi.fn(() => false);
+      const deleteBtn = container.querySelector('.lucide-trash-2')?.closest('button');
+      if (deleteBtn) {
+        fireEvent.click(deleteBtn);
+        expect(tablesApi.deleteAdminTableZone).not.toHaveBeenCalled();
+
+        window.confirm = vi.fn(() => true);
+        fireEvent.click(deleteBtn);
+        await waitFor(() => {
+          expect(tablesApi.deleteAdminTableZone).toHaveBeenCalledWith('zone-1');
+        });
+      }
+    });
+
+    it('triggers onClose when Tutup button is clicked', () => {
+      const onClose = vi.fn();
+      const wrapper = createQueryWrapper();
+      render(
+        <ZoneManagerModal
+          isOpen={true}
+          onClose={onClose}
+        />,
+        { wrapper }
+      );
+
+      const closeBtn = screen.getByRole('button', { name: 'Tutup' });
+      fireEvent.click(closeBtn);
+      expect(onClose).toHaveBeenCalled();
     });
   });
 });

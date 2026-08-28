@@ -5,6 +5,7 @@ import {
   useUpdateBranchSettingMutation,
   useUpdateStoreStatusMutation,
   usePublicBranchLocationQuery,
+  ADMIN_SETTINGS_QUERY_KEYS,
 } from '@/hooks/queries/use-admin-settings';
 import { createQueryWrapper } from '@/test/test-utils';
 import * as settingsApi from '@/lib/api/admin-settings-api';
@@ -12,6 +13,8 @@ import { right, left } from '@/lib/api/either';
 import { ApiError } from '@/lib/api/api-error';
 import { STORE_MODE } from '@/lib/constants/branch-settings';
 import { toast } from 'sonner';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
 
 vi.mock('@/lib/api/admin-settings-api', () => ({
   fetchAdminBranchSetting: vi.fn(),
@@ -26,6 +29,18 @@ vi.mock('sonner', () => ({
     error: vi.fn(),
   },
 }));
+
+function createQueryWrapperWithClient() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+  const wrapper = ({ children }: { children: React.ReactNode }) =>
+    React.createElement(QueryClientProvider, { client: queryClient }, children);
+  return { queryClient, wrapper };
+}
 
 describe('use-admin-settings query hooks', () => {
   const mockSetting = {
@@ -101,6 +116,30 @@ describe('use-admin-settings query hooks', () => {
         expect.stringContaining('berhasil disimpan')
       );
     });
+
+    it('throws error and triggers onError callback when update fails', async () => {
+      vi.mocked(settingsApi.updateAdminBranchSetting).mockResolvedValue(
+        left(new ApiError(400, 'UPDATE_FAILED', 'Gagal update'))
+      );
+
+      const wrapper = createQueryWrapper();
+      const { result } = renderHook(() => useUpdateBranchSettingMutation(), { wrapper });
+
+      await expect(
+        result.current.mutateAsync({
+          name: 'Test',
+          address: 'Test',
+          latitude: 0,
+          longitude: 0,
+          geofenceRadius: 50,
+          openTime: '08:00',
+          closeTime: '22:00',
+          lateGracePeriod: 10,
+          storeMode: STORE_MODE.SHIFT_DRIVEN,
+          timezone: 'Asia/Jakarta',
+        })
+      ).rejects.toBeDefined();
+    });
   });
 
   describe('useUpdateStoreStatusMutation', () => {
@@ -122,7 +161,7 @@ describe('use-admin-settings query hooks', () => {
       );
     });
 
-    it('updates store status to closed and shows success toast', async () => {
+    it('updates store status to closed with emergency reason', async () => {
       vi.mocked(settingsApi.updateStoreStatus).mockResolvedValue(
         right({ ...mockSetting, isStoreOpen: false, storeMode: STORE_MODE.EMERGENCY_CLOSED })
       );
@@ -139,6 +178,26 @@ describe('use-admin-settings query hooks', () => {
       expect(toast.success).toHaveBeenCalledWith(
         expect.stringContaining('TUTUP SEMENTARA')
       );
+    });
+
+    it('optimistically updates and rolls back on error', async () => {
+      vi.mocked(settingsApi.updateStoreStatus).mockResolvedValue(
+        left(new ApiError(500, 'STORE_UPDATE_FAILED', 'Gagal update status'))
+      );
+
+      const { queryClient, wrapper } = createQueryWrapperWithClient();
+      queryClient.setQueryData(ADMIN_SETTINGS_QUERY_KEYS.branch(), mockSetting);
+
+      const { result } = renderHook(() => useUpdateStoreStatusMutation(), { wrapper });
+
+      await expect(
+        result.current.mutateAsync({
+          isStoreOpen: false,
+        })
+      ).rejects.toBeDefined();
+
+      const setting = queryClient.getQueryData<any>(ADMIN_SETTINGS_QUERY_KEYS.branch());
+      expect(setting.isStoreOpen).toBe(true);
     });
   });
 
@@ -167,6 +226,19 @@ describe('use-admin-settings query hooks', () => {
       });
 
       expect(result.current.data?.latitude).toBeCloseTo(-6.2297465);
+    });
+
+    it('handles error Left branch on public location query', async () => {
+      vi.mocked(settingsApi.fetchPublicBranchLocation).mockResolvedValue(
+        left(ApiError.networkError())
+      );
+
+      const wrapper = createQueryWrapper();
+      const { result } = renderHook(() => usePublicBranchLocationQuery(), { wrapper });
+
+      await waitFor(() => {
+        expect(result.current.isError).toBe(true);
+      });
     });
   });
 });

@@ -39,6 +39,9 @@ export enum ErrorCode {
   MAX_EXTRA_EXCEEDED = 'MAX_EXTRA_EXCEEDED',
   ORDER_ALREADY_PAID = 'ORDER_ALREADY_PAID',
   QRIS_EXPIRED = 'QRIS_EXPIRED',
+
+  // File & Media Errors
+  FILE_TOO_LARGE = 'FILE_TOO_LARGE',
 }
 
 /**

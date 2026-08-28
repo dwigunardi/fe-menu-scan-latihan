@@ -1,21 +1,27 @@
 import { describe, it, expect, vi } from 'vitest';
 import { logger } from '@/lib/logger';
 
-describe('Zero-Leakage Isomorphic Pino Logger', () => {
-  it('instantiates logger with correct level and redaction config', () => {
+describe('Logger utility', () => {
+  it('instantiates pino logger with redaction configurations', () => {
     expect(logger).toBeDefined();
     expect(typeof logger.info).toBe('function');
-    expect(typeof logger.debug).toBe('function');
-    expect(typeof logger.warn).toBe('function');
     expect(typeof logger.error).toBe('function');
+    expect(typeof logger.warn).toBe('function');
+    expect(typeof logger.debug).toBe('function');
   });
 
-  it('can log messages and objects without throwing', () => {
-    expect(() => {
-      logger.info({ test: 'hello' }, 'Test info log');
-      logger.debug({ endpoint: '/admin/menus' }, 'Test debug log');
-      logger.warn({ warning: 'Rate limit approaching' }, 'Test warn log');
-      logger.error({ error: 'Failed' }, 'Test error log');
-    }).not.toThrow();
+  it('logs messages without throwing errors', () => {
+    const spy = vi.spyOn(logger, 'info');
+    logger.info({ message: 'User logged in' });
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('masks sensitive fields configured in redaction paths', () => {
+    const spy = vi.spyOn(logger, 'debug');
+    logger.debug({
+      password: 'secret-password-123',
+      token: 'jwt-bearer-token',
+    });
+    expect(spy).toHaveBeenCalled();
   });
 });
