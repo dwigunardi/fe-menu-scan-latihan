@@ -368,9 +368,9 @@ describe('Table Modals', () => {
       });
     });
 
-    it('handles editing an existing zone and canceling edit', async () => {
+    it('handles editing an existing zone, submitting updates, and canceling edit', async () => {
       const wrapper = createQueryWrapper();
-      const { container } = render(
+      render(
         <ZoneManagerModal
           isOpen={true}
           onClose={vi.fn()}
@@ -378,16 +378,32 @@ describe('Table Modals', () => {
         { wrapper }
       );
 
-      expect(await screen.findByText('Indoor (AC Non-Smoking)')).toBeInTheDocument();
+      const zoneText = await screen.findByText('Indoor (AC Non-Smoking)');
+      const zoneContainer = zoneText.closest('div.border') || zoneText.parentElement?.parentElement?.parentElement;
+      const buttons = zoneContainer?.querySelectorAll('button') || [];
+      const editBtn = Array.from(buttons).find((b) => b.querySelector('svg'));
 
-      // Click Edit on zone
-      const editBtn = container.querySelector('.lucide-edit-2')?.closest('button');
       if (editBtn) {
         fireEvent.click(editBtn);
         expect(await screen.findByText(/Simpan Perubahan/i)).toBeInTheDocument();
 
-        // Click cancel edit
-        const cancelEditBtn = screen.getByRole('button', { name: /Batal Edit/i });
+        // Update name and submit
+        const nameInput = screen.getByPlaceholderText('Misal: Outdoor Garden, VIP Room');
+        fireEvent.change(nameInput, { target: { value: 'Indoor AC VIP Updated' } });
+
+        const saveBtn = screen.getByRole('button', { name: /Simpan Perubahan/i });
+        fireEvent.click(saveBtn);
+
+        await waitFor(() => {
+          expect(tablesApi.updateAdminTableZone).toHaveBeenCalledWith(
+            'zone-1',
+            expect.objectContaining({ name: 'Indoor AC VIP Updated' })
+          );
+        });
+
+        // Re-open edit and cancel
+        fireEvent.click(editBtn);
+        const cancelEditBtn = await screen.findByRole('button', { name: /Batal Edit/i });
         fireEvent.click(cancelEditBtn);
         expect(screen.getByRole('button', { name: /Tambah Zona/i })).toBeInTheDocument();
       }
@@ -395,7 +411,7 @@ describe('Table Modals', () => {
 
     it('handles deleting a zone with confirm true and false', async () => {
       const wrapper = createQueryWrapper();
-      const { container } = render(
+      render(
         <ZoneManagerModal
           isOpen={true}
           onClose={vi.fn()}
@@ -403,12 +419,14 @@ describe('Table Modals', () => {
         { wrapper }
       );
 
-      expect(await screen.findByText('Indoor (AC Non-Smoking)')).toBeInTheDocument();
+      const zoneText = await screen.findByText('Indoor (AC Non-Smoking)');
+      const zoneContainer = zoneText.closest('div.border') || zoneText.parentElement?.parentElement?.parentElement;
+      const buttons = zoneContainer?.querySelectorAll('button') || [];
+      const deleteBtn = Array.from(buttons).reverse().find((b) => b.querySelector('svg'));
 
-      // Mock window.confirm
-      window.confirm = vi.fn(() => false);
-      const deleteBtn = container.querySelector('.lucide-trash-2')?.closest('button');
       if (deleteBtn) {
+        // Mock window.confirm
+        window.confirm = vi.fn(() => false);
         fireEvent.click(deleteBtn);
         expect(tablesApi.deleteAdminTableZone).not.toHaveBeenCalled();
 
