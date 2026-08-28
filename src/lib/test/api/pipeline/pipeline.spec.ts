@@ -10,12 +10,14 @@ import { useHandshakeStore } from '@/store/use-handshake-store';
 import { server } from '@/test/mocks/server';
 import { http, HttpResponse } from 'msw';
 import { ApiError } from '@/lib/api/api-error';
+import * as authApiModule from '@/lib/api/auth-api';
+import { right } from '@/lib/api/either';
 
 const API_BASE = 'http://localhost:5000/api/v1';
 
 describe('Interceptor Middleware Pipeline', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
     useAuthStore.getState().logout();
     useHandshakeStore.getState().clearHandshake();
   });
@@ -176,6 +178,32 @@ describe('Interceptor Middleware Pipeline', () => {
       }
     });
 
+    it('retries request on Handshake Expired error and succeeds after renegotiation', async () => {
+      let callCount = 0;
+      server.use(
+        http.get(`${API_BASE}/admin/test-handshake-expired`, () => {
+          callCount++;
+          if (callCount === 1) {
+            return HttpResponse.json(
+              { statusCode: 401, error: 'Unauthorized', message: 'Handshake token has expired' },
+              { status: 401 }
+            );
+          }
+          return HttpResponse.json({
+            statusCode: 200,
+            data: { recovered: true },
+          });
+        })
+      );
+
+      const result = await executePipeline<any>('/admin/test-handshake-expired');
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.recovered).toBe(true);
+      }
+      expect(callCount).toBe(2);
+    });
+
     it('silently refreshes token on 401 and retries the original request', async () => {
       useAuthStore.getState().setAuth(
         { id: 'u1', name: 'Admin', role: 'ADMIN' },
@@ -208,6 +236,61 @@ describe('Interceptor Middleware Pipeline', () => {
         expect(result.value.success).toBe(true);
       }
       expect(useAuthStore.getState().accessToken).toBe('renewed-access-token-789');
+    });
+
+    it('handles concurrent 401 requests with single-flight mutex refresh', async () => {
+      useAuthStore.getState().setAuth(
+        { id: 'u1', name: 'Admin', role: 'ADMIN' },
+        'expired-access-token',
+        'valid-refresh-token'
+      );
+
+      server.use(
+        http.get(`${API_BASE}/admin/concurrent-1`, ({ request }) => {
+          const auth = request.headers.get('Authorization');
+          if (auth === 'Bearer renewed-access-token-789') {
+            return HttpResponse.json({ statusCode: 200, data: { endpoint: 1 } });
+          }
+          return HttpResponse.json({ statusCode: 401, message: 'Token expired' }, { status: 401 });
+        }),
+        http.get(`${API_BASE}/admin/concurrent-2`, ({ request }) => {
+          const auth = request.headers.get('Authorization');
+          if (auth === 'Bearer renewed-access-token-789') {
+            return HttpResponse.json({ statusCode: 200, data: { endpoint: 2 } });
+          }
+          return HttpResponse.json({ statusCode: 401, message: 'Token expired' }, { status: 401 });
+        })
+      );
+
+      const [res1, res2] = await Promise.all([
+        executePipeline<any>('/admin/concurrent-1'),
+        executePipeline<any>('/admin/concurrent-2'),
+      ]);
+
+      expect(res1.isRight()).toBe(true);
+      expect(res2.isRight()).toBe(true);
+    });
+
+    it('handles exception in silent token refresh and falls back to reauth or logout', async () => {
+      useAuthStore.getState().setAuth(
+        { id: 'u1', name: 'Admin', role: 'ADMIN' },
+        'expired-access-token',
+        'faulty-refresh-token'
+      );
+
+      vi.spyOn(authApiModule, 'refreshTokenApi').mockRejectedValue(
+        new Error('Network crash during refresh')
+      );
+
+      server.use(
+        http.get(`${API_BASE}/admin/test-refresh-crash`, () => {
+          return HttpResponse.json({ statusCode: 401, message: 'Unauthorized' }, { status: 401 });
+        })
+      );
+
+      const result = await executePipeline('/admin/test-refresh-crash');
+      expect(result.isLeft()).toBe(true);
+      expect(useAuthStore.getState().isReauthModalOpen).toBe(true);
     });
 
     it('triggers reauth modal when refresh token is invalid on 401', async () => {

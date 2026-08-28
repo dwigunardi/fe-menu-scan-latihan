@@ -19,6 +19,17 @@ describe('ClockInModal Component', () => {
       isEmailVerified: true,
       isPhoneVerified: true,
     },
+    {
+      id: 'staff-2',
+      name: 'Inaktif Staf',
+      email: 'inaktif@kumpulcafe.com',
+      role: ROLE.WAITER,
+      pinCodeSet: false,
+      isActive: false,
+      dailyShiftHours: 8,
+      isEmailVerified: true,
+      isPhoneVerified: true,
+    },
   ];
 
   const mockBranchSetting = {
@@ -41,7 +52,7 @@ describe('ClockInModal Component', () => {
     } as any);
 
     vi.spyOn(staffHooks, 'useAdminStaffPaginatedQuery').mockReturnValue({
-      data: { items: mockStaff, total: 1 },
+      data: { items: mockStaff, total: 2 },
       isLoading: false,
     } as any);
 
@@ -72,24 +83,203 @@ describe('ClockInModal Component', () => {
     });
   });
 
-  it('renders modal with geofence indicator and staff options', () => {
+  it('renders modal with geofence indicator and staff options (filters out inactive staff)', () => {
     render(<ClockInModal isOpen={true} onClose={vi.fn()} />);
 
     expect(screen.getByText('Terminal Presensi Staf Kafe')).toBeInTheDocument();
     expect(screen.getByText('Posisi Dalam Jangkauan Kafe')).toBeInTheDocument();
     expect(screen.getByRole('option', { name: /Rian Barista/i })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: /Inaktif Staf/i })).not.toBeInTheDocument();
   });
 
-  it('switches to Clock-Out mode', () => {
+  it('handles fallback when branchSetting and staffData are undefined', () => {
+    vi.spyOn(settingsHooks, 'useAdminBranchSettingQuery').mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    } as any);
+    vi.spyOn(staffHooks, 'useAdminStaffPaginatedQuery').mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    } as any);
+
+    render(<ClockInModal isOpen={true} onClose={vi.fn()} />);
+    expect(screen.getByText(/Radius: 100m/i)).toBeInTheDocument();
+  });
+
+  it('handles GPS permission denied error', () => {
+    Object.defineProperty(global.navigator, 'geolocation', {
+      value: {
+        getCurrentPosition: vi.fn((_success, error) =>
+          error({
+            code: 1,
+            PERMISSION_DENIED: 1,
+            POSITION_UNAVAILABLE: 2,
+            TIMEOUT: 3,
+          })
+        ),
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    render(<ClockInModal isOpen={true} onClose={vi.fn()} />);
+    expect(screen.getByText(/Izin akses lokasi GPS ditolak/i)).toBeInTheDocument();
+  });
+
+  it('handles GPS position unavailable error', () => {
+    Object.defineProperty(global.navigator, 'geolocation', {
+      value: {
+        getCurrentPosition: vi.fn((_success, error) =>
+          error({
+            code: 2,
+            PERMISSION_DENIED: 1,
+            POSITION_UNAVAILABLE: 2,
+            TIMEOUT: 3,
+          })
+        ),
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    render(<ClockInModal isOpen={true} onClose={vi.fn()} />);
+    expect(screen.getByText(/Sinyal GPS lokasi tidak terdeteksi/i)).toBeInTheDocument();
+  });
+
+  it('handles GPS timeout error', () => {
+    Object.defineProperty(global.navigator, 'geolocation', {
+      value: {
+        getCurrentPosition: vi.fn((_success, error) =>
+          error({
+            code: 3,
+            PERMISSION_DENIED: 1,
+            POSITION_UNAVAILABLE: 2,
+            TIMEOUT: 3,
+          })
+        ),
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    render(<ClockInModal isOpen={true} onClose={vi.fn()} />);
+    expect(screen.getByText(/Waktu permintaan lokasi habis/i)).toBeInTheDocument();
+  });
+
+  it('handles environment where navigator.geolocation is not supported', () => {
+    Object.defineProperty(global.navigator, 'geolocation', {
+      value: undefined,
+      configurable: true,
+      writable: true,
+    });
+
+    render(<ClockInModal isOpen={true} onClose={vi.fn()} />);
+    expect(screen.getByText(/Browser tidak mendukung/i)).toBeInTheDocument();
+  });
+
+  it('disables submit button when staff is not selected or PIN is incomplete', () => {
     render(<ClockInModal isOpen={true} onClose={vi.fn()} />);
 
+    const submitBtn = screen.getByRole('button', { name: /Konfirmasi Clock-In/i });
+    expect(submitBtn).toBeDisabled();
+
+    // Select staff
+    const staffSelect = screen.getByRole('combobox');
+    fireEvent.change(staffSelect, { target: { value: 'staff-1' } });
+    expect(submitBtn).toBeDisabled();
+
+    // Enter partial PIN (2 digits)
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    expect(submitBtn).toBeDisabled();
+
+    // Enter remaining 2 digits -> enabled
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    fireEvent.click(screen.getByRole('button', { name: '4' }));
+    expect(submitBtn).not.toBeDisabled();
+  });
+
+  it('validates outside geofence boundary warning and disables submit button', () => {
+    Object.defineProperty(global.navigator, 'geolocation', {
+      value: {
+        getCurrentPosition: vi.fn((success) =>
+          success({
+            coords: {
+              latitude: -6.3000,
+              longitude: 106.9000,
+            },
+          })
+        ),
+      },
+      configurable: true,
+      writable: true,
+    });
+
+    render(<ClockInModal isOpen={true} onClose={vi.fn()} />);
+
+    expect(screen.getByText(/Posisi di Luar Jangkauan/i)).toBeInTheDocument();
+
+    const staffSelect = screen.getByRole('combobox');
+    fireEvent.change(staffSelect, { target: { value: 'staff-1' } });
+
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    fireEvent.click(screen.getByRole('button', { name: '4' }));
+
+    const submitBtn = screen.getByRole('button', { name: /Konfirmasi Clock-In/i });
+    expect(submitBtn).toBeDisabled();
+  });
+
+  it('switches to Clock-Out mode and back to Clock-In mode, submits with notes', async () => {
+    mockClockOutMutate.mockResolvedValue({ staffName: 'Rian Barista' });
+    const onClose = vi.fn();
+
+    render(<ClockInModal isOpen={true} onClose={onClose} />);
+
+    // Switch to Clock-Out
     const clockOutTab = screen.getByRole('button', { name: /Presensi Pulang \(Clock-Out\)/i });
     fireEvent.click(clockOutTab);
 
-    expect(screen.getByRole('button', { name: /Konfirmasi Clock-Out/i })).toBeInTheDocument();
+    // Switch back to Clock-In
+    const clockInTab = screen.getByRole('button', { name: /Presensi Masuk \(Clock-In\)/i });
+    fireEvent.click(clockInTab);
+
+    // Switch again to Clock-Out
+    fireEvent.click(clockOutTab);
+
+    // Select staff
+    const staffSelect = screen.getByRole('combobox');
+    fireEvent.change(staffSelect, { target: { value: 'staff-1' } });
+
+    // Enter PIN 1, 2, 3, 0
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    fireEvent.click(screen.getByRole('button', { name: '0' }));
+
+    // Input notes
+    const notesInput = screen.getByPlaceholderText(/Contoh: Terlambat karena hujan/i);
+    fireEvent.change(notesInput, { target: { value: 'Selesai shift sore tepat waktu' } });
+
+    // Submit Clock-Out
+    const submitBtn = screen.getByRole('button', { name: /Konfirmasi Clock-Out/i });
+    expect(submitBtn).not.toBeDisabled();
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockClockOutMutate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          staffId: 'staff-1',
+          pinCode: '1230',
+          notes: 'Selesai shift sore tepat waktu',
+        })
+      );
+      expect(onClose).toHaveBeenCalled();
+    });
   });
 
-  it('inputs 4-digit PIN via keypad and submits clock-in', async () => {
+  it('inputs 4-digit PIN via keypad and submits clock-in with empty notes', async () => {
     mockClockInMutate.mockResolvedValue({ staffName: 'Rian Barista' });
     const onClose = vi.fn();
 
@@ -114,14 +304,39 @@ describe('ClockInModal Component', () => {
         expect.objectContaining({
           staffId: 'staff-1',
           pinCode: '1234',
+          notes: undefined,
         })
       );
       expect(onClose).toHaveBeenCalled();
     });
   });
 
-  it('handles backspace and clear pin keypad interactions', () => {
-    render(<ClockInModal isOpen={true} onClose={vi.fn()} />);
+  it('handles mutation rejection without crashing', async () => {
+    mockClockInMutate.mockRejectedValue(new Error('Network error'));
+    const onClose = vi.fn();
+
+    render(<ClockInModal isOpen={true} onClose={onClose} />);
+
+    const staffSelect = screen.getByRole('combobox');
+    fireEvent.change(staffSelect, { target: { value: 'staff-1' } });
+
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    fireEvent.click(screen.getByRole('button', { name: '4' }));
+
+    const submitBtn = screen.getByRole('button', { name: /Konfirmasi Clock-In/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockClockInMutate).toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled();
+    });
+  });
+
+  it('handles backspace and clear pin keypad interactions, and dialog dismiss', () => {
+    const onClose = vi.fn();
+    render(<ClockInModal isOpen={true} onClose={onClose} />);
 
     // Press PIN 1, 2, 3
     fireEvent.click(screen.getByRole('button', { name: '1' }));
@@ -135,5 +350,10 @@ describe('ClockInModal Component', () => {
     // Press Clear
     const clearBtn = screen.getByRole('button', { name: 'C' });
     fireEvent.click(clearBtn);
+
+    // Press Batal button
+    const cancelBtn = screen.getByRole('button', { name: 'Batal' });
+    fireEvent.click(cancelBtn);
+    expect(onClose).toHaveBeenCalled();
   });
 });

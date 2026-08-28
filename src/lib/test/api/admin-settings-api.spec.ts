@@ -54,23 +54,30 @@ describe('Admin Settings API Client', () => {
 
       expect(result.isLeft()).toBe(true);
     });
+
+    it('returns contractViolation when schema validation fails', async () => {
+      vi.mocked(pipeline.executePipeline).mockResolvedValue(right({ latitude: 9999 }));
+
+      const result = await fetchAdminBranchSetting();
+      expect(result.isLeft()).toBe(true);
+    });
   });
 
   describe('updateAdminBranchSetting', () => {
-    it('sends PUT request with payload and returns updated setting', async () => {
-      const updatePayload = {
-        name: 'Kumpul Cafe Tebet Baru',
-        address: 'Jl. Tebet Raya No. 50',
-        latitude: -6.2298,
-        longitude: 106.8558,
-        geofenceRadius: 120,
-        openTime: '08:00',
-        closeTime: '22:00',
-        lateGracePeriod: 15,
-        storeMode: STORE_MODE.SHIFT_DRIVEN,
-        timezone: 'Asia/Jakarta',
-      };
+    const updatePayload = {
+      name: 'Kumpul Cafe Tebet Baru',
+      address: 'Jl. Tebet Raya No. 50',
+      latitude: -6.2298,
+      longitude: 106.8558,
+      geofenceRadius: 120,
+      openTime: '08:00',
+      closeTime: '22:00',
+      lateGracePeriod: 15,
+      storeMode: STORE_MODE.SHIFT_DRIVEN,
+      timezone: 'Asia/Jakarta',
+    };
 
+    it('sends PUT request with payload and returns updated setting', async () => {
       vi.mocked(pipeline.executePipeline).mockResolvedValue(
         right({ ...mockSettingData, ...updatePayload })
       );
@@ -83,24 +90,54 @@ describe('Admin Settings API Client', () => {
         expect(result.value.geofenceRadius).toBe(120);
       }
     });
+
+    it('returns error when pipeline fails during update', async () => {
+      vi.mocked(pipeline.executePipeline).mockResolvedValue(left(ApiError.networkError()));
+
+      const result = await updateAdminBranchSetting(updatePayload);
+      expect(result.isLeft()).toBe(true);
+    });
+
+    it('returns contractViolation when update response is malformed', async () => {
+      vi.mocked(pipeline.executePipeline).mockResolvedValue(right({ latitude: -999 }));
+
+      const result = await updateAdminBranchSetting(updatePayload);
+      expect(result.isLeft()).toBe(true);
+    });
   });
 
   describe('updateStoreStatus', () => {
+    const statusPayload = {
+      isStoreOpen: false,
+      storeMode: STORE_MODE.EMERGENCY_CLOSED,
+      emergencyReason: 'Mati Lampu',
+    };
+
     it('updates store open/closed status', async () => {
       vi.mocked(pipeline.executePipeline).mockResolvedValue(
         right({ ...mockSettingData, isStoreOpen: false, storeMode: STORE_MODE.EMERGENCY_CLOSED })
       );
 
-      const result = await updateStoreStatus({
-        isStoreOpen: false,
-        storeMode: STORE_MODE.EMERGENCY_CLOSED,
-        emergencyReason: 'Mati Lampu',
-      });
+      const result = await updateStoreStatus(statusPayload);
 
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
         expect(result.value.isStoreOpen).toBe(false);
       }
+    });
+
+    it('returns error when pipeline fails during store status update', async () => {
+      vi.mocked(pipeline.executePipeline).mockResolvedValue(left(ApiError.networkError()));
+
+      const result = await updateStoreStatus(statusPayload);
+      expect(result.isLeft()).toBe(true);
+    });
+
+    it('returns contractViolation when store status response is invalid', async () => {
+      vi.mocked(pipeline.executePipeline).mockResolvedValue(right({ openTime: 'invalid-time' }));
+
+      const result = await updateStoreStatus(statusPayload);
+      expect(result.isLeft()).toBe(true);
     });
   });
 
@@ -127,6 +164,20 @@ describe('Admin Settings API Client', () => {
       if (result.isRight()) {
         expect(result.value.latitude).toBeCloseTo(-6.2297465);
       }
+    });
+
+    it('returns error when pipeline fails during public location fetch', async () => {
+      vi.mocked(pipeline.executePipeline).mockResolvedValue(left(ApiError.networkError()));
+
+      const result = await fetchPublicBranchLocation();
+      expect(result.isLeft()).toBe(true);
+    });
+
+    it('returns contractViolation when public location response is invalid', async () => {
+      vi.mocked(pipeline.executePipeline).mockResolvedValue(right({ notCoords: 123 }));
+
+      const result = await fetchPublicBranchLocation();
+      expect(result.isLeft()).toBe(true);
     });
   });
 });

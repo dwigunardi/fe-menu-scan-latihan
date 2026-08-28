@@ -43,7 +43,7 @@ describe('admin-attendance-api', () => {
   });
 
   describe('getAdminAttendancePaginated', () => {
-    it('fetches paginated attendance log successfully', async () => {
+    it('fetches paginated attendance log successfully with all filter parameters', async () => {
       const mockResponse = {
         items: [mockAttendanceItem],
         meta: {
@@ -58,9 +58,22 @@ describe('admin-attendance-api', () => {
 
       vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockResponse));
 
-      const result = await getAdminAttendancePaginated({ page: 1, limit: 10 });
+      const result = await getAdminAttendancePaginated({
+        page: 1,
+        limit: 10,
+        startDate: '2026-01-01',
+        endDate: '2026-01-07',
+        status: ATTENDANCE_STATUS.ON_TIME,
+        role: ROLE.KITCHEN,
+        search: 'Budi',
+      });
 
       expect(result.isRight()).toBe(true);
+      expect(hardenedFetchModule.hardenedFetch).toHaveBeenCalledWith(
+        expect.stringContaining('startDate=2026-01-01&endDate=2026-01-07&status=ON_TIME&role=KITCHEN&search=Budi'),
+        expect.anything(),
+        expect.anything()
+      );
       if (result.isRight()) {
         expect(result.value.items[0].staffName).toBe('Budi Barista');
         expect(result.value.items[0].isWithinGeofence).toBe(true);
@@ -76,7 +89,7 @@ describe('admin-attendance-api', () => {
   });
 
   describe('getAdminAttendanceSummary', () => {
-    it('fetches attendance KPI summary', async () => {
+    it('fetches attendance KPI summary with and without date parameter', async () => {
       const mockSummary = {
         totalStaff: 10,
         presentCount: 8,
@@ -90,12 +103,21 @@ describe('admin-attendance-api', () => {
 
       vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockSummary));
 
-      const result = await getAdminAttendanceSummary();
+      // Without date
+      const resultDefault = await getAdminAttendanceSummary();
+      expect(resultDefault.isRight()).toBe(true);
 
-      expect(result.isRight()).toBe(true);
-      if (result.isRight()) {
-        expect(result.value.totalStaff).toBe(10);
-        expect(result.value.attendanceRatePercent).toBe(80);
+      // With date
+      const resultWithDate = await getAdminAttendanceSummary({ date: '2026-01-01' });
+      expect(resultWithDate.isRight()).toBe(true);
+      expect(hardenedFetchModule.hardenedFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/summary?date=2026-01-01'),
+        expect.anything(),
+        expect.anything()
+      );
+      if (resultWithDate.isRight()) {
+        expect(resultWithDate.value.totalStaff).toBe(10);
+        expect(resultWithDate.value.attendanceRatePercent).toBe(80);
       }
     });
   });

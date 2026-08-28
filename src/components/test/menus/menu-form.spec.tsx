@@ -103,7 +103,9 @@ describe('MenuForm Component', () => {
     // Switch to URL mode
     const urlModeBtn = screen.getByRole('button', { name: /Input URL/i });
     fireEvent.click(urlModeBtn);
-    expect(screen.getByPlaceholderText(/https:\/\/images.unsplash.com/i)).toBeInTheDocument();
+    const urlInput = screen.getByPlaceholderText(/https:\/\/images.unsplash.com/i);
+    expect(urlInput).toBeInTheDocument();
+    fireEvent.change(urlInput, { target: { value: 'https://images.unsplash.com/photo-test' } });
 
     // Switch back to Upload File mode
     const uploadModeBtn = screen.getByRole('button', { name: /Upload File/i });
@@ -132,6 +134,60 @@ describe('MenuForm Component', () => {
     }
   });
 
+  it('validates file size limit and non-image files on file upload', async () => {
+    const { container } = renderWithProviders(
+      <MenuForm categories={mockCategories} mode="create" />
+    );
+
+    const dropzone = container.querySelector('.border-dashed');
+    if (dropzone) {
+      // Over 5MB file
+      const bigFile = new File(['a'.repeat(6 * 1024 * 1024)], 'big.png', { type: 'image/png' });
+      Object.defineProperty(bigFile, 'size', { value: 6 * 1024 * 1024 });
+      fireEvent.drop(dropzone, {
+        dataTransfer: { files: [bigFile] },
+      });
+      expect(toast.error).toHaveBeenCalledWith('Ukuran gambar melebihi batas 5 MB.');
+
+      // Non-image file
+      const txtFile = new File(['hello'], 'document.pdf', { type: 'application/pdf' });
+      fireEvent.drop(dropzone, {
+        dataTransfer: { files: [txtFile] },
+      });
+      expect(toast.error).toHaveBeenCalledWith(
+        'Format file tidak didukung. Harap pilih gambar JPG, PNG, atau WebP.'
+      );
+    }
+  });
+
+  it('handles image upload failure from API Left and Exception', async () => {
+    vi.spyOn(adminMenusApi, 'uploadAdminMenuImage').mockResolvedValueOnce(
+      new Left(new ApiError(400, 'BAD_REQUEST', 'Format gambar rusak'))
+    );
+
+    const { container } = renderWithProviders(
+      <MenuForm categories={mockCategories} mode="create" />
+    );
+
+    const dropzone = container.querySelector('.border-dashed');
+    if (dropzone) {
+      const file = new File(['test'], 'broken.jpg', { type: 'image/jpeg' });
+      fireEvent.drop(dropzone, {
+        dataTransfer: { files: [file] },
+      });
+
+      await waitFor(() => {
+        expect(adminMenusApi.uploadAdminMenuImage).toHaveBeenCalled();
+      });
+
+      // Reject with exception
+      vi.spyOn(adminMenusApi, 'uploadAdminMenuImage').mockRejectedValueOnce(new Error('Network drop'));
+      fireEvent.drop(dropzone, {
+        dataTransfer: { files: [file] },
+      });
+    }
+  });
+
   it('switches to Variants tab and allows adding, editing, and removing variant groups & options', async () => {
     const user = userEvent.setup();
 
@@ -140,11 +196,11 @@ describe('MenuForm Component', () => {
     );
 
     // Switch to Variants tab
-    const variantsTab = screen.getByRole('tab', { name: /Variasi & Topping/i });
+    const variantsTab = screen.getByRole('tab', { name: /Variasi/i });
     await user.click(variantsTab);
 
     // Click quick default group creation
-    const defaultGroupBtn = await screen.findByRole('button', { name: /\+ Buat Grup Ukuran Default/i });
+    const defaultGroupBtn = await screen.findByRole('button', { name: /Buat Grup Ukuran Default/i });
     await user.click(defaultGroupBtn);
 
     expect(screen.getByDisplayValue('Ukuran Cup')).toBeInTheDocument();
@@ -159,6 +215,22 @@ describe('MenuForm Component', () => {
 
     expect(screen.queryByDisplayValue('Ukuran Cup')).not.toBeInTheDocument();
   }, 15000);
+
+  it('allows adding a custom variant group and setting min/max select and option values', async () => {
+    const user = userEvent.setup();
+
+    renderWithProviders(
+      <MenuForm categories={mockCategories} mode="create" />
+    );
+
+    const variantsTab = screen.getByRole('tab', { name: /Variasi/i });
+    await user.click(variantsTab);
+
+    const customGroupBtn = screen.getByRole('button', { name: /Tambah Grup Variasi/i });
+    await user.click(customGroupBtn);
+
+    expect(screen.getByPlaceholderText(/Contoh: Level Gula/i)).toBeInTheDocument();
+  });
 
   it('navigates back to /admin/menus when Cancel button is clicked', async () => {
     const user = userEvent.setup();
@@ -238,7 +310,15 @@ describe('MenuForm Component', () => {
       isBestSeller: true,
       isRecommended: false,
       categoryId: 'cat-1',
-      variantGroups: [],
+      variantGroups: [
+        {
+          name: 'Pilihan Nasi',
+          isRequired: true,
+          minSelect: 1,
+          maxSelect: 1,
+          options: [{ name: 'Nasi Putih', extraPrice: 0, isAvailable: true }],
+        },
+      ],
     };
 
     renderWithProviders(

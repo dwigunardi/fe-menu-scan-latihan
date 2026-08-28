@@ -53,6 +53,28 @@ describe('SessionExpiredModal Component', () => {
     expect(screen.getByText(/admin@menuscan.com \(ADMIN\)/i)).toBeInTheDocument();
   });
 
+  it('validates empty password when form is submitted directly', () => {
+    useAuthStore.getState().setAuth(
+      {
+        id: 'u1',
+        name: 'Budi Santoso',
+        email: 'admin@menuscan.com',
+        role: 'ADMIN',
+      },
+      'token-123'
+    );
+    useAuthStore.getState().openReauthModal();
+
+    const wrapper = createQueryWrapper();
+    const { container } = render(<SessionExpiredModal />, { wrapper });
+
+    const form = container.querySelector('form');
+    if (form) {
+      fireEvent.submit(form);
+      expect(toast.error).toHaveBeenCalledWith('Mohon masukkan kata sandi staf.');
+    }
+  });
+
   it('toggles password visibility when eye icon is clicked', () => {
     useAuthStore.getState().openReauthModal();
 
@@ -138,6 +160,28 @@ describe('SessionExpiredModal Component', () => {
 
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(useAuthStore.getState().isReauthModalOpen).toBe(false);
+    expect(mockReplace).toHaveBeenCalledWith('/login');
+  });
+
+  it('triggers logout when dialog is dismissed externally', () => {
+    useAuthStore.getState().setAuth(
+      {
+        id: 'u1',
+        name: 'Budi Santoso',
+        email: 'admin@menuscan.com',
+        role: 'ADMIN',
+      },
+      'token-123'
+    );
+    useAuthStore.getState().openReauthModal();
+
+    const wrapper = createQueryWrapper();
+    render(<SessionExpiredModal />, { wrapper });
+
+    const closeBtn = screen.getByRole('button', { name: 'Close' });
+    fireEvent.click(closeBtn);
+
+    expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(mockReplace).toHaveBeenCalledWith('/login');
   });
 });

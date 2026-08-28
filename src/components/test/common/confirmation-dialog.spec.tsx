@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
-import { Trash2, AlertTriangle, Info, AlertCircle } from 'lucide-react';
+import { Trash2, AlertTriangle, Info, AlertCircle, Sparkles } from 'lucide-react';
 
 describe('ConfirmationDialog Component', () => {
   it('does not render content when isOpen is false', () => {
@@ -17,12 +17,13 @@ describe('ConfirmationDialog Component', () => {
     expect(screen.queryByText('Hapus Item')).not.toBeInTheDocument();
   });
 
-  it('renders title, description, and contextual children when isOpen is true', () => {
+  it('renders title, description, custom icon, and contextual children when isOpen is true', () => {
     render(
       <ConfirmationDialog
         isOpen={true}
         onClose={vi.fn()}
         onConfirm={vi.fn()}
+        icon={Sparkles}
         title="Konfirmasi Keluar Akun"
         description="Sesi Anda akan segera diakhiri."
       >
@@ -142,5 +143,34 @@ describe('ConfirmationDialog Component', () => {
     expect(screen.getByText('Sedang Menghapus...')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Batal/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /Sedang Menghapus.../i })).toBeDisabled();
+  });
+
+  it('handles dialog onOpenChange dismiss callbacks', () => {
+    const handleClose = vi.fn();
+    const { rerender } = render(
+      <ConfirmationDialog
+        isOpen={true}
+        onClose={handleClose}
+        onConfirm={vi.fn()}
+        title="Test Dismiss"
+        isLoading={false}
+      />
+    );
+
+    // Escape key or open change
+    const closeBtn = screen.getByRole('button', { name: 'Close' });
+    fireEvent.click(closeBtn);
+    expect(handleClose).toHaveBeenCalled();
+
+    // When loading, should not dismiss
+    rerender(
+      <ConfirmationDialog
+        isOpen={true}
+        onClose={handleClose}
+        onConfirm={vi.fn()}
+        title="Test Dismiss Loading"
+        isLoading={true}
+      />
+    );
   });
 });

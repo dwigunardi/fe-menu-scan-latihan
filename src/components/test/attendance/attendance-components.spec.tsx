@@ -41,6 +41,23 @@ describe('Attendance UI Components', () => {
       workDurationMinutes: 475,
       notes: 'Shift pagi',
     },
+    {
+      id: 'att-2',
+      branchId: 'b-1',
+      staffId: 's-2',
+      staffName: 'Siti Kasir',
+      staffRole: ROLE.CASHIER,
+      date: '2026-01-01',
+      clockInTime: null,
+      clockOutTime: null,
+      status: ATTENDANCE_STATUS.ABSENT,
+      clockInLat: null,
+      clockInLon: null,
+      clockInDistanceMeters: null,
+      isWithinGeofence: false,
+      workDurationMinutes: 0,
+      notes: null,
+    },
   ];
 
   beforeEach(() => {
@@ -107,36 +124,111 @@ describe('Attendance UI Components', () => {
       fireEvent.change(searchInput, { target: { value: 'Budi' } });
       expect(onSearchChange).toHaveBeenCalledWith('Budi');
 
+      const roleSelect = screen.getByRole('combobox');
+      fireEvent.change(roleSelect, { target: { value: ROLE.KITCHEN } });
+      expect(onRoleChange).toHaveBeenCalledWith(ROLE.KITCHEN);
+
       const lateFilter = screen.getByRole('button', { name: /Terlambat/i });
       fireEvent.click(lateFilter);
       expect(onStatusChange).toHaveBeenCalledWith(ATTENDANCE_STATUS.LATE);
+
+      const todayPreset = screen.getByRole('button', { name: /Hari Ini/i });
+      fireEvent.click(todayPreset);
+      expect(onDatePresetChange).toHaveBeenCalledWith('today');
 
       const yesterdayPreset = screen.getByRole('button', { name: /Kemarin/i });
       fireEvent.click(yesterdayPreset);
       expect(onDatePresetChange).toHaveBeenCalledWith('yesterday');
 
+      const monthPreset = screen.getByRole('button', { name: /Bulan Ini/i });
+      fireEvent.click(monthPreset);
+      expect(onDatePresetChange).toHaveBeenCalledWith('month');
+
       const exportBtn = screen.getByRole('button', { name: /Ekspor CSV/i });
       fireEvent.click(exportBtn);
       expect(onExportCSV).toHaveBeenCalled();
+    });
+
+    it('renders with yesterday and month presets active and toggles all status filters', () => {
+      const onStatusChange = vi.fn();
+      const { rerender } = render(
+        <AttendanceFilterBar
+          search=""
+          onSearchChange={vi.fn()}
+          selectedRole="ALL"
+          onRoleChange={vi.fn()}
+          selectedStatus={ATTENDANCE_STATUS.ON_TIME}
+          onStatusChange={onStatusChange}
+          datePreset="yesterday"
+          onDatePresetChange={vi.fn()}
+          onExportCSV={vi.fn()}
+        />
+      );
+
+      // Status filters
+      fireEvent.click(screen.getByRole('button', { name: /Semua/i }));
+      expect(onStatusChange).toHaveBeenCalledWith('ALL');
+
+      fireEvent.click(screen.getByRole('button', { name: /Tepat Waktu/i }));
+      expect(onStatusChange).toHaveBeenCalledWith(ATTENDANCE_STATUS.ON_TIME);
+
+      fireEvent.click(screen.getByRole('button', { name: /Izin \/ Cuti/i }));
+      expect(onStatusChange).toHaveBeenCalledWith(ATTENDANCE_STATUS.LEAVE);
+
+      fireEvent.click(screen.getByRole('button', { name: /Alpa/i }));
+      expect(onStatusChange).toHaveBeenCalledWith(ATTENDANCE_STATUS.ABSENT);
+
+      // Month preset active
+      rerender(
+        <AttendanceFilterBar
+          search=""
+          onSearchChange={vi.fn()}
+          selectedRole="ALL"
+          onRoleChange={vi.fn()}
+          selectedStatus={ATTENDANCE_STATUS.ABSENT}
+          onStatusChange={onStatusChange}
+          datePreset="month"
+          onDatePresetChange={vi.fn()}
+          onExportCSV={vi.fn()}
+        />
+      );
     });
   });
 
   describe('AttendanceTable', () => {
     it('renders attendance rows with staff name, status, and geofence distance', () => {
+      const onLimitChange = vi.fn();
       render(
         <AttendanceTable
           items={mockItems}
-          totalItems={1}
+          totalItems={2}
           currentPage={1}
           totalPages={1}
           onPageChange={vi.fn()}
+          onLimitChange={onLimitChange}
         />
       );
 
       expect(screen.getByText('Budi Barista')).toBeInTheDocument();
+      expect(screen.getByText('Siti Kasir')).toBeInTheDocument();
       expect(screen.getByText('Tepat Waktu')).toBeInTheDocument();
       expect(screen.getByText('14m')).toBeInTheDocument();
       expect(screen.getByText('Shift pagi')).toBeInTheDocument();
+    });
+
+    it('renders loading skeleton when isLoading is true', () => {
+      const { container } = render(
+        <AttendanceTable
+          items={[]}
+          totalItems={0}
+          currentPage={1}
+          totalPages={1}
+          isLoading={true}
+          onPageChange={vi.fn()}
+        />
+      );
+
+      expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
     });
 
     it('renders empty state when no items exist', () => {
@@ -208,7 +300,7 @@ describe('Attendance UI Components', () => {
       vi.spyOn(attendanceHooks, 'useAdminAttendancePaginatedQuery').mockReturnValue({
         data: {
           items: mockItems,
-          meta: { page: 1, limit: 10, totalItems: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+          meta: { page: 1, limit: 10, totalItems: 2, totalPages: 1, hasNextPage: false, hasPrevPage: false },
         },
         isLoading: false,
       } as any);

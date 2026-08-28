@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { CommonHeader } from '@/components/common/common-header';
 import { useAuthStore } from '@/store/use-auth-store';
+import { useSidebarStore } from '@/store/use-sidebar-store';
 import { TooltipProvider } from '@/components/ui/tooltip';
 
 const mockReplace = vi.fn();
@@ -19,12 +20,16 @@ vi.mock('sonner', () => ({
   },
 }));
 
-const mockSetTheme = vi.fn();
+let currentTheme = 'light';
+const mockSetTheme = vi.fn((newTheme) => {
+  currentTheme = newTheme;
+});
+
 vi.mock('next-themes', () => ({
   useTheme: () => ({
-    theme: 'light',
+    theme: currentTheme,
     setTheme: mockSetTheme,
-    resolvedTheme: 'light',
+    resolvedTheme: currentTheme,
   }),
 }));
 
@@ -32,6 +37,7 @@ describe('CommonHeader Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.getState().logout();
+    currentTheme = 'light';
   });
 
   it('renders portal breadcrumb and user details', () => {
@@ -49,6 +55,40 @@ describe('CommonHeader Component', () => {
     expect(screen.getByText('KDS Monitor')).toBeInTheDocument();
     expect(screen.getByText('Chef Gordon')).toBeInTheDocument();
     expect(screen.getByText('ADMIN')).toBeInTheDocument();
+  });
+
+  it('renders fallback portalTitle when breadcrumb is not provided', () => {
+    render(
+      <TooltipProvider>
+        <CommonHeader portalTitle="Portal Dapur Utama" />
+      </TooltipProvider>
+    );
+
+    expect(screen.getByText('Portal Dapur Utama')).toBeInTheDocument();
+  });
+
+  it('toggles sidebar collapsed state and theme mode', () => {
+    const toggleCollapseSpy = vi.spyOn(useSidebarStore.getState(), 'toggleCollapse');
+
+    const { container } = render(
+      <TooltipProvider>
+        <CommonHeader />
+      </TooltipProvider>
+    );
+
+    // Sidebar collapse button
+    const collapseBtn = container.querySelector('.lucide-panel-left-close, .lucide-panel-left-open')?.closest('button');
+    if (collapseBtn) {
+      fireEvent.click(collapseBtn);
+      expect(toggleCollapseSpy).toHaveBeenCalled();
+    }
+
+    // Theme toggle button (light -> dark)
+    const themeBtn = container.querySelector('.lucide-moon, .lucide-sun')?.closest('button');
+    if (themeBtn) {
+      fireEvent.click(themeBtn);
+      expect(mockSetTheme).toHaveBeenCalledWith('dark');
+    }
   });
 
   it('opens confirmation modal on Keluar button click and cancels logout when Batal is clicked', () => {

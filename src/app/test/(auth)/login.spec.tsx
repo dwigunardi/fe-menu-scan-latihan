@@ -3,7 +3,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import StaffLoginPage from '@/app/(auth)/login/page';
 import { useAuthStore } from '@/store/use-auth-store';
 import * as authApi from '@/lib/api/auth-api';
-import { Right } from '@/lib/api/either';
+import { Right, Left } from '@/lib/api/either';
+import { ApiError } from '@/lib/api/api-error';
 
 const mockReplace = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -40,6 +41,31 @@ describe('StaffLoginPage Component', () => {
     expect(screen.getByText('Pelayan (Floor)')).toBeInTheDocument();
   });
 
+  it('redirects on mount if user is already authenticated', () => {
+    useAuthStore.getState().setAuth(
+      { id: 'a1', username: 'admin', name: 'Admin', role: 'ADMIN' },
+      'test-token'
+    );
+
+    render(<StaffLoginPage />);
+    expect(mockReplace).toHaveBeenCalledWith('/admin/dashboard');
+  });
+
+  it('toggles password visibility when eye icon is clicked', () => {
+    render(<StaffLoginPage />);
+
+    const passwordInput = screen.getByPlaceholderText(/Masukkan kata sandi/i);
+    expect(passwordInput).toHaveAttribute('type', 'password');
+
+    const toggleBtn = passwordInput.nextElementSibling as HTMLButtonElement;
+    if (toggleBtn) {
+      fireEvent.click(toggleBtn);
+      expect(passwordInput).toHaveAttribute('type', 'text');
+      fireEvent.click(toggleBtn);
+      expect(passwordInput).toHaveAttribute('type', 'password');
+    }
+  });
+
   it('shows loading spinner when form is submitted and redirects to dashboard', async () => {
     vi.spyOn(authApi, 'loginStaff').mockResolvedValue(
       new Right({
@@ -64,6 +90,52 @@ describe('StaffLoginPage Component', () => {
 
     const submitBtn = screen.getByRole('button', { name: /Masuk ke Portal/i });
     fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(useAuthStore.getState().isAuthenticated).toBe(true);
+      expect(mockReplace).toHaveBeenCalledWith('/admin/dashboard');
+    });
+  });
+
+  it('handles login failure when credentials are invalid', async () => {
+    vi.spyOn(authApi, 'loginStaff').mockResolvedValue(
+      new Left(new ApiError(401, 'UNAUTHORIZED', 'Username atau password salah'))
+    );
+
+    render(<StaffLoginPage />);
+
+    const usernameInput = screen.getByPlaceholderText(/Masukkan username staf/i);
+    const passwordInput = screen.getByPlaceholderText(/Masukkan kata sandi/i);
+
+    fireEvent.change(usernameInput, { target: { value: 'wronguser' } });
+    fireEvent.change(passwordInput, { target: { value: 'wrongpass' } });
+
+    const submitBtn = screen.getByRole('button', { name: /Masuk ke Portal/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(useAuthStore.getState().isAuthenticated).toBe(false);
+    });
+  });
+
+  it('triggers 1-Click login when Super Admin card is clicked', async () => {
+    vi.spyOn(authApi, 'loginStaff').mockResolvedValue(
+      new Right({
+        user: {
+          id: 'a1',
+          username: 'admin',
+          name: 'Super Admin',
+          role: 'ADMIN' as const,
+        },
+        accessToken: 'token-abc',
+        refreshToken: 'refresh-xyz',
+      })
+    );
+
+    render(<StaffLoginPage />);
+
+    const adminBtn = screen.getByRole('button', { name: /Super Admin/i });
+    fireEvent.click(adminBtn);
 
     await waitFor(() => {
       expect(useAuthStore.getState().isAuthenticated).toBe(true);
@@ -118,6 +190,31 @@ describe('StaffLoginPage Component', () => {
     await waitFor(() => {
       expect(useAuthStore.getState().isAuthenticated).toBe(true);
       expect(mockReplace).toHaveBeenCalledWith('/cashier/tables');
+    });
+  });
+
+  it('successfully logs in and redirects WAITER staff to /waiter/tables', async () => {
+    vi.spyOn(authApi, 'loginStaff').mockResolvedValue(
+      new Right({
+        user: {
+          id: 'w1',
+          username: 'waiter',
+          name: 'Pelayan Doni',
+          role: 'WAITER' as const,
+        },
+        accessToken: 'token-abc',
+        refreshToken: 'refresh-xyz',
+      })
+    );
+
+    render(<StaffLoginPage />);
+
+    const waiterBtn = screen.getByRole('button', { name: /Pelayan \(Floor\)/i });
+    fireEvent.click(waiterBtn);
+
+    await waitFor(() => {
+      expect(useAuthStore.getState().isAuthenticated).toBe(true);
+      expect(mockReplace).toHaveBeenCalledWith('/waiter/tables');
     });
   });
 });

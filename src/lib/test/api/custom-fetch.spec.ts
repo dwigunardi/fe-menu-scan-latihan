@@ -1,15 +1,17 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { customFetch, performHandshake, ensureHandshakeSession } from '@/lib/api/custom-fetch';
 import { useAuthStore } from '@/store/use-auth-store';
 import { useHandshakeStore } from '@/store/use-handshake-store';
 import { server } from '@/test/mocks/server';
 import { http, HttpResponse } from 'msw';
 import { encryptPayload, generateClientKeyPair } from '@/lib/crypto/ecdh';
+import * as ecdhModule from '@/lib/crypto/ecdh';
 
 const API_BASE = 'http://localhost:5000/api/v1';
 
 describe('customFetch & Handshake Architecture', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     useAuthStore.getState().logout();
     useHandshakeStore.getState().clearHandshake();
   });
@@ -74,6 +76,18 @@ describe('customFetch & Handshake Architecture', () => {
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
         expect(result.value.message).toContain('Server tidak mengembalikan public key');
+      }
+    });
+
+    it('handles non-network crypto failures during handshake', async () => {
+      vi.spyOn(ecdhModule, 'generateClientKeyPair').mockRejectedValue(
+        new Error('SubtleCrypto subsystem hardware failure')
+      );
+
+      const result = await performHandshake();
+      expect(result.isLeft()).toBe(true);
+      if (result.isLeft()) {
+        expect(result.value.message).toContain('SubtleCrypto subsystem hardware failure');
       }
     });
   });
@@ -220,11 +234,8 @@ describe('customFetch & Handshake Architecture', () => {
     });
 
     it('retries request on handshake expired 401 and returns error if retry handshake fails', async () => {
-      let callCount = 0;
-
       server.use(
         http.get(`${API_BASE}/test/handshake-retry-fail`, () => {
-          callCount++;
           return HttpResponse.json(
             { statusCode: 401, message: 'HANDSHAKE_EXPIRED' },
             { status: 401 }

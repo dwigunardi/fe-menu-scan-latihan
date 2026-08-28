@@ -1,4 +1,39 @@
-import pino from 'pino';
+import pino, { LoggerOptions } from 'pino';
+
+export function getLogLevel(isServer: boolean, isDev: boolean): string {
+  if (isServer) {
+    return isDev ? 'debug' : 'info';
+  }
+  return isDev ? 'debug' : 'silent';
+}
+
+export function getLoggerOptions(isServer: boolean, isDev: boolean): LoggerOptions {
+  return {
+    level: getLogLevel(isServer, isDev),
+    redact: {
+      paths: [
+        'password',
+        'accessToken',
+        'handshakeToken',
+        'sessionKey',
+        'token',
+        'authorization',
+        '*.password',
+        '*.accessToken',
+        '*.handshakeToken',
+        '*.sessionKey',
+        'headers.authorization',
+        'headers.x-handshake-token',
+        'req.headers.authorization',
+      ],
+      censor: '[REDACTED]',
+    },
+    browser: {
+      asObject: true,
+      disabled: !isDev,
+    },
+  };
+}
 
 const isServer = typeof window === 'undefined';
 const isDev = process.env.NODE_ENV === 'development';
@@ -10,28 +45,4 @@ const isDev = process.env.NODE_ENV === 'development';
  * - Browser Side Prod: SILENCED (100% disabled) to prevent sensitive data leaks in user DevTools.
  * - Automatic Deep Redaction: Masks password, tokens, and cryptographic keys.
  */
-export const logger = pino({
-  level: isServer ? (isDev ? 'debug' : 'info') : (isDev ? 'debug' : 'silent'),
-  redact: {
-    paths: [
-      'password',
-      'accessToken',
-      'handshakeToken',
-      'sessionKey',
-      'token',
-      'authorization',
-      '*.password',
-      '*.accessToken',
-      '*.handshakeToken',
-      '*.sessionKey',
-      'headers.authorization',
-      'headers.x-handshake-token',
-      'req.headers.authorization',
-    ],
-    censor: '[REDACTED]',
-  },
-  browser: {
-    asObject: true,
-    disabled: !isDev,
-  },
-});
+export const logger = pino(getLoggerOptions(isServer, isDev));

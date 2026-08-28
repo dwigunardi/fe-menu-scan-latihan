@@ -263,6 +263,57 @@ describe('Banner Components', () => {
       });
     });
 
+    it('rejects invalid custom URL in Paste URL tab', async () => {
+      vi.spyOn(validatorModule, 'validateBannerImageDimensions').mockResolvedValue({
+        isValid: false,
+        width: 100,
+        height: 100,
+        aspectRatio: 1,
+        aspectRatioLabel: 'Square',
+        error: 'Rasio gambar tidak sesuai. Banner harus 16:9.',
+      });
+
+      const onChange = vi.fn();
+      render(<BannerImageUploader value="" onChange={onChange} />);
+
+      fireEvent.click(screen.getByRole('button', { name: /Paste URL/i }));
+
+      const urlInput = screen.getByPlaceholderText(/https:\/\/images.unsplash.com/i);
+      fireEvent.change(urlInput, { target: { value: 'https://example.com/square.jpg' } });
+
+      const applyBtn = screen.getByRole('button', { name: /Terapkan/i });
+      fireEvent.click(applyBtn);
+
+      await waitFor(() => {
+        expect(onChange).not.toHaveBeenCalled();
+      });
+    });
+
+    it('handles selecting preset with onPresetSelect callback and dropzone click', () => {
+      const onChange = vi.fn();
+      const onPresetSelect = vi.fn();
+      render(
+        <BannerImageUploader
+          value=""
+          onChange={onChange}
+          onPresetSelect={onPresetSelect}
+        />
+      );
+
+      // Select preset
+      fireEvent.click(screen.getByRole('button', { name: /Contoh Preset/i }));
+      fireEvent.click(screen.getByText('☕ Buy 1 Get 1 Kopi'));
+      expect(onChange).toHaveBeenCalled();
+      expect(onPresetSelect).toHaveBeenCalled();
+
+      // Dropzone click in upload tab
+      fireEvent.click(screen.getByRole('button', { name: /Upload File/i }));
+      const dropzone = screen.getByText(/Klik untuk memilih file/i).closest('div');
+      if (dropzone) {
+        fireEvent.click(dropzone);
+      }
+    });
+
     it('removes image preview when clear button (X) is clicked', () => {
       const onChange = vi.fn();
       render(

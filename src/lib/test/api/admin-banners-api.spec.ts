@@ -9,6 +9,10 @@ import {
   deleteAdminBanner,
 } from '@/lib/api/admin-banners-api';
 import { useAuthStore } from '@/store/use-auth-store';
+import { server } from '@/test/mocks/server';
+import { http, HttpResponse } from 'msw';
+
+const API_BASE = 'http://localhost:5000/api/v1';
 
 describe('Admin Banners API Client', () => {
   beforeEach(() => {
@@ -19,13 +23,16 @@ describe('Admin Banners API Client', () => {
     );
   });
 
-  it('fetches all banners for admin with getAdminBanners', async () => {
+  it('fetches all banners for admin with getAdminBanners (with and without query params)', async () => {
     const result = await getAdminBanners();
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value.length).toBeGreaterThan(0);
       expect(result.value[0].title).toBeDefined();
     }
+
+    const filteredResult = await getAdminBanners({ search: 'kopi', isActive: true });
+    expect(filteredResult.isRight()).toBe(true);
   });
 
   it('fetches active public banners with getPublicBanners', async () => {
@@ -33,6 +40,34 @@ describe('Admin Banners API Client', () => {
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value.every((b) => b.isActive)).toBe(true);
+    }
+  });
+
+  it('handles wrapped banner list response object { items: [...] }', async () => {
+    server.use(
+      http.get(`${API_BASE}/admin/banners`, () => {
+        return HttpResponse.json({
+          items: [
+            {
+              id: 'ban-wrapped-1',
+              title: 'Wrapped Banner',
+              description: 'Wrapped test',
+              imageUrl: 'https://example.com/banner.jpg',
+              targetUrl: '/menu',
+              sortOrder: 1,
+              isActive: true,
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-01-01T00:00:00.000Z',
+            },
+          ],
+        });
+      })
+    );
+
+    const result = await getAdminBanners();
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value[0].title).toBe('Wrapped Banner');
     }
   });
 
@@ -80,12 +115,23 @@ describe('Admin Banners API Client', () => {
     }
   });
 
-  it('deletes a promo banner with deleteAdminBanner', async () => {
+  it('deletes a promo banner with deleteAdminBanner successfully', async () => {
     const result = await deleteAdminBanner('ban-2');
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value.success).toBe(true);
       expect(result.value.id).toBe('ban-2');
     }
+  });
+
+  it('returns ApiError when deleteAdminBanner encounters error', async () => {
+    server.use(
+      http.delete(`${API_BASE}/admin/banners/:id`, () => {
+        return HttpResponse.json({ message: 'Banner not found' }, { status: 404 });
+      })
+    );
+
+    const result = await deleteAdminBanner('invalid-id');
+    expect(result.isLeft()).toBe(true);
   });
 });
