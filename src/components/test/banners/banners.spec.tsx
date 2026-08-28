@@ -222,7 +222,7 @@ describe('Banner Components', () => {
       });
 
       vi.mocked(mediaApi.uploadMediaImage).mockResolvedValue(
-        left(new ApiError('Koneksi server gagal saat mengunggah', 500, 'UPLOAD_ERROR'))
+        left(new ApiError(500, 'UPLOAD_ERROR', 'Koneksi server gagal saat mengunggah'))
       );
 
       const onChange = vi.fn();

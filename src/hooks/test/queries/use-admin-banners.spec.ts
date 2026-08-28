@@ -236,7 +236,7 @@ describe('use-admin-banners hooks', () => {
 
   describe('useDeleteBannerMutation', () => {
     it('deletes banner with title and without title', async () => {
-      vi.spyOn(bannersApi, 'deleteAdminBanner').mockResolvedValue(right({ success: true }));
+      vi.spyOn(bannersApi, 'deleteAdminBanner').mockResolvedValue(right({ success: true, id: 'ban-1' }));
       const { result } = renderHook(() => useDeleteBannerMutation(), {
         wrapper: createQueryWrapper(),
       });
