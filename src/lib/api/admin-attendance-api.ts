@@ -16,7 +16,7 @@ import {
   AttendancePaginatedResponseSchema,
 } from '../validations/attendance.schema';
 
-const BASE_URL = '/api/v1/admin/attendance';
+const BASE_URL = '/admin/attendance';
 
 export async function getAdminAttendancePaginated(
   params: AttendanceQueryParams = {}
