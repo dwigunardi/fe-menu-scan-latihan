@@ -7,6 +7,9 @@ import { CategoryData } from '@/lib/validations/admin-menu.schema';
 import { toast } from 'sonner';
 import { server } from '@/test/mocks/server';
 import { http, HttpResponse } from 'msw';
+import * as adminMenusApi from '@/lib/api/admin-menus-api';
+import { Right, Left } from '@/lib/api/either';
+import { ApiError } from '@/lib/api/api-error';
 
 const API_BASE = 'http://localhost:5000/api/v1';
 
@@ -81,6 +84,52 @@ describe('MenuForm Component', () => {
     await user.type(promoInput, '25000');
 
     expect(screen.getByText(/Rp 25.000/i)).toBeInTheDocument();
+  });
+
+  it('handles image upload mode switching, drag and drop, file upload, and clear image', async () => {
+    vi.spyOn(adminMenusApi, 'uploadAdminMenuImage').mockResolvedValue(
+      new Right({
+        url: 'http://localhost:5000/uploads/menu.webp',
+        filename: 'menu.webp',
+        size: 1024,
+        mimeType: 'image/webp',
+      })
+    );
+
+    const { container } = renderWithProviders(
+      <MenuForm categories={mockCategories} mode="create" />
+    );
+
+    // Switch to URL mode
+    const urlModeBtn = screen.getByRole('button', { name: /Input URL/i });
+    fireEvent.click(urlModeBtn);
+    expect(screen.getByPlaceholderText(/https:\/\/images.unsplash.com/i)).toBeInTheDocument();
+
+    // Switch back to Upload File mode
+    const uploadModeBtn = screen.getByRole('button', { name: /Upload File/i });
+    fireEvent.click(uploadModeBtn);
+
+    // Drag & Drop events
+    const dropzone = container.querySelector('.border-dashed');
+    if (dropzone) {
+      fireEvent.dragOver(dropzone);
+      fireEvent.dragLeave(dropzone);
+
+      const file = new File(['test'], 'menu.png', { type: 'image/png' });
+      fireEvent.drop(dropzone, {
+        dataTransfer: { files: [file] },
+      });
+
+      await waitFor(() => {
+        expect(adminMenusApi.uploadAdminMenuImage).toHaveBeenCalled();
+      });
+
+      // Clear image
+      const clearBtn = screen.getByRole('button', { name: '' });
+      if (clearBtn) {
+        fireEvent.click(clearBtn);
+      }
+    }
   });
 
   it('switches to Variants tab and allows adding, editing, and removing variant groups & options', async () => {

@@ -3,15 +3,16 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { MenuTable } from '@/components/menus/menu-table';
 import { AdminMenuItem } from '@/lib/api/admin-menus-api';
 
+const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: vi.fn(),
+    push: mockPush,
     replace: vi.fn(),
     refresh: vi.fn(),
   }),
 }));
 
-describe('MenuTable Component (Quick Sold-Out Switch)', () => {
+describe('MenuTable Component (Desktop Table & Row Actions)', () => {
   const mockMenus: AdminMenuItem[] = [
     {
       id: 'menu-1',
@@ -78,7 +79,7 @@ describe('MenuTable Component (Quick Sold-Out Switch)', () => {
     expect(switches[1]).toHaveAttribute('data-state', 'unchecked');
   });
 
-  it('triggers onToggleStock callback when switch is clicked', () => {
+  it('triggers onToggleStock callback when switch is clicked without row bubbling', () => {
     const onToggleStock = vi.fn();
     render(
       <MenuTable
@@ -94,5 +95,90 @@ describe('MenuTable Component (Quick Sold-Out Switch)', () => {
     const switches = screen.getAllByRole('switch');
     fireEvent.click(switches[0]);
     expect(onToggleStock).toHaveBeenCalledWith(mockMenus[0]);
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('navigates to detail page when table row is clicked', () => {
+    render(
+      <MenuTable
+        menus={mockMenus}
+        isLoading={false}
+        isTogglePending={false}
+        isDeletePending={false}
+        onToggleStock={vi.fn()}
+        onDeleteMenu={vi.fn()}
+      />
+    );
+
+    const row = screen.getByText('Kopi Susu Gula Aren').closest('tr');
+    if (row) {
+      fireEvent.click(row);
+      expect(mockPush).toHaveBeenCalledWith('/admin/menus/detail/menu-1');
+    }
+  });
+
+  it('handles action buttons (View Detail, Edit, and Delete)', () => {
+    const onDeleteMenu = vi.fn();
+    const { container } = render(
+      <MenuTable
+        menus={mockMenus}
+        isLoading={false}
+        isTogglePending={false}
+        isDeletePending={false}
+        onToggleStock={vi.fn()}
+        onDeleteMenu={onDeleteMenu}
+      />
+    );
+
+    // Detail button (eye)
+    const detailBtn = container.querySelector('.lucide-eye')?.closest('button');
+    if (detailBtn) {
+      fireEvent.click(detailBtn);
+      expect(mockPush).toHaveBeenCalledWith('/admin/menus/detail/menu-1');
+    }
+
+    // Edit button (edit)
+    const editBtn = container.querySelector('.lucide-edit')?.closest('button');
+    if (editBtn) {
+      fireEvent.click(editBtn);
+      expect(mockPush).toHaveBeenCalledWith('/admin/menus/edit/menu-1');
+    }
+
+    // Delete button (trash)
+    const deleteBtn = container.querySelector('.lucide-trash-2')?.closest('button');
+    if (deleteBtn) {
+      fireEvent.click(deleteBtn);
+      expect(onDeleteMenu).toHaveBeenCalledWith('menu-1', 'Kopi Susu Gula Aren');
+    }
+  });
+
+  it('renders loading skeleton rows when isLoading is true', () => {
+    const { container } = render(
+      <MenuTable
+        menus={[]}
+        isLoading={true}
+        isTogglePending={false}
+        isDeletePending={false}
+        onToggleStock={vi.fn()}
+        onDeleteMenu={vi.fn()}
+      />
+    );
+
+    expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+  });
+
+  it('renders empty placeholder when menus array is empty', () => {
+    render(
+      <MenuTable
+        menus={[]}
+        isLoading={false}
+        isTogglePending={false}
+        isDeletePending={false}
+        onToggleStock={vi.fn()}
+        onDeleteMenu={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Tidak ada menu yang sesuai')).toBeInTheDocument();
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { BannerForm } from '@/components/banners/banner-form';
 import { BannerImageUploader } from '@/components/banners/banner-image-uploader';
 import { PromoCarousel } from '@/components/banners/promo-carousel';
@@ -282,16 +282,94 @@ describe('Banner Components', () => {
   });
 
   describe('PromoCarousel', () => {
-    it('renders promo carousel slides and navigates with next and prev buttons', () => {
+    it('renders promo carousel slides and navigates with next, prev, and dot buttons', () => {
       render(<PromoCarousel initialBanners={mockBanners} />);
 
       expect(screen.getByText('Diskon Kopi 50%')).toBeInTheDocument();
 
       // Click next button
-      const nextButtons = screen.getAllByRole('button');
-      if (nextButtons.length > 0) {
-        fireEvent.click(nextButtons[0]);
+      const nextBtn = screen.getByRole('button', { name: 'Next Banner' });
+      fireEvent.click(nextBtn);
+      expect(screen.getByText('Cashback QRIS 30%')).toBeInTheDocument();
+
+      // Click prev button
+      const prevBtn = screen.getByRole('button', { name: 'Previous Banner' });
+      fireEvent.click(prevBtn);
+      expect(screen.getByText('Diskon Kopi 50%')).toBeInTheDocument();
+
+      // Click slide indicator dot
+      const dot2 = screen.getByRole('button', { name: 'Slide 2' });
+      fireEvent.click(dot2);
+      expect(screen.getByText('Cashback QRIS 30%')).toBeInTheDocument();
+    });
+
+    it('pauses and resumes on mouseEnter and mouseLeave, and advances with autoPlay timer', () => {
+      vi.useFakeTimers();
+      render(<PromoCarousel initialBanners={mockBanners} autoPlayInterval={3000} />);
+
+      expect(screen.getByText('Diskon Kopi 50%')).toBeInTheDocument();
+
+      // Mouse enter pauses auto-play
+      const carouselContainer = screen.getByText('Diskon Kopi 50%').closest('div.group');
+      if (carouselContainer) {
+        fireEvent.mouseEnter(carouselContainer);
+        act(() => {
+          vi.advanceTimersByTime(3500);
+        });
+        // Should still be slide 1
+        expect(screen.getByText('Diskon Kopi 50%')).toBeInTheDocument();
+
+        // Mouse leave resumes
+        fireEvent.mouseLeave(carouselContainer);
+        act(() => {
+          vi.advanceTimersByTime(3500);
+        });
+        expect(screen.getByText('Cashback QRIS 30%')).toBeInTheDocument();
       }
+      vi.useRealTimers();
+    });
+
+    it('handles touch swipe gestures (left swipe next, right swipe prev)', () => {
+      render(<PromoCarousel initialBanners={mockBanners} />);
+
+      const carouselContainer = screen.getByText('Diskon Kopi 50%').closest('div.group');
+      if (carouselContainer) {
+        // Swipe left (distance > 50 -> next slide)
+        fireEvent.touchStart(carouselContainer, { targetTouches: [{ clientX: 200 }] });
+        fireEvent.touchMove(carouselContainer, { targetTouches: [{ clientX: 100 }] });
+        fireEvent.touchEnd(carouselContainer);
+        expect(screen.getByText('Cashback QRIS 30%')).toBeInTheDocument();
+
+        // Swipe right (distance < -50 -> prev slide)
+        fireEvent.touchStart(carouselContainer, { targetTouches: [{ clientX: 100 }] });
+        fireEvent.touchMove(carouselContainer, { targetTouches: [{ clientX: 200 }] });
+        fireEvent.touchEnd(carouselContainer);
+        expect(screen.getByText('Diskon Kopi 50%')).toBeInTheDocument();
+
+        // Insufficient swipe (no change)
+        fireEvent.touchStart(carouselContainer, { targetTouches: [{ clientX: 100 }] });
+        fireEvent.touchEnd(carouselContainer);
+        expect(screen.getByText('Diskon Kopi 50%')).toBeInTheDocument();
+      }
+    });
+
+    it('renders single banner without navigation arrows or dots', () => {
+      render(<PromoCarousel initialBanners={[mockBanners[0]]} />);
+
+      expect(screen.getByText('Diskon Kopi 50%')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Next Banner' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Previous Banner' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Slide 1' })).not.toBeInTheDocument();
+    });
+
+    it('renders loading skeleton when fetching public banners', () => {
+      vi.spyOn(bannerHooks, 'usePublicBannersQuery').mockReturnValue({
+        data: undefined,
+        isLoading: true,
+      } as any);
+
+      const { container } = render(<PromoCarousel />);
+      expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
     });
 
     it('renders empty carousel when banners array is empty', () => {
