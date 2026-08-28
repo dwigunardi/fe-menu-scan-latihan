@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   Clock,
   Users,
+  CalendarCheck,
   Settings,
   Sparkles,
   PanelLeftClose,
@@ -79,6 +80,12 @@ const defaultNavItems: CommonNavItem[] = [
     title: 'Manajemen Staf',
     href: '/admin/staff',
     icon: Users,
+    allowedRoles: [ROLE.ADMIN],
+  },
+  {
+    title: 'Presensi Staf',
+    href: '/admin/attendance',
+    icon: CalendarCheck,
     allowedRoles: [ROLE.ADMIN],
   },
   {

@@ -27,6 +27,11 @@ export const adminQueryKeys = {
   staff: () => ['admin', 'staff'] as const,
   staffPaginated: (params: Record<string, unknown> = {}) =>
     ['admin', 'staff', 'paginated', params] as const,
+  attendance: () => ['admin', 'attendance'] as const,
+  attendancePaginated: (params: Record<string, unknown> = {}) =>
+    ['admin', 'attendance', 'paginated', params] as const,
+  attendanceSummary: (params: Record<string, unknown> = {}) =>
+    ['admin', 'attendance', 'summary', params] as const,
 };
 
 
