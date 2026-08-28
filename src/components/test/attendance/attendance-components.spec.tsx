@@ -5,15 +5,50 @@ import {
   AttendanceFilterBar,
   AttendanceTable,
   LeaveRequestModal,
+  AttendanceView,
 } from '@/components/attendance';
 import { ATTENDANCE_STATUS, LEAVE_TYPE } from '@/lib/constants/attendance';
 import { ROLE } from '@/lib/constants/roles';
 import * as staffHooks from '@/hooks/queries/use-admin-staff';
 import * as attendanceHooks from '@/hooks/queries/use-admin-attendance';
+import * as settingsHooks from '@/hooks/queries/use-admin-settings';
+import { createQueryWrapper } from '@/test/test-utils';
+import { toast } from 'sonner';
+
+vi.mock('sonner', () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
 
 describe('Attendance UI Components', () => {
+  const mockItems = [
+    {
+      id: 'att-1',
+      branchId: 'b-1',
+      staffId: 's-1',
+      staffName: 'Budi Barista',
+      staffRole: ROLE.KITCHEN,
+      date: '2026-01-01',
+      clockInTime: '2026-01-01T08:05:00.000Z',
+      clockOutTime: '2026-01-01T16:00:00.000Z',
+      status: ATTENDANCE_STATUS.ON_TIME,
+      clockInLat: -6.2297,
+      clockInLon: 106.8557,
+      clockInDistanceMeters: 14,
+      isWithinGeofence: true,
+      workDurationMinutes: 475,
+      notes: 'Shift pagi',
+    },
+  ];
+
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Mock URL object methods for CSV export
+    global.URL.createObjectURL = vi.fn(() => 'blob:http://localhost/test');
+    global.URL.revokeObjectURL = vi.fn();
   });
 
   describe('AttendanceSummaryCards', () => {
@@ -87,26 +122,6 @@ describe('Attendance UI Components', () => {
   });
 
   describe('AttendanceTable', () => {
-    const mockItems = [
-      {
-        id: 'att-1',
-        branchId: 'b-1',
-        staffId: 's-1',
-        staffName: 'Budi Barista',
-        staffRole: ROLE.KITCHEN,
-        date: '2026-01-01',
-        clockInTime: '2026-01-01T08:05:00.000Z',
-        clockOutTime: '2026-01-01T16:00:00.000Z',
-        status: ATTENDANCE_STATUS.ON_TIME,
-        clockInLat: -6.2297,
-        clockInLon: 106.8557,
-        clockInDistanceMeters: 14,
-        isWithinGeofence: true,
-        workDurationMinutes: 475,
-        notes: 'Shift pagi',
-      },
-    ];
-
     it('renders attendance rows with staff name, status, and geofence distance', () => {
       render(
         <AttendanceTable
@@ -153,7 +168,7 @@ describe('Attendance UI Components', () => {
       } as any);
 
       const onClose = vi.fn();
-      render(<LeaveRequestModal isOpen={true} onClose={onClose} />);
+      render(<LeaveRequestModal isOpen={true} onClose={onClose} />, { wrapper: createQueryWrapper() });
 
       expect(screen.getByText('Form Izin / Sakit / Cuti Staf')).toBeInTheDocument();
 
@@ -175,6 +190,97 @@ describe('Attendance UI Components', () => {
         );
         expect(onClose).toHaveBeenCalled();
       });
+    });
+  });
+
+  describe('AttendanceView Coordinator', () => {
+    beforeEach(() => {
+      vi.spyOn(settingsHooks, 'useAdminBranchSettingQuery').mockReturnValue({
+        data: { id: 'b-1', name: 'Kumpul Cafe', latitude: -6.22, longitude: 106.85, geofenceRadius: 100 },
+        isLoading: false,
+      } as any);
+
+      vi.spyOn(staffHooks, 'useAdminStaffPaginatedQuery').mockReturnValue({
+        data: { items: [{ id: 's-1', name: 'Budi Barista', role: ROLE.KITCHEN, isActive: true }] },
+        isLoading: false,
+      } as any);
+
+      vi.spyOn(attendanceHooks, 'useAdminAttendancePaginatedQuery').mockReturnValue({
+        data: {
+          items: mockItems,
+          meta: { page: 1, limit: 10, totalItems: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+        },
+        isLoading: false,
+      } as any);
+
+      vi.spyOn(attendanceHooks, 'useAdminAttendanceSummaryQuery').mockReturnValue({
+        data: {
+          totalStaff: 5,
+          presentCount: 4,
+          onTimeCount: 3,
+          lateCount: 1,
+          earlyLeaveCount: 0,
+          leaveCount: 1,
+          absentCount: 0,
+          attendanceRatePercent: 80,
+        },
+        isLoading: false,
+      } as any);
+    });
+
+    it('renders master view with header, cards, filters, and table', () => {
+      render(<AttendanceView />, { wrapper: createQueryWrapper() });
+
+      expect(screen.getByText('Presensi & Absensi Karyawan')).toBeInTheDocument();
+      expect(screen.getByText('Total Staf Hari Ini')).toBeInTheDocument();
+      expect(screen.getByText('Budi Barista')).toBeInTheDocument();
+    });
+
+    it('exports attendance data to CSV and shows success toast', () => {
+      render(<AttendanceView />, { wrapper: createQueryWrapper() });
+
+      const exportBtn = screen.getByRole('button', { name: /Ekspor CSV/i });
+      fireEvent.click(exportBtn);
+
+      expect(global.URL.createObjectURL).toHaveBeenCalled();
+      expect(toast.success).toHaveBeenCalledWith(
+        expect.stringContaining('Rekapitulasi presensi berhasil diekspor ke CSV')
+      );
+    });
+
+    it('shows error toast on CSV export if attendance data is empty', () => {
+      vi.spyOn(attendanceHooks, 'useAdminAttendancePaginatedQuery').mockReturnValue({
+        data: {
+          items: [],
+          meta: { page: 1, limit: 10, totalItems: 0, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+        },
+        isLoading: false,
+      } as any);
+
+      render(<AttendanceView />, { wrapper: createQueryWrapper() });
+
+      const exportBtn = screen.getByRole('button', { name: /Ekspor CSV/i });
+      fireEvent.click(exportBtn);
+
+      expect(toast.error).toHaveBeenCalledWith('Tidak ada data presensi untuk diekspor');
+    });
+
+    it('opens and closes ClockInModal and LeaveRequestModal from header actions', () => {
+      render(<AttendanceView />, { wrapper: createQueryWrapper() });
+
+      const clockInBtn = screen.getByRole('button', { name: /Presensi Staf \(Clock-In\)/i });
+      fireEvent.click(clockInBtn);
+      expect(screen.getByText('Terminal Presensi Staf Kafe')).toBeInTheDocument();
+
+      const cancelClockInBtn = screen.getByRole('button', { name: 'Batal' });
+      fireEvent.click(cancelClockInBtn);
+
+      const leaveBtn = screen.getByRole('button', { name: /Catat Izin \/ Cuti/i });
+      fireEvent.click(leaveBtn);
+      expect(screen.getByText('Form Izin / Sakit / Cuti Staf')).toBeInTheDocument();
+
+      const cancelLeaveBtn = screen.getByRole('button', { name: 'Batal' });
+      fireEvent.click(cancelLeaveBtn);
     });
   });
 });

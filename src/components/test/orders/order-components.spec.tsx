@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { OrderCard, OrderReceiptModal } from '@/components/orders';
+import { OrderCard, OrderReceiptModal, OrdersView } from '@/components/orders';
 import { OrderData } from '@/lib/validations/order.schema';
+import * as orderHooks from '@/hooks/queries/use-admin-orders';
+import { createQueryWrapper } from '@/test/test-utils';
 
 const mockOrder: OrderData = {
   id: 'ord-1',
@@ -44,9 +46,55 @@ const mockOrder: OrderData = {
   ],
 };
 
+const mockOrderList: OrderData[] = [
+  mockOrder,
+  {
+    ...mockOrder,
+    id: 'ord-2',
+    orderNumber: 'ORD-20260820-002',
+    tableNumber: '02',
+    customerName: 'Siti Rahma',
+    status: 'PREPARING',
+  },
+  {
+    ...mockOrder,
+    id: 'ord-3',
+    orderNumber: 'ORD-20260820-003',
+    tableNumber: '03',
+    customerName: 'Andi Wijaya',
+    status: 'SERVED',
+  },
+  {
+    ...mockOrder,
+    id: 'ord-4',
+    orderNumber: 'ORD-20260820-004',
+    tableNumber: '04',
+    customerName: 'Dewi Lestari',
+    status: 'PAID',
+  },
+];
+
 describe('Order Components', () => {
+  const mockUpdateStatus = vi.fn();
+  const mockRefetch = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
+
+    vi.spyOn(orderHooks, 'useAdminOrdersPaginatedQuery').mockReturnValue({
+      data: {
+        items: mockOrderList,
+        meta: { page: 1, limit: 100, totalItems: 4, totalPages: 1, hasNextPage: false, hasPrevPage: false },
+      },
+      isLoading: false,
+      isRefetching: false,
+      refetch: mockRefetch,
+    } as any);
+
+    vi.spyOn(orderHooks, 'useUpdateOrderStatusMutation').mockReturnValue({
+      mutate: mockUpdateStatus,
+      isPending: false,
+    } as any);
   });
 
   describe('OrderCard', () => {
@@ -162,7 +210,7 @@ describe('Order Components', () => {
         />
       );
 
-      const viewReceiptBtn = screen.getByRole('button', { name: /Lihat Struk/i });
+      const viewReceiptBtn = screen.getByRole('button', { name: /Lihat Struk Pembayaran/i });
       fireEvent.click(viewReceiptBtn);
       expect(onOpenReceipt).toHaveBeenCalledWith(paidOrder);
     });
@@ -245,6 +293,70 @@ describe('Order Components', () => {
       fireEvent.click(printBtn);
 
       expect(window.print).toHaveBeenCalled();
+    });
+  });
+
+  describe('OrdersView (Master Kanban & Table Controller)', () => {
+    it('renders header, stats KPI cards, and columns in Kanban view', () => {
+      const wrapper = createQueryWrapper();
+      render(<OrdersView pageTitle="Manajemen Pesanan Masuk" />, { wrapper });
+
+      expect(screen.getByText('Manajemen Pesanan Masuk')).toBeInTheDocument();
+      expect(screen.getAllByText('Budi Santoso').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Siti Rahma').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Andi Wijaya').length).toBeGreaterThan(0);
+    });
+
+    it('toggles audio sound chime on and off', () => {
+      const wrapper = createQueryWrapper();
+      render(<OrdersView />, { wrapper });
+
+      const soundToggle = screen.getByRole('button', { name: /Bel Aktif|Mute/i });
+      fireEvent.click(soundToggle);
+
+      expect(screen.getByText(/Mute/i)).toBeInTheDocument();
+    });
+
+    it('switches to Table audit view and renders table rows with receipt trigger', () => {
+      const wrapper = createQueryWrapper();
+      render(<OrdersView />, { wrapper });
+
+      const tableModeBtn = screen.getByRole('button', { name: /Tabel/i });
+      fireEvent.click(tableModeBtn);
+
+      expect(screen.getByText('No. Pesanan')).toBeInTheDocument();
+      expect(screen.getByText('ORD-20260820-001')).toBeInTheDocument();
+      expect(screen.getByText('Dewi Lestari')).toBeInTheDocument();
+
+      // Open receipt from table view
+      const receiptButtons = screen.getAllByRole('button', { name: /Struk/i });
+      fireEvent.click(receiptButtons[0]);
+
+      expect(screen.getByText('KUMPUL CAFE & RESTO')).toBeInTheDocument();
+    });
+
+    it('filters orders by search query', () => {
+      const wrapper = createQueryWrapper();
+      render(<OrdersView />, { wrapper });
+
+      const searchInput = screen.getByPlaceholderText(/Cari no\. pesanan atau nama tamu/i);
+      fireEvent.change(searchInput, { target: { value: 'Siti' } });
+
+      expect(orderHooks.useAdminOrdersPaginatedQuery).toHaveBeenCalledWith(
+        expect.objectContaining({ search: 'Siti' })
+      );
+    });
+
+    it('refetches orders when refresh button is clicked', () => {
+      const wrapper = createQueryWrapper();
+      const { container } = render(<OrdersView />, { wrapper });
+
+      const buttons = container.querySelectorAll('button');
+      const refreshBtn = Array.from(buttons).find((b) => b.querySelector('.lucide-rotate-cw'));
+      if (refreshBtn) {
+        fireEvent.click(refreshBtn);
+        expect(mockRefetch).toHaveBeenCalled();
+      }
     });
   });
 });

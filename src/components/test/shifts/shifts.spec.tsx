@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   ShiftSummaryCard,
@@ -9,6 +9,7 @@ import {
   ZReportReceiptModal,
 } from '@/components/shifts';
 import { ShiftItem } from '@/lib/validations/shift.schema';
+import * as shiftHooks from '@/hooks/queries/use-admin-shifts';
 
 function renderWithQuery(ui: React.ReactElement) {
   const queryClient = new QueryClient({
@@ -45,8 +46,21 @@ describe('Shifts Domain UI Components', () => {
     closedAt: null,
   };
 
+  const mockOpenMutate = vi.fn();
+  const mockCloseMutate = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
+
+    vi.spyOn(shiftHooks, 'useOpenShiftMutation').mockReturnValue({
+      mutateAsync: mockOpenMutate,
+      isPending: false,
+    } as any);
+
+    vi.spyOn(shiftHooks, 'useCloseShiftMutation').mockReturnValue({
+      mutateAsync: mockCloseMutate,
+      isPending: false,
+    } as any);
   });
 
   describe('ShiftSummaryCard', () => {
@@ -125,41 +139,118 @@ describe('Shifts Domain UI Components', () => {
   });
 
   describe('OpenShiftModal', () => {
-    it('renders opening cash input and quick presets', () => {
+    it('renders opening cash input and quick presets, and submits form successfully', async () => {
+      mockOpenMutate.mockResolvedValue(mockShift);
+      const onClose = vi.fn();
+      const onSuccess = vi.fn();
+
       renderWithQuery(
         <OpenShiftModal
           isOpen={true}
-          onClose={vi.fn()}
+          onClose={onClose}
+          onSuccess={onSuccess}
         />
       );
 
       expect(screen.getByText('Buka Shift Kasir')).toBeInTheDocument();
-      expect(screen.getByText(/Kas Modal Awal/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Buka Shift Sekarang/i })).toBeInTheDocument();
+
+      // Click preset
+      const presetBtns = screen.getAllByRole('button');
+      const preset500k = presetBtns.find((b) => b.textContent?.includes('500.000'));
+      if (preset500k) {
+        fireEvent.click(preset500k);
+      }
+
+      // Custom cash input
+      const cashInput = screen.getByPlaceholderText('200.000');
+      fireEvent.change(cashInput, { target: { value: '300000' } });
+
+      // Enter notes
+      const notesInput = screen.getByPlaceholderText(/Contoh: Tambahan uang receh/i);
+      fireEvent.change(notesInput, { target: { value: 'Pecahan lengkap 5rb dan 10rb' } });
+
+      const submitBtn = screen.getByRole('button', { name: /Buka Shift Sekarang/i });
+      fireEvent.click(submitBtn);
+
+      await waitFor(() => {
+        expect(mockOpenMutate).toHaveBeenCalledWith({
+          openingCash: 300000,
+          notes: 'Pecahan lengkap 5rb dan 10rb',
+        });
+        expect(onClose).toHaveBeenCalled();
+        expect(onSuccess).toHaveBeenCalled();
+      });
     });
   });
 
   describe('CloseShiftModal', () => {
-    it('renders expected cash summary and auto calculates variance', () => {
+    it('renders expected cash summary, handles actual cash variance, and submits reconciliation', async () => {
+      const closedShiftResult: ShiftItem = {
+        ...mockShift,
+        actualCash: 360000,
+        cashVariance: 10000,
+        status: 'CLOSED',
+        closedAt: '2026-08-25T16:00:00.000Z',
+      };
+      mockCloseMutate.mockResolvedValue(closedShiftResult);
+      const onShiftClosed = vi.fn();
+
       renderWithQuery(
         <CloseShiftModal
           isOpen={true}
           onClose={vi.fn()}
           shift={mockShift}
-          onShiftClosed={vi.fn()}
+          onShiftClosed={onShiftClosed}
         />
       );
 
       expect(screen.getByText('Tutup Shift & Rekonsiliasi Kas')).toBeInTheDocument();
       expect(screen.getByText('Total Kas Harapan di Laci:')).toBeInTheDocument();
-      expect(screen.getByText('Kas Sempurna / Klop')).toBeInTheDocument();
+
+      // Input actual cash with surplus
+      const cashInput = screen.getByDisplayValue('350.000');
+      fireEvent.change(cashInput, { target: { value: '360000' } });
+
+      expect(screen.getByText(/Kas Lebih \(Overage\)/i)).toBeInTheDocument();
+
+      // Input actual cash with deficit
+      fireEvent.change(cashInput, { target: { value: '340000' } });
+      expect(screen.getByText(/Kas Kurang \(Shortage\)/i)).toBeInTheDocument();
+
+      // Add notes
+      const notesInput = screen.getByPlaceholderText(/Catatan kendala atau rincian selisih/i);
+      fireEvent.change(notesInput, { target: { value: 'Kurang uang receh 10rb untuk tips' } });
+
+      const submitBtn = screen.getByRole('button', { name: /Tutup Shift & Cetak Z-Report/i });
+      fireEvent.click(submitBtn);
+
+      await waitFor(() => {
+        expect(mockCloseMutate).toHaveBeenCalledWith({
+          shiftId: mockShift.id,
+          payload: {
+            actualCash: 340000,
+            notes: 'Kurang uang receh 10rb untuk tips',
+          },
+        });
+        expect(onShiftClosed).toHaveBeenCalledWith(closedShiftResult);
+      });
     });
   });
 
   describe('ZReportReceiptModal', () => {
-    it('renders thermal receipt details and print button', () => {
+    it('returns null when shift is not provided', () => {
+      const { container } = render(
+        <ZReportReceiptModal isOpen={true} onClose={vi.fn()} shift={null} />
+      );
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('renders thermal receipt details, variance status, and triggers print', () => {
+      window.print = vi.fn();
       const closedShift: ShiftItem = {
         ...mockShift,
+        actualCash: 340000,
+        cashVariance: -10000,
         status: 'CLOSED',
         closedAt: '2026-08-25T16:00:00.000Z',
       };
@@ -175,7 +266,12 @@ describe('Shifts Domain UI Components', () => {
       expect(screen.getByText('KUMPUL CAFE')).toBeInTheDocument();
       expect(screen.getByText('Z-REPORT (TUTUP SHIFT)')).toBeInTheDocument();
       expect(screen.getByText(/TOTAL OMSET SHIFT/)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Cetak Struk Z-Report/i })).toBeInTheDocument();
+      expect(screen.getByText(/SELISIH \(VARIANCE\):/i)).toBeInTheDocument();
+
+      const printBtn = screen.getByRole('button', { name: /Cetak Struk Z-Report/i });
+      fireEvent.click(printBtn);
+
+      expect(window.print).toHaveBeenCalled();
     });
   });
 });
