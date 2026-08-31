@@ -14,6 +14,8 @@ import {
   AttendanceSummarySchema,
   AttendancePaginatedResponse,
   AttendancePaginatedResponseSchema,
+  OvertimeReviewInput,
+  AttendanceCorrectionInput,
 } from '../validations/attendance.schema';
 
 const BASE_URL = '/admin/attendance';
@@ -75,6 +77,28 @@ export async function createLeaveRequest(
 ): Promise<Either<ApiError, LeaveResponse>> {
   return hardenedFetch(`${BASE_URL}/leave`, LeaveResponseSchema, {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function reviewOvertime(
+  id: string,
+  payload: OvertimeReviewInput
+): Promise<Either<ApiError, AttendanceItem>> {
+  return hardenedFetch(`${BASE_URL}/${id}/overtime`, AttendanceItemSchema, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function correctAttendanceTime(
+  id: string,
+  payload: AttendanceCorrectionInput
+): Promise<Either<ApiError, AttendanceItem>> {
+  return hardenedFetch(`${BASE_URL}/${id}/correction`, AttendanceItemSchema, {
+    method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });

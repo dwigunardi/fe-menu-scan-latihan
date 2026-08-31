@@ -6,12 +6,16 @@ import {
   recordClockIn,
   recordClockOut,
   createLeaveRequest,
+  reviewOvertime,
+  correctAttendanceTime,
 } from '@/lib/api/admin-attendance-api';
 import {
   AttendanceQueryParams,
   ClockInInput,
   ClockOutInput,
   LeaveRequestInput,
+  OvertimeReviewInput,
+  AttendanceCorrectionInput,
 } from '@/lib/validations/attendance.schema';
 import { notifyApiError } from '@/lib/api/notify-error';
 import { toast } from 'sonner';
@@ -97,6 +101,44 @@ export function useCreateLeaveRequestMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: adminQueryKeys.attendance() });
       toast.success('Pengajuan izin/sakit/cuti staf berhasil dicatat');
+    },
+  });
+}
+
+export function useReviewOvertimeMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: OvertimeReviewInput }) => {
+      const res = await reviewOvertime(id, payload);
+      if (res.isLeft()) {
+        notifyApiError(res.value);
+        throw res.value;
+      }
+      return res.value;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.attendance() });
+      toast.success(`Review lembur staf ${data.staffName} berhasil diperbarui!`);
+    },
+  });
+}
+
+export function useCorrectAttendanceMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: AttendanceCorrectionInput }) => {
+      const res = await correctAttendanceTime(id, payload);
+      if (res.isLeft()) {
+        notifyApiError(res.value);
+        throw res.value;
+      }
+      return res.value;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: adminQueryKeys.attendance() });
+      toast.success(`Koreksi jam pulang staf ${data.staffName} berhasil disimpan!`);
     },
   });
 }

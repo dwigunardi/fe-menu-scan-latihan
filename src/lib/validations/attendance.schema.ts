@@ -41,6 +41,12 @@ export const AttendanceItemSchema = z.object({
   clockInDistanceMeters: z.number().nullable().optional(),
   isWithinGeofence: z.boolean().default(true),
   workDurationMinutes: z.number().nullable().optional(),
+  isAutoClosed: z.boolean().default(false).optional(),
+  overtimeMinutes: z.number().nullable().optional(),
+  isOvertimeApproved: z.boolean().nullable().optional(),
+  overtimeApprovedById: z.string().nullable().optional(),
+  overtimeNotes: z.string().nullable().optional(),
+  actingRole: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   leaveType: LeaveTypeSchema.nullable().optional(),
   leaveStatus: LeaveStatusSchema.nullable().optional(),
@@ -50,6 +56,21 @@ export const AttendanceItemSchema = z.object({
 });
 
 export type AttendanceItem = z.infer<typeof AttendanceItemSchema>;
+
+export const OvertimeReviewSchema = z.object({
+  status: z.enum(['APPROVED', 'REJECTED', 'OVERRIDDEN']),
+  approvedMinutes: z.number().min(0, 'Menit lembur tidak boleh negatif').optional(),
+  notes: z.string().optional(),
+});
+
+export type OvertimeReviewInput = z.infer<typeof OvertimeReviewSchema>;
+
+export const AttendanceCorrectionSchema = z.object({
+  clockOutTime: z.string().min(1, 'Jam pulang koreksi wajib diisi'),
+  notes: z.string().min(3, 'Alasan koreksi minimal 3 karakter'),
+});
+
+export type AttendanceCorrectionInput = z.infer<typeof AttendanceCorrectionSchema>;
 
 export const ClockInInputSchema = z.object({
   staffId: z.string().min(1, 'Pilih staf yang akan presensi'),
