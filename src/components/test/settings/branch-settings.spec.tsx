@@ -134,7 +134,7 @@ describe('BranchSettingsForm Component', () => {
     const nameInput = screen.getByDisplayValue('Kumpul Cafe - Cabang Pusat');
     fireEvent.change(nameInput, { target: { value: 'Kumpul Cafe Tebet Baru' } });
 
-    const submitBtn = screen.getByRole('button', { name: /Simpan Pengaturan Cabang/i });
+    const submitBtn = screen.getByRole('button', { name: /^Simpan/i });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {

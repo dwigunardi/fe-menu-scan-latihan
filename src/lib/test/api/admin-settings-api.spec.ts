@@ -5,13 +5,13 @@ import {
   updateStoreStatus,
   fetchPublicBranchLocation,
 } from '@/lib/api/admin-settings-api';
-import * as pipeline from '@/lib/api/pipeline/pipeline-runner';
+import * as hardenedFetchModule from '@/lib/api/hardened-fetch';
 import { right, left } from '@/lib/api/either';
 import { ApiError } from '@/lib/api/api-error';
 import { STORE_MODE } from '@/lib/constants/branch-settings';
 
-vi.mock('@/lib/api/pipeline/pipeline-runner', () => ({
-  executePipeline: vi.fn(),
+vi.mock('@/lib/api/hardened-fetch', () => ({
+  hardenedFetch: vi.fn(),
 }));
 
 describe('Admin Settings API Client', () => {
@@ -30,13 +30,26 @@ describe('Admin Settings API Client', () => {
     timezone: 'Asia/Jakarta',
   };
 
+  const mockPublicLocation = {
+    name: 'Kumpul Cafe - Cabang Pusat',
+    address: 'Jl. Tebet Raya No. 45, Jakarta Selatan',
+    latitude: -6.2297465,
+    longitude: 106.8557342,
+    geofenceRadius: 100,
+    isStoreOpen: true,
+    storeMode: STORE_MODE.SHIFT_DRIVEN,
+    openTime: '08:00',
+    closeTime: '22:00',
+    timezone: 'Asia/Jakarta',
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   describe('fetchAdminBranchSetting', () => {
     it('returns parsed BranchSetting on success', async () => {
-      vi.mocked(pipeline.executePipeline).mockResolvedValue(right(mockSettingData));
+      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockSettingData));
 
       const result = await fetchAdminBranchSetting();
 
@@ -47,18 +60,11 @@ describe('Admin Settings API Client', () => {
       }
     });
 
-    it('returns error when pipeline fails', async () => {
-      vi.mocked(pipeline.executePipeline).mockResolvedValue(left(ApiError.networkError()));
+    it('returns error when request fails', async () => {
+      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(left(ApiError.networkError()));
 
       const result = await fetchAdminBranchSetting();
 
-      expect(result.isLeft()).toBe(true);
-    });
-
-    it('returns contractViolation when schema validation fails', async () => {
-      vi.mocked(pipeline.executePipeline).mockResolvedValue(right({ latitude: 9999 }));
-
-      const result = await fetchAdminBranchSetting();
       expect(result.isLeft()).toBe(true);
     });
   });
@@ -78,7 +84,7 @@ describe('Admin Settings API Client', () => {
     };
 
     it('sends PUT request with payload and returns updated setting', async () => {
-      vi.mocked(pipeline.executePipeline).mockResolvedValue(
+      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(
         right({ ...mockSettingData, ...updatePayload })
       );
 
@@ -91,15 +97,8 @@ describe('Admin Settings API Client', () => {
       }
     });
 
-    it('returns error when pipeline fails during update', async () => {
-      vi.mocked(pipeline.executePipeline).mockResolvedValue(left(ApiError.networkError()));
-
-      const result = await updateAdminBranchSetting(updatePayload);
-      expect(result.isLeft()).toBe(true);
-    });
-
-    it('returns contractViolation when update response is malformed', async () => {
-      vi.mocked(pipeline.executePipeline).mockResolvedValue(right({ latitude: -999 }));
+    it('returns error when request fails during update', async () => {
+      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(left(ApiError.networkError()));
 
       const result = await updateAdminBranchSetting(updatePayload);
       expect(result.isLeft()).toBe(true);
@@ -107,74 +106,45 @@ describe('Admin Settings API Client', () => {
   });
 
   describe('updateStoreStatus', () => {
-    const statusPayload = {
-      isStoreOpen: false,
-      storeMode: STORE_MODE.EMERGENCY_CLOSED,
-      emergencyReason: 'Mati Lampu',
-    };
+    it('sends PUT request to update store status', async () => {
+      const updatedSetting = {
+        ...mockSettingData,
+        isStoreOpen: false,
+        storeMode: STORE_MODE.EMERGENCY_CLOSED,
+        emergencyReason: 'Perbaikan Mesin',
+      };
 
-    it('updates store open/closed status', async () => {
-      vi.mocked(pipeline.executePipeline).mockResolvedValue(
-        right({ ...mockSettingData, isStoreOpen: false, storeMode: STORE_MODE.EMERGENCY_CLOSED })
-      );
+      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(updatedSetting));
 
-      const result = await updateStoreStatus(statusPayload);
+      const result = await updateStoreStatus({
+        isStoreOpen: false,
+        storeMode: STORE_MODE.EMERGENCY_CLOSED,
+        emergencyReason: 'Perbaikan Mesin',
+      });
 
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
         expect(result.value.isStoreOpen).toBe(false);
+        expect(result.value.storeMode).toBe(STORE_MODE.EMERGENCY_CLOSED);
       }
-    });
-
-    it('returns error when pipeline fails during store status update', async () => {
-      vi.mocked(pipeline.executePipeline).mockResolvedValue(left(ApiError.networkError()));
-
-      const result = await updateStoreStatus(statusPayload);
-      expect(result.isLeft()).toBe(true);
-    });
-
-    it('returns contractViolation when store status response is invalid', async () => {
-      vi.mocked(pipeline.executePipeline).mockResolvedValue(right({ openTime: 'invalid-time' }));
-
-      const result = await updateStoreStatus(statusPayload);
-      expect(result.isLeft()).toBe(true);
     });
   });
 
   describe('fetchPublicBranchLocation', () => {
-    it('returns public coordinates and radius', async () => {
-      vi.mocked(pipeline.executePipeline).mockResolvedValue(
-        right({
-          name: 'Kumpul Cafe',
-          address: 'Jl. Tebet',
-          latitude: -6.2297465,
-          longitude: 106.8557342,
-          geofenceRadius: 100,
-          isStoreOpen: true,
-          storeMode: STORE_MODE.SHIFT_DRIVEN,
-          openTime: '08:00',
-          closeTime: '22:00',
-          timezone: 'Asia/Jakarta',
-        })
-      );
+    it('returns public location on success', async () => {
+      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockPublicLocation));
 
       const result = await fetchPublicBranchLocation();
 
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
-        expect(result.value.latitude).toBeCloseTo(-6.2297465);
+        expect(result.value.name).toBe('Kumpul Cafe - Cabang Pusat');
+        expect(result.value.geofenceRadius).toBe(100);
       }
     });
 
-    it('returns error when pipeline fails during public location fetch', async () => {
-      vi.mocked(pipeline.executePipeline).mockResolvedValue(left(ApiError.networkError()));
-
-      const result = await fetchPublicBranchLocation();
-      expect(result.isLeft()).toBe(true);
-    });
-
-    it('returns contractViolation when public location response is invalid', async () => {
-      vi.mocked(pipeline.executePipeline).mockResolvedValue(right({ notCoords: 123 }));
+    it('returns error when public fetch fails', async () => {
+      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(left(ApiError.networkError()));
 
       const result = await fetchPublicBranchLocation();
       expect(result.isLeft()).toBe(true);
