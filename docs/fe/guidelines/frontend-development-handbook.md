@@ -283,7 +283,155 @@ export function TableFormModal({ isOpen, onClose, onSubmit, initialData }) {
 
 ---
 
-## 🚫 4. Anti-Patterns & Standar Penulisan Kode Bersih (*Clean Code*)
+## 🌐 4. Arsitektur Transport API: Layering, Pipeline & Panduan Debugging
+
+Arsitektur komunikasi data Frontend Kumpul Cafe menggunakan **4-Layered Zero-Trust Transport Engine**. Seluruh komunikasi API **WAJIB** mematuhi hierarki ini agar tidak terjadi inkonsistensi penulisan dan kebocoran kontrak data.
+
+### 📐 1. Diagram 4-Layer Transport Hierarchy
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ Layer 1: API Client Domain (e.g. admin-attendance-api.ts)   │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ memanggil
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Layer 2: hardenedFetch(endpoint, schema, options)           │ 👈 STANDAR TUNGGAL (Golden Template)
+│    - Menjalankan fetch aman via customFetch                 │
+│    - Validasi runtime Zod (`schema.safeParse`)              │
+│    - Mengembalikan type-safe `Either<ApiError, Data>`       │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ memanggil
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Layer 3: customFetch(endpoint, options)                     │ 👈 Mid-Level Universal Fetcher
+│    - Entry point universal untuk transport                  │
+│    - Mendelegasikan ke pipeline runner                      │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ mendelegasikan ke
+                               ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Layer 4: executePipeline(endpoint, options)                 │ 👈 Low-Level Pipeline Engine (Core)
+│    - loggerMiddleware (step-tracing audit log)              │
+│    - authMiddleware (injeksi JWT Bearer)                    │
+│    - handshakeMiddleware (injeksi x-handshake-token)        │
+│    - encryptionMiddleware (enkripsi/dekripsi AES-256-GCM)   │
+│    - terminalFetch (eksekusi window.fetch asli)             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+> [!IMPORTANT]
+> **Aturan Wajib**: File domain API di `src/lib/api/*` **HANYA BOLEH memanggil `hardenedFetch` (Layer 2)**. Jangan memanggil `executePipeline` (Layer 4) atau `fetch()` langsung secara manual!
+
+---
+
+### 🔄 2. Step-by-Step API Hit to Response Flow
+
+Berikut adalah perjalanan sebuah request dari klik UI hingga data diterima:
+
+```
+[1. User Trigger] 
+       │  (Contoh: Klik simpan menu baru / clock-in)
+       ▼
+[2. React Query Mutation/Query]
+       │  (Memanggil fetcher domain: recordClockIn(payload))
+       ▼
+[3. hardenedFetch(endpoint, schema, options)]
+       │  (Meneruskan endpoint, schema Zod, dan options ke customFetch)
+       ▼
+[4. customFetch -> executePipeline]
+       │
+       ├─► [a. loggerMiddleware]: Mencatat info step request ke console/Pino logger
+       │
+       ├─► [b. authMiddleware]: Mengambil accessToken aktif dari useAuthStore dan menyisipkan header `Authorization: Bearer <token>`
+       │
+       ├─► [c. handshakeMiddleware]: Memeriksa sessionKey di RAM. Jika belum ada, otomatis melakukan handshake ECDH P-256 dan menyisipkan header `x-handshake-token`
+       │
+       ├─► [d. encryptionMiddleware (Outgoing)]: Jika body ada dan skipEncryption false, mengenkripsi objek payload dengan AES-256-GCM menjadi `{ iv, payload, tag }`
+       │
+       ├─► [e. terminalFetch]: Mengirim HTTP request terenkripsi ke backend NestJS via `fetch()`
+       │
+       ▼
+[5. Response dari Server Backend]
+       │  (Server merespons payload JSON terenkripsi)
+       ▼
+[6. encryptionMiddleware (Incoming Decryption)]
+       │  (Mendeteksi payload `{ encrypted: true, iv, payload, tag }`, lalu mendekripsi dengan sessionKey di RAM kembali menjadi plain JavaScript object)
+       ▼
+[7. hardenedFetch (Runtime Contract Validation)]
+       │  (Mengeksekusi `schema.safeParse(decryptedData)`):
+       ├─► Jika VALID: Mengembalikan `Right(data)` (100% type-safe)
+       └─► Jika INVALID: Log error `🚨 [Contract Violation Error]` dan mengembalikan `Left(ApiError.contractViolation)`
+       ▼
+[8. React Query Hook / UI]
+       │  (Menerima Either: jika isRight() update state & toast success; jika isLeft() panggil notifyApiError(result.value))
+```
+
+---
+
+### 🐞 3. Panduan Debugging & Rekomendasi `console.log`
+
+Ketika mengembangkan fitur atau menginvestigasi masalah komunikasi API, berikut adalah titik-titik inspeksi yang direkomendasikan:
+
+#### A. Melihat Hasil Respons Bersih yang Sudah Tervalidasi (Clean Decrypted Data)
+Untuk melihat data hasil akhir yang sudah didekripsi dan divalidasi oleh Zod:
+1. **Di React Query Hook (`src/hooks/queries/use-*.ts`)**:
+   ```typescript
+   const result = await fetchShiftTemplates();
+   if (result.isRight()) {
+     console.log('✅ Clean Decrypted Response:', result.value);
+   } else {
+     console.error('❌ API Error:', result.value);
+   }
+   ```
+2. **Di Komponen UI**:
+   ```typescript
+   const { data, error } = useShiftTemplatesQuery();
+   console.log('📦 UI Shift Templates Data:', data);
+   ```
+
+---
+
+#### B. Melihat Request & Response yang Masih Berbentuk Enkripsi (Raw Ciphertext Envelope)
+Karena sistem menggunakan Zero-Trust ECDH + AES-256-GCM, data yang lewat di jaringan berupa ciphertext. Berikut cara memeriksanya:
+
+1. **Melalui Browser DevTools (Network Tab)**:
+   - Buka `F12` $\rightarrow$ Tab **Network** $\rightarrow$ Pilih request terkait (misal: `/api/v1/admin/shifts/open`).
+   - Tab **Payload**: Menampilkan ciphertext request `{ iv: "...", payload: "...", tag: "..." }`.
+   - Tab **Response / Preview**: Menampilkan ciphertext respons dari backend `{ encrypted: true, iv: "...", payload: "...", tag: "..." }`.
+   - Tab **Headers**: Memverifikasi header `x-handshake-token: ...` dan `authorization: Bearer ...`.
+
+2. **Melalui Source Code Middleware (`src/lib/api/pipeline/encryption-middleware.ts`)**:
+   - **Melihat Outgoing Request Terenkripsi**:
+     ```typescript
+     // Di encryptionMiddleware.ts tepat setelah encryptPayload:
+     const encryptedEnvelope = await encryptPayload(ctx.body, ctx.sessionKey);
+     console.log('🔐 [DEBUG ENCRYPTED OUTGOING]:', encryptedEnvelope);
+     ```
+   - **Melihat Incoming Response Terenkripsi Sebelum Didekripsi**:
+     ```typescript
+     // Di encryptionMiddleware.ts tepat sebelum decryptPayload:
+     const json = ctx.responseData as any;
+     if (json?.encrypted) {
+       console.log('🔒 [DEBUG ENCRYPTED INCOMING RAW]:', json);
+     }
+     ```
+
+---
+
+#### C. Mengetahui Kegagalan Validasi Kontrak (*Contract Violation*)
+Jika backend mengembalikan field yang tidak sesuai dengan Zod Schema (misal: tipe data berubah atau field wajib hilang), `hardenedFetch` akan otomatis mencatatnya ke console:
+```text
+🚨 [Contract Violation Error] on /admin/settings/shift-templates
+{
+  endpoint: '/admin/settings/shift-templates',
+  issues: [{ field: '0.startTime', message: 'Format jam harus HH:mm (invalid_string)' }]
+}
+```
+
+---
+
+## 🚫 5. Anti-Patterns & Standar Penulisan Kode Bersih (*Clean Code*)
 
 ### 📊 Tabel Anti-Pattern vs Standar Baku
 
