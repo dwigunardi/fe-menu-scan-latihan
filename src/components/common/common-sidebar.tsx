@@ -20,123 +20,22 @@ import {
   PanelLeftOpen,
 } from 'lucide-react';
 
-import { useAuthStore, UserRole, ROLE } from '@/store/use-auth-store';
+import { useAuthStore } from '@/store/use-auth-store';
 import { useSidebarStore } from '@/store/use-sidebar-store';
 import { cn } from '@/lib/utils/cn';
 import { SimpleTooltip } from '@/components/ui/tooltip';
+import {
+  APP_NAVIGATION_ITEMS,
+  NavigationItem,
+  getNavItemsForRole,
+} from '@/lib/constants/navigation';
 
-export interface CommonNavItem {
-  title: string;
-  href: string;
-  icon: ComponentType<{ className?: string }>;
-  allowedRoles: UserRole[] | readonly UserRole[];
-}
-
-const defaultNavItems: CommonNavItem[] = [
-  // Admin Specific
-  {
-    title: 'Dashboard Omset',
-    href: '/admin/dashboard',
-    icon: LayoutDashboard,
-    allowedRoles: [ROLE.ADMIN],
-  },
-  {
-    title: 'Laporan Penjualan',
-    href: '/admin/reports',
-    icon: BarChart3,
-    allowedRoles: [ROLE.ADMIN],
-  },
-  {
-    title: 'Log Pesanan Admin',
-    href: '/admin/orders',
-    icon: UtensilsCrossed,
-    allowedRoles: [ROLE.ADMIN],
-  },
-  {
-    title: 'Denah Meja & Kasir',
-    href: '/admin/tables',
-    icon: Grid2X2,
-    allowedRoles: [ROLE.ADMIN],
-  },
-  {
-    title: 'Katalog Menu',
-    href: '/admin/menus',
-    icon: BookOpen,
-    allowedRoles: [ROLE.ADMIN],
-  },
-  {
-    title: 'Kategori Menu',
-    href: '/admin/categories',
-    icon: Tags,
-    allowedRoles: [ROLE.ADMIN],
-  },
-  {
-    title: 'Shift & Kasir',
-    href: '/admin/shifts',
-    icon: Clock,
-    allowedRoles: [ROLE.ADMIN, ROLE.CASHIER, ROLE.KASIR],
-  },
-  {
-    title: 'Manajemen Staf',
-    href: '/admin/staff',
-    icon: Users,
-    allowedRoles: [ROLE.ADMIN],
-  },
-  {
-    title: 'Presensi Staf',
-    href: '/admin/attendance',
-    icon: CalendarCheck,
-    allowedRoles: [ROLE.ADMIN],
-  },
-  {
-    title: 'Banner Promo',
-    href: '/admin/banners',
-    icon: ImageIcon,
-    allowedRoles: [ROLE.ADMIN],
-  },
-  {
-    title: 'Pengaturan Cabang',
-    href: '/admin/settings',
-    icon: Settings,
-    allowedRoles: [ROLE.ADMIN],
-  },
-
-
-  // Kitchen Specific
-  {
-    title: 'Kitchen Display (KDS)',
-    href: '/kitchen/orders',
-    icon: UtensilsCrossed,
-    allowedRoles: [ROLE.KITCHEN, ROLE.DAPUR],
-  },
-
-  // Cashier Specific
-  {
-    title: 'Denah Meja & Kasir',
-    href: '/cashier/tables',
-    icon: Grid2X2,
-    allowedRoles: [ROLE.CASHIER, ROLE.KASIR],
-  },
-  {
-    title: 'Monitor Antrean KDS',
-    href: '/kitchen/orders',
-    icon: UtensilsCrossed,
-    allowedRoles: [ROLE.CASHIER, ROLE.KASIR],
-  },
-
-  // Waiter Specific
-  {
-    title: 'Denah Meja Pelayan',
-    href: '/waiter/tables',
-    icon: Grid2X2,
-    allowedRoles: [ROLE.WAITER, ROLE.PELAYAN],
-  },
-];
+export interface CommonNavItem extends NavigationItem {}
 
 interface CommonSidebarProps {
   brandTitle?: string;
   portalSubtitle?: string;
-  customNavItems?: CommonNavItem[];
+  customNavItems?: NavigationItem[];
 }
 
 export function CommonSidebar({
@@ -153,7 +52,7 @@ export function CommonSidebar({
     setMounted(true);
   }, []);
 
-  const navList = customNavItems || defaultNavItems;
+  const navList = customNavItems || APP_NAVIGATION_ITEMS;
   const filteredNavItems = navList.filter((item) => {
     if (!user) return false;
     return item.allowedRoles.includes(user.role);
@@ -276,17 +175,19 @@ export function CommonSidebar({
         {/* Role Badge Footer */}
         <div
           className={cn(
-            'p-3 border-t border-stone-100 dark:border-zinc-800 m-3 rounded-2xl bg-stone-50/80 dark:bg-zinc-800/40 transition-all duration-300 shrink-0',
-            collapsed ? 'flex justify-center' : 'flex items-center justify-between'
+            'border-t border-stone-100 dark:border-zinc-800 transition-all duration-300 shrink-0 overflow-hidden',
+            collapsed
+              ? 'flex justify-center p-2.5 m-2 rounded-xl bg-stone-50/80 dark:bg-zinc-800/40'
+              : 'flex items-center justify-between p-3 m-3 rounded-2xl bg-stone-50/80 dark:bg-zinc-800/40'
           )}
         >
           {!collapsed ? (
             <>
-              <div className="truncate animate-in fade-in duration-200">
+              <div className="min-w-0 flex-1 mr-2 truncate animate-in fade-in duration-200">
                 <span className="text-xs font-bold text-stone-900 dark:text-zinc-100 block truncate">
                   {userName}
                 </span>
-                <span className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-wider">
+                <span className="text-[10px] font-bold text-amber-600 dark:text-amber-500 uppercase tracking-wider block truncate">
                   {userRole}
                 </span>
               </div>
@@ -296,7 +197,10 @@ export function CommonSidebar({
             </>
           ) : (
             <SimpleTooltip content={`${userName} (${userRole})`} side="right">
-              <div className="h-3 w-3 rounded-full bg-emerald-500 ring-4 ring-emerald-500/20 cursor-default" />
+              <div className="relative flex items-center justify-center h-8.5 w-8.5 rounded-xl bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 font-bold text-xs cursor-pointer shadow-xs">
+                {userName.substring(0, 1).toUpperCase()}
+                <div className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-zinc-900 shrink-0" />
+              </div>
             </SimpleTooltip>
           )}
         </div>
