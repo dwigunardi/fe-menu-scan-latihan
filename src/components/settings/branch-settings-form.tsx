@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -15,13 +15,17 @@ import {
   Mail,
   Calendar,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
+import { reverseGeocode } from '@/lib/utils/geocoding';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { motion, AnimatePresence } from 'motion/react';
 import { BranchMapPicker } from './branch-map-picker';
 import {
   BranchSetting,
@@ -56,6 +60,7 @@ interface BranchSettingsFormProps {
 
 export function BranchSettingsForm({ initialData }: BranchSettingsFormProps) {
   const updateMutation = useUpdateBranchSettingMutation();
+  const [isSyncingAddress, setIsSyncingAddress] = useState(false);
 
   const {
     register,
@@ -107,9 +112,12 @@ export function BranchSettingsForm({ initialData }: BranchSettingsFormProps) {
     });
   }, [initialData, reset]);
 
-  const handleCoordinatesChange = (lat: number, lon: number) => {
+  const handleCoordinatesChange = (lat: number, lon: number, resolvedAddress?: string) => {
     setValue('latitude', lat, { shouldDirty: true, shouldValidate: true });
     setValue('longitude', lon, { shouldDirty: true, shouldValidate: true });
+    if (resolvedAddress) {
+      setValue('address', resolvedAddress, { shouldDirty: true, shouldValidate: true });
+    }
   };
 
   const handleApplySameHours = () => {
@@ -125,37 +133,56 @@ export function BranchSettingsForm({ initialData }: BranchSettingsFormProps) {
     setValue('schedules', newSchedules, { shouldDirty: true });
   };
 
+  const handleResetChanges = () => {
+    reset({
+      name: initialData.name,
+      address: initialData.address,
+      latitude: initialData.latitude,
+      longitude: initialData.longitude,
+      geofenceRadius: initialData.geofenceRadius,
+      openTime: initialData.openTime,
+      closeTime: initialData.closeTime,
+      lateGracePeriod: initialData.lateGracePeriod,
+      storeMode: initialData.storeMode,
+      timezone: initialData.timezone || 'Asia/Jakarta',
+      phone: initialData.phone || '',
+      email: initialData.email || '',
+      schedules: initialData.schedules && initialData.schedules.length > 0 ? initialData.schedules : DEFAULT_SCHEDULES,
+    });
+  };
+
   const onFormSubmit = async (data: UpdateBranchSettingInput) => {
     await updateMutation.mutateAsync({
       ...data,
       phone: data.phone?.trim() || undefined,
       email: data.email?.trim() || undefined,
     });
+    reset(data);
   };
 
   return (
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
       <Tabs defaultValue="location" className="w-full space-y-4">
         {/* Navigation Tabs */}
-        <div className="flex items-center justify-between border-b border-stone-200/80 dark:border-zinc-800 pb-3">
-          <TabsList className="bg-stone-100 dark:bg-zinc-800/80 p-1 rounded-2xl h-11">
+        <div className="border-b border-stone-200/80 dark:border-zinc-800 pb-3">
+          <TabsList className="bg-stone-100 dark:bg-zinc-800/80 p-1 rounded-2xl h-11 inline-flex max-w-full overflow-x-auto">
             <TabsTrigger
               value="location"
-              className="rounded-xl text-xs font-bold gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900 data-[state=active]:shadow-xs px-3.5 py-2 cursor-pointer"
+              className="rounded-xl text-xs font-bold gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900 data-[state=active]:shadow-xs px-3.5 py-2 cursor-pointer shrink-0"
             >
               <MapPin className="h-3.5 w-3.5 text-amber-600" />
               <span>Lokasi & Geofence</span>
             </TabsTrigger>
             <TabsTrigger
               value="schedule"
-              className="rounded-xl text-xs font-bold gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900 data-[state=active]:shadow-xs px-3.5 py-2 cursor-pointer"
+              className="rounded-xl text-xs font-bold gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900 data-[state=active]:shadow-xs px-3.5 py-2 cursor-pointer shrink-0"
             >
               <Clock className="h-3.5 w-3.5 text-amber-600" />
               <span>Jam Buka & Absensi</span>
             </TabsTrigger>
             <TabsTrigger
               value="mode"
-              className="rounded-xl text-xs font-bold gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900 data-[state=active]:shadow-xs px-3.5 py-2 cursor-pointer"
+              className="rounded-xl text-xs font-bold gap-1.5 data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900 data-[state=active]:shadow-xs px-3.5 py-2 cursor-pointer shrink-0"
             >
               <Store className="h-3.5 w-3.5 text-amber-600" />
               <span>Mode Operasi Toko</span>
@@ -190,9 +217,30 @@ export function BranchSettingsForm({ initialData }: BranchSettingsFormProps) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="branch-address" className="text-xs font-semibold text-stone-700 dark:text-zinc-300">
-                    Alamat Lengkap *
-                  </Label>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="branch-address" className="text-xs font-semibold text-stone-700 dark:text-zinc-300">
+                      Alamat Lengkap *
+                    </Label>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setIsSyncingAddress(true);
+                        const addr = await reverseGeocode(currentLat, currentLon);
+                        setIsSyncingAddress(false);
+                        if (addr) {
+                          setValue('address', addr, { shouldDirty: true, shouldValidate: true });
+                          toast.success('Alamat berhasil disinkronkan dari titik peta!');
+                        } else {
+                          toast.error('Gagal mendeteksi alamat dari koordinat peta.');
+                        }
+                      }}
+                      disabled={isSyncingAddress}
+                      className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <RefreshCw className={`h-3 w-3 ${isSyncingAddress ? 'animate-spin' : ''}`} />
+                      <span>Sinkronkan dari Peta</span>
+                    </button>
+                  </div>
                   <Textarea
                     id="branch-address"
                     {...register('address')}
@@ -536,28 +584,54 @@ export function BranchSettingsForm({ initialData }: BranchSettingsFormProps) {
         </TabsContent>
       </Tabs>
 
-      {/* Sticky Bottom Save Action Bar */}
-      <div className="sticky bottom-4 z-20 p-3 sm:p-4 rounded-2xl bg-stone-900/90 dark:bg-zinc-800/95 backdrop-blur-md border border-stone-700/60 shadow-2xl flex items-center justify-between text-white">
-        <div className="flex items-center gap-2 text-xs">
-          <Sparkles className="h-4 w-4 text-amber-400" />
-          <span className="font-medium text-stone-300">
-            {isDirty ? 'Ada perubahan yang belum disimpan' : 'Semua pengaturan tersimpan'}
-          </span>
-        </div>
+      {/* Floating Save Pill - Only visible when isDirty */}
+      <AnimatePresence>
+        {isDirty && (
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-stone-900/95 dark:bg-zinc-900/95 text-white backdrop-blur-xl border border-stone-700/80 dark:border-zinc-700 shadow-2xl flex items-center gap-3.5 max-w-md w-auto pointer-events-auto"
+          >
+            <div className="flex items-center gap-2 text-xs font-medium text-stone-200 pr-1">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+              </span>
+              <span className="whitespace-nowrap font-medium text-[11px] sm:text-xs">
+                Ada perubahan belum disimpan
+              </span>
+            </div>
 
-        <Button
-          type="submit"
-          disabled={updateMutation.isPending}
-          className="h-10 px-6 font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-md cursor-pointer flex items-center gap-2"
-        >
-          {updateMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
-          <span>{updateMutation.isPending ? 'Menyimpan...' : 'Simpan Pengaturan Cabang'}</span>
-        </Button>
-      </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleResetChanges}
+                disabled={updateMutation.isPending}
+                className="h-8 px-2.5 text-xs text-stone-400 hover:text-white hover:bg-stone-800 dark:hover:bg-zinc-800 rounded-lg cursor-pointer"
+              >
+                Batal
+              </Button>
+
+              <Button
+                type="submit"
+                disabled={updateMutation.isPending}
+                className="h-8 px-3.5 font-bold text-xs bg-amber-600 hover:bg-amber-700 text-white rounded-lg shadow-md flex items-center gap-1.5 cursor-pointer"
+              >
+                {updateMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Save className="h-3.5 w-3.5" />
+                )}
+                <span>Simpan</span>
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </form>
   );
 }

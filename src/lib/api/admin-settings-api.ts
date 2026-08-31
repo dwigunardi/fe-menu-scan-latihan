@@ -1,5 +1,5 @@
-import { executePipeline } from './pipeline/pipeline-runner';
-import { Either, left, right } from './either';
+import { hardenedFetch } from './hardened-fetch';
+import { Either } from './either';
 import { ApiError } from './api-error';
 import {
   BranchSetting,
@@ -10,32 +10,15 @@ import {
   PublicBranchLocationSchema,
 } from '../validations/branch-settings.schema';
 
+const BASE_URL = '/admin/settings/branch';
+
 /**
  * Fetch branch settings & geofence configuration for admin.
  */
 export async function fetchAdminBranchSetting(): Promise<Either<ApiError, BranchSetting>> {
-  const result = await executePipeline<BranchSetting>('/admin/settings/branch', {
+  return hardenedFetch(BASE_URL, BranchSettingSchema, {
     method: 'GET',
   });
-
-  if (result.isLeft()) {
-    return left(result.value);
-  }
-
-  const parsed = BranchSettingSchema.safeParse(result.value);
-  if (!parsed.success) {
-    return left(
-      ApiError.contractViolation(
-        '/admin/settings/branch',
-        parsed.error.issues.map((e: any) => ({
-          field: e.path.join('.'),
-          message: e.message,
-        }))
-      )
-    );
-  }
-
-  return right(parsed.data);
 }
 
 /**
@@ -44,32 +27,10 @@ export async function fetchAdminBranchSetting(): Promise<Either<ApiError, Branch
 export async function updateAdminBranchSetting(
   payload: UpdateBranchSettingInput
 ): Promise<Either<ApiError, BranchSetting>> {
-  const result = await executePipeline<BranchSetting>('/admin/settings/branch', {
+  return hardenedFetch(BASE_URL, BranchSettingSchema, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
+    body: payload,
   });
-
-  if (result.isLeft()) {
-    return left(result.value);
-  }
-
-  const parsed = BranchSettingSchema.safeParse(result.value);
-  if (!parsed.success) {
-    return left(
-      ApiError.contractViolation(
-        '/admin/settings/branch',
-        parsed.error.issues.map((e: any) => ({
-          field: e.path.join('.'),
-          message: e.message,
-        }))
-      )
-    );
-  }
-
-  return right(parsed.data);
 }
 
 /**
@@ -78,32 +39,10 @@ export async function updateAdminBranchSetting(
 export async function updateStoreStatus(
   payload: UpdateStoreStatusInput
 ): Promise<Either<ApiError, BranchSetting>> {
-  const result = await executePipeline<BranchSetting>('/admin/settings/branch/store-status', {
+  return hardenedFetch(`${BASE_URL}/store-status`, BranchSettingSchema, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
+    body: payload,
   });
-
-  if (result.isLeft()) {
-    return left(result.value);
-  }
-
-  const parsed = BranchSettingSchema.safeParse(result.value);
-  if (!parsed.success) {
-    return left(
-      ApiError.contractViolation(
-        '/admin/settings/branch/store-status',
-        parsed.error.issues.map((e: any) => ({
-          field: e.path.join('.'),
-          message: e.message,
-        }))
-      )
-    );
-  }
-
-  return right(parsed.data);
 }
 
 /**
@@ -112,27 +51,8 @@ export async function updateStoreStatus(
 export async function fetchPublicBranchLocation(): Promise<
   Either<ApiError, PublicBranchLocation>
 > {
-  const result = await executePipeline<PublicBranchLocation>('/public/branch/location', {
+  return hardenedFetch('/public/branch/location', PublicBranchLocationSchema, {
     method: 'GET',
     skipHandshakeToken: true,
   });
-
-  if (result.isLeft()) {
-    return left(result.value);
-  }
-
-  const parsed = PublicBranchLocationSchema.safeParse(result.value);
-  if (!parsed.success) {
-    return left(
-      ApiError.contractViolation(
-        '/public/branch/location',
-        parsed.error.issues.map((e: any) => ({
-          field: e.path.join('.'),
-          message: e.message,
-        }))
-      )
-    );
-  }
-
-  return right(parsed.data);
 }

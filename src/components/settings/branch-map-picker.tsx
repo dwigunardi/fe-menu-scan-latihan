@@ -1,18 +1,20 @@
-'use client';
+﻿'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   MapPin,
   Navigation,
   Link as LinkIcon,
+  Search,
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Maximize2,
+  Sparkles,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { parseGoogleMapsCoordinates } from '@/lib/utils/gmaps-parser';
+import { reverseGeocode, forwardGeocode } from '@/lib/utils/geocoding';
 import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
 
@@ -20,7 +22,7 @@ interface BranchMapPickerProps {
   latitude: number;
   longitude: number;
   radiusMeters: number;
-  onChangeCoordinates: (lat: number, lon: number) => void;
+  onChangeCoordinates: (lat: number, lon: number, resolvedAddress?: string) => void;
   disabled?: boolean;
 }
 
@@ -36,9 +38,27 @@ export function BranchMapPicker({
   const markerRef = useRef<any>(null);
   const circleRef = useRef<any>(null);
 
-  const [gmapsInput, setGmapsInput] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [isLocating, setIsLocating] = useState(false);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [detectedAddress, setDetectedAddress] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
+
+  // Debounced reverse geocoding handler
+  const handleResolveAddress = useCallback(
+    async (lat: number, lon: number) => {
+      setIsGeocoding(true);
+      const addr = await reverseGeocode(lat, lon);
+      setIsGeocoding(false);
+      if (addr) {
+        setDetectedAddress(addr);
+        onChangeCoordinates(lat, lon, addr);
+      } else {
+        onChangeCoordinates(lat, lon);
+      }
+    },
+    [onChangeCoordinates]
+  );
 
   // Initialize Leaflet map on client mount
   useEffect(() => {
@@ -116,10 +136,9 @@ export function BranchMapPicker({
 
       marker.on('dragend', () => {
         const pos = marker.getLatLng();
-        onChangeCoordinates(
-          Math.round(pos.lat * 10000000) / 10000000,
-          Math.round(pos.lng * 10000000) / 10000000
-        );
+        const lat = Math.round(pos.lat * 10000000) / 10000000;
+        const lon = Math.round(pos.lng * 10000000) / 10000000;
+        handleResolveAddress(lat, lon);
       });
 
       // Add Geofence Circle Overlay
@@ -135,13 +154,12 @@ export function BranchMapPicker({
       // Click on map to move marker
       map.on('click', (e: any) => {
         if (disabled) return;
-        const { lat, lng } = e.latlng;
-        marker.setLatLng([lat, lng]);
-        circle.setLatLng([lat, lng]);
-        onChangeCoordinates(
-          Math.round(lat * 10000000) / 10000000,
-          Math.round(lng * 10000000) / 10000000
-        );
+        const { lat: rawLat, lng: rawLng } = e.latlng;
+        const lat = Math.round(rawLat * 10000000) / 10000000;
+        const lon = Math.round(rawLng * 10000000) / 10000000;
+        marker.setLatLng([lat, lon]);
+        circle.setLatLng([lat, lon]);
+        handleResolveAddress(lat, lon);
       });
 
       mapInstanceRef.current = map;
@@ -184,14 +202,12 @@ export function BranchMapPicker({
 
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         setIsLocating(false);
-        const { latitude: lat, longitude: lon } = position.coords;
-        onChangeCoordinates(
-          Math.round(lat * 10000000) / 10000000,
-          Math.round(lon * 10000000) / 10000000
-        );
+        const lat = Math.round(position.coords.latitude * 10000000) / 10000000;
+        const lon = Math.round(position.coords.longitude * 10000000) / 10000000;
         toast.success('Lokasi GPS perangkat berhasil dideteksi!');
+        await handleResolveAddress(lat, lon);
       },
       (error) => {
         setIsLocating(false);
@@ -201,39 +217,59 @@ export function BranchMapPicker({
     );
   };
 
-  // Google Maps URL Parse Handler
-  const handleApplyGmapsLink = () => {
-    if (!gmapsInput.trim()) return;
+  // Google Maps URL Parse or Address Search Handler
+  const handleApplySearchOrLink = async () => {
+    const query = searchInput.trim();
+    if (!query) return;
 
-    const parsed = parseGoogleMapsCoordinates(gmapsInput);
-    if (!parsed) {
-      toast.error(
-        'Format link Google Maps atau koordinat tidak dikenali. Contoh: https://maps.google.com/?q=-6.2297,106.8557'
-      );
+    // 1. Try parsing as Google Maps link or coordinates
+    const parsed = parseGoogleMapsCoordinates(query);
+    if (parsed) {
+      toast.success('Koordinat berhasil diekstrak!');
+      setSearchInput('');
+      await handleResolveAddress(parsed.latitude, parsed.longitude);
       return;
     }
 
-    onChangeCoordinates(parsed.latitude, parsed.longitude);
-    toast.success('Koordinat dari Google Maps berhasil diterapkan ke peta!');
-    setGmapsInput('');
+    // 2. Try forward geocoding query by address name
+    setIsGeocoding(true);
+    const result = await forwardGeocode(query);
+    setIsGeocoding(false);
+
+    if (result) {
+      toast.success(`Lokasi ditemukan: ${result.displayName.slice(0, 45)}...`);
+      setDetectedAddress(result.displayName);
+      setSearchInput('');
+      onChangeCoordinates(result.lat, result.lon, result.displayName);
+    } else {
+      toast.error(
+        'Lokasi tidak ditemukan. Masukkan nama jalan lengkap atau paste link Google Maps.'
+      );
+    }
   };
 
   return (
     <div className="space-y-3">
       {/* 3-Way Input Control Toolbar */}
       <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
-        {/* Method 2: Google Maps Link Extractor */}
+        {/* Search Address or Google Maps Link */}
         <div className="sm:col-span-8 flex items-center gap-1.5">
           <div className="relative flex-1">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">
-              <LinkIcon className="h-4 w-4" />
+              {isGeocoding ? (
+                <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
             </span>
             <Input
-              value={gmapsInput}
-              onChange={(e) => setGmapsInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleApplyGmapsLink())}
-              placeholder="Paste link Google Maps / koordinat..."
-              disabled={disabled}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) =>
+                e.key === 'Enter' && (e.preventDefault(), handleApplySearchOrLink())
+              }
+              placeholder="Cari nama jalan / paste link Google Maps..."
+              disabled={disabled || isGeocoding}
               className="pl-9 text-xs rounded-xl h-9.5 bg-white dark:bg-zinc-800 border-stone-200 dark:border-zinc-700"
             />
           </div>
@@ -241,11 +277,11 @@ export function BranchMapPicker({
             type="button"
             variant="outline"
             size="sm"
-            onClick={handleApplyGmapsLink}
-            disabled={disabled || !gmapsInput.trim()}
+            onClick={handleApplySearchOrLink}
+            disabled={disabled || !searchInput.trim() || isGeocoding}
             className="h-9.5 px-3 text-xs font-bold rounded-xl shrink-0 cursor-pointer"
           >
-            Terapkan
+            {isGeocoding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Cari / Terapkan'}
           </Button>
         </div>
 
@@ -277,24 +313,35 @@ export function BranchMapPicker({
           className="z-10 bg-stone-100 dark:bg-zinc-800"
         />
 
-        {/* Floating Coordinates & Radius Info Badge */}
-        <div className="absolute bottom-3 left-3 right-3 sm:right-auto z-20 pointer-events-none">
-          <div className="p-2.5 px-3 rounded-xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-stone-200/80 dark:border-zinc-800 shadow-md text-xs space-y-0.5 pointer-events-auto">
-            <div className="flex items-center gap-1.5 font-bold text-stone-900 dark:text-zinc-100">
-              <MapPin className="h-3.5 w-3.5 text-amber-600" />
-              <span>Titik Pusat Geofence:</span>
-            </div>
-            <div className="font-mono text-[11px] text-stone-600 dark:text-zinc-400 flex items-center gap-2">
-              <span>
-                Lat: {latitude.toFixed(6)}, Lon: {longitude.toFixed(6)}
+        {/* Floating Coordinates & Address Info Badge */}
+        <div className="absolute bottom-3 left-3 right-3 z-20 pointer-events-none">
+          <div className="p-2.5 px-3 rounded-xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-stone-200/80 dark:border-zinc-800 shadow-md text-xs space-y-1 pointer-events-auto">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 font-bold text-stone-900 dark:text-zinc-100">
+                <MapPin className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                <span className="truncate">Titik Pusat Geofence:</span>
+              </div>
+              <span className="text-amber-600 font-bold text-[11px] shrink-0 font-mono">
+                Radius {radiusMeters}m
               </span>
-              <span className="text-amber-600 font-bold">• Radius: {radiusMeters}m</span>
             </div>
+
+            <div className="font-mono text-[10px] text-stone-500 dark:text-zinc-400 flex items-center gap-2">
+              <span>Lat: {latitude.toFixed(6)}</span>
+              <span>Lon: {longitude.toFixed(6)}</span>
+            </div>
+
+            {detectedAddress && (
+              <div className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 pt-0.5 border-t border-stone-100 dark:border-zinc-800/80 flex items-center gap-1 truncate">
+                <Sparkles className="h-3 w-3 shrink-0 text-emerald-500" />
+                <span className="truncate">Tersinkron: {detectedAddress}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
       <p className="text-[11px] text-stone-400 dark:text-zinc-500">
-        💡 <em>Tips:</em> Anda bisa menggeser marker pin di atas peta atau mengklik area manapun untuk memindahkan titik pusat kafe.
+        💡 <em>Tips:</em> Geser pin atau klik peta untuk memilih lokasi baru. Alamat form di sebelah kiri akan otomatis tersinkronisasi dengan titik peta yang dipilih.
       </p>
     </div>
   );

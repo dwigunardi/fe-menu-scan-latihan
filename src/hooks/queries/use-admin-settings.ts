@@ -32,7 +32,8 @@ export function useAdminBranchSettingQuery() {
       }
       return res.value;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -52,6 +53,7 @@ export function useUpdateBranchSettingMutation() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(ADMIN_SETTINGS_QUERY_KEYS.branch(), data);
+      queryClient.invalidateQueries({ queryKey: ADMIN_SETTINGS_QUERY_KEYS.branch() });
       queryClient.invalidateQueries({ queryKey: ADMIN_SETTINGS_QUERY_KEYS.publicLocation() });
       toast.success('Pengaturan cabang & geofence berhasil disimpan!');
     },
@@ -125,6 +127,7 @@ export function usePublicBranchLocationQuery() {
       }
       return res.value;
     },
-    staleTime: 10 * 60 * 1000,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
   });
 }
