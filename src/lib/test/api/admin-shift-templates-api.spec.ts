@@ -6,11 +6,12 @@ import {
   deleteShiftTemplate,
   seedDefaultShiftTemplates,
 } from '@/lib/api/admin-shift-templates-api';
-import * as hardenedFetchModule from '@/lib/api/hardened-fetch';
+import * as apiTransportModule from '@/lib/api/api-transport';
 import { right, left } from '@/lib/api/either';
 import { ApiError } from '@/lib/api/api-error';
 
-vi.mock('@/lib/api/hardened-fetch', () => ({
+vi.mock('@/lib/api/api-transport', () => ({
+  apiTransport: vi.fn(),
   hardenedFetch: vi.fn(),
 }));
 
@@ -32,7 +33,7 @@ describe('Admin Shift Templates API', () => {
   };
 
   it('fetchShiftTemplates successfully returns array of templates', async () => {
-    vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(
+    vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(
       right([mockTemplate])
     );
 
@@ -45,7 +46,7 @@ describe('Admin Shift Templates API', () => {
   });
 
   it('createShiftTemplate successfully creates and returns new template', async () => {
-    vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(
+    vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(
       right(mockTemplate)
     );
 
@@ -66,7 +67,7 @@ describe('Admin Shift Templates API', () => {
   });
 
   it('updateShiftTemplate updates template', async () => {
-    vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(
+    vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(
       right({ ...mockTemplate, name: 'Shift Pagi Baru' })
     );
 
@@ -81,7 +82,7 @@ describe('Admin Shift Templates API', () => {
   });
 
   it('deleteShiftTemplate deletes template', async () => {
-    vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(
+    vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(
       right(mockTemplate)
     );
 
@@ -93,7 +94,7 @@ describe('Admin Shift Templates API', () => {
   });
 
   it('seedDefaultShiftTemplates seeds and returns default templates', async () => {
-    vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(
+    vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(
       right([mockTemplate])
     );
 
@@ -105,7 +106,7 @@ describe('Admin Shift Templates API', () => {
   });
 
   it('handles errors correctly', async () => {
-    vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(
+    vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(
       left(ApiError.networkError('Network error'))
     );
 

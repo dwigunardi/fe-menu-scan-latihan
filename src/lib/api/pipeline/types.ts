@@ -1,11 +1,11 @@
-import { CustomFetchOptions } from '../custom-fetch';
+import { ApiTransportOptions } from '../types';
 
 export interface PipelineContext<T = unknown> {
   url: string;
   method: string;
   headers: Record<string, string>;
   body?: unknown;
-  options: CustomFetchOptions;
+  options: ApiTransportOptions;
   sessionKey?: CryptoKey | null;
   rawResponse?: Response;
   responseData?: T;

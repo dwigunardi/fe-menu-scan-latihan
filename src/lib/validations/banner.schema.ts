@@ -17,6 +17,18 @@ export const BannerSchema = z.object({
 
 export type BannerData = z.infer<typeof BannerSchema>;
 
+export const BannerListSchema = z.union([
+  z.array(BannerSchema),
+  z.object({ items: z.array(BannerSchema) }).transform((v) => v.items),
+]);
+
+export const DeleteBannerResponseSchema = z.object({
+  success: z.boolean().optional(),
+  message: z.string().optional(),
+}).passthrough();
+
+export type DeleteBannerResponse = z.infer<typeof DeleteBannerResponseSchema>;
+
 /**
  * Form input schema for creating / updating a promo banner
  */

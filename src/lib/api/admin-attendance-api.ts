@@ -1,4 +1,4 @@
-import { hardenedFetch } from './hardened-fetch';
+import { apiTransport } from './api-transport';
 import { Either } from './either';
 import { ApiError } from './api-error';
 import {
@@ -33,9 +33,8 @@ export async function getAdminAttendancePaginated(
   if (params.search) searchParams.set('search', params.search);
 
   const url = `${BASE_URL}?${searchParams.toString()}`;
-  return hardenedFetch(url, AttendancePaginatedResponseSchema, {
+  return apiTransport(url, AttendancePaginatedResponseSchema, {
     method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
   });
 }
 
@@ -46,39 +45,35 @@ export async function getAdminAttendanceSummary(
   if (params.date) searchParams.set('date', params.date);
 
   const url = `${BASE_URL}/summary?${searchParams.toString()}`;
-  return hardenedFetch(url, AttendanceSummarySchema, {
+  return apiTransport(url, AttendanceSummarySchema, {
     method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
   });
 }
 
 export async function recordClockIn(
   payload: ClockInInput
 ): Promise<Either<ApiError, AttendanceItem>> {
-  return hardenedFetch(`${BASE_URL}/clock-in`, AttendanceItemSchema, {
+  return apiTransport(`${BASE_URL}/clock-in`, AttendanceItemSchema, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
   });
 }
 
 export async function recordClockOut(
   payload: ClockOutInput
 ): Promise<Either<ApiError, AttendanceItem>> {
-  return hardenedFetch(`${BASE_URL}/clock-out`, AttendanceItemSchema, {
+  return apiTransport(`${BASE_URL}/clock-out`, AttendanceItemSchema, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
   });
 }
 
 export async function createLeaveRequest(
   payload: LeaveRequestInput
 ): Promise<Either<ApiError, LeaveResponse>> {
-  return hardenedFetch(`${BASE_URL}/leave`, LeaveResponseSchema, {
+  return apiTransport(`${BASE_URL}/leave`, LeaveResponseSchema, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
   });
 }
 
@@ -86,10 +81,9 @@ export async function reviewOvertime(
   id: string,
   payload: OvertimeReviewInput
 ): Promise<Either<ApiError, AttendanceItem>> {
-  return hardenedFetch(`${BASE_URL}/${id}/overtime`, AttendanceItemSchema, {
+  return apiTransport(`${BASE_URL}/${id}/overtime`, AttendanceItemSchema, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
   });
 }
 
@@ -97,9 +91,8 @@ export async function correctAttendanceTime(
   id: string,
   payload: AttendanceCorrectionInput
 ): Promise<Either<ApiError, AttendanceItem>> {
-  return hardenedFetch(`${BASE_URL}/${id}/correction`, AttendanceItemSchema, {
+  return apiTransport(`${BASE_URL}/${id}/correction`, AttendanceItemSchema, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: payload,
   });
 }

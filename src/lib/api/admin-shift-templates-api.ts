@@ -1,23 +1,22 @@
-import { hardenedFetch } from './hardened-fetch';
+import { apiTransport } from './api-transport';
 import { Either } from './either';
 import { ApiError } from './api-error';
 import {
   ShiftTemplateItem,
   ShiftTemplateItemSchema,
+  ShiftTemplatesListSchema,
   CreateShiftTemplateInput,
   UpdateShiftTemplateInput,
   SeedDefaultShiftTemplatesInput,
 } from '../validations/shift-template.schema';
-import { z } from 'zod';
 
-const ShiftTemplatesListSchema = z.array(ShiftTemplateItemSchema);
 const BASE_URL = '/admin/settings/shift-templates';
 
 /**
  * Fetch all master shift templates.
  */
 export async function fetchShiftTemplates(): Promise<Either<ApiError, ShiftTemplateItem[]>> {
-  return hardenedFetch(BASE_URL, ShiftTemplatesListSchema, {
+  return apiTransport(BASE_URL, ShiftTemplatesListSchema, {
     method: 'GET',
   });
 }
@@ -28,7 +27,7 @@ export async function fetchShiftTemplates(): Promise<Either<ApiError, ShiftTempl
 export async function createShiftTemplate(
   payload: CreateShiftTemplateInput
 ): Promise<Either<ApiError, ShiftTemplateItem>> {
-  return hardenedFetch(BASE_URL, ShiftTemplateItemSchema, {
+  return apiTransport(BASE_URL, ShiftTemplateItemSchema, {
     method: 'POST',
     body: payload,
   });
@@ -41,7 +40,7 @@ export async function updateShiftTemplate(
   id: string,
   payload: UpdateShiftTemplateInput
 ): Promise<Either<ApiError, ShiftTemplateItem>> {
-  return hardenedFetch(`${BASE_URL}/${id}`, ShiftTemplateItemSchema, {
+  return apiTransport(`${BASE_URL}/${id}`, ShiftTemplateItemSchema, {
     method: 'PUT',
     body: payload,
   });
@@ -51,7 +50,7 @@ export async function updateShiftTemplate(
  * Delete a master shift template.
  */
 export async function deleteShiftTemplate(id: string): Promise<Either<ApiError, ShiftTemplateItem>> {
-  return hardenedFetch(`${BASE_URL}/${id}`, ShiftTemplateItemSchema, {
+  return apiTransport(`${BASE_URL}/${id}`, ShiftTemplateItemSchema, {
     method: 'DELETE',
   });
 }
@@ -62,7 +61,7 @@ export async function deleteShiftTemplate(id: string): Promise<Either<ApiError, 
 export async function seedDefaultShiftTemplates(
   payload: SeedDefaultShiftTemplatesInput = {}
 ): Promise<Either<ApiError, ShiftTemplateItem[]>> {
-  return hardenedFetch(`${BASE_URL}/seed-defaults`, ShiftTemplatesListSchema, {
+  return apiTransport(`${BASE_URL}/seed-defaults`, ShiftTemplatesListSchema, {
     method: 'POST',
     body: payload,
   });

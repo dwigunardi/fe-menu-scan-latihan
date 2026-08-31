@@ -1,4 +1,4 @@
-import { hardenedFetch } from './hardened-fetch';
+import { apiTransport } from './api-transport';
 import { Either } from './either';
 import { ApiError } from './api-error';
 import {
@@ -42,7 +42,7 @@ export async function getAdminOrders(
   if (params.sortOrder) query.set('sortOrder', params.sortOrder);
 
   const qs = query.toString();
-  return hardenedFetch(
+  return apiTransport(
     `/admin/orders${qs ? `?${qs}` : ''}`,
     PaginatedOrderSchema
   );
@@ -55,7 +55,7 @@ export async function updateAdminOrderStatus(
   id: string,
   status: OrderStatus
 ): Promise<Either<ApiError, OrderData>> {
-  return hardenedFetch(`/admin/orders/${id}/status`, OrderSchema, {
+  return apiTransport(`/admin/orders/${id}/status`, OrderSchema, {
     method: 'PUT',
     body: { status },
   });

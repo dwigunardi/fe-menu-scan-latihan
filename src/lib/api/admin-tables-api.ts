@@ -1,17 +1,19 @@
-import { z } from 'zod';
-import { hardenedFetch } from './hardened-fetch';
+import { apiTransport } from './api-transport';
 import { Either, right } from './either';
 import { ApiError } from './api-error';
 import {
   TableData,
   TableSchema,
+  TableListSchema,
   TableFormInput,
   TableStatus,
   TableZoneData,
   TableZoneSchema,
+  TableZoneListSchema,
   TableZoneFormInput,
 } from '../validations/table.schema';
 import { createPaginatedResponseSchema } from '../validations/pagination.schema';
+import { DeleteResponseSchema } from '../validations/common.schema';
 import { PaginatedResult } from '@/types/pagination';
 
 export interface QueryTableParams {
@@ -25,19 +27,12 @@ export interface QueryTableParams {
   sortOrder?: 'asc' | 'desc';
 }
 
-const TableListSchema = z.union([
-  createPaginatedResponseSchema(TableSchema),
-  z.array(TableSchema),
-]);
-
-const TableZoneListSchema = z.array(TableZoneSchema);
-
 /**
  * Fetches all tables (unbounded via limit: -1).
  */
 export async function getAdminTables(status?: string): Promise<Either<ApiError, TableData[]>> {
   const statusQuery = status && status !== 'ALL' ? `&status=${status}` : '';
-  const res = await hardenedFetch(`/admin/tables?limit=-1${statusQuery}`, TableListSchema);
+  const res = await apiTransport(`/admin/tables?limit=-1${statusQuery}`, TableListSchema);
   if (res.isLeft()) return res as Either<ApiError, TableData[]>;
   const data = res.value;
   const items = Array.isArray(data) ? data : (data?.items || []);
@@ -64,7 +59,7 @@ export async function getAdminTablesPaginated(
   if (params.sortOrder) query.set('sortOrder', params.sortOrder);
 
   const qs = query.toString();
-  return hardenedFetch(
+  return apiTransport(
     `/admin/tables${qs ? `?${qs}` : ''}`,
     createPaginatedResponseSchema(TableSchema)
   );
@@ -76,7 +71,7 @@ export async function getAdminTablesPaginated(
 export async function createAdminTable(
   payload: TableFormInput
 ): Promise<Either<ApiError, TableData>> {
-  return hardenedFetch('/admin/tables', TableSchema, {
+  return apiTransport('/admin/tables', TableSchema, {
     method: 'POST',
     body: {
       number: payload.tableNumber,
@@ -92,7 +87,7 @@ export async function updateAdminTable(
   id: string,
   payload: Partial<TableFormInput & { status: TableStatus }>
 ): Promise<Either<ApiError, TableData>> {
-  return hardenedFetch(`/admin/tables/${id}`, TableSchema, {
+  return apiTransport(`/admin/tables/${id}`, TableSchema, {
     method: 'PUT',
     body: {
       ...(payload.tableNumber ? { number: payload.tableNumber } : {}),
@@ -105,7 +100,7 @@ export async function updateAdminTable(
  * Resets an active table session (sets status to VACANT and clears active guest).
  */
 export async function resetAdminTable(id: string): Promise<Either<ApiError, TableData>> {
-  return hardenedFetch(`/admin/tables/${id}/reset`, TableSchema, {
+  return apiTransport(`/admin/tables/${id}/reset`, TableSchema, {
     method: 'POST',
   });
 }
@@ -114,7 +109,7 @@ export async function resetAdminTable(id: string): Promise<Either<ApiError, Tabl
  * Deletes a table.
  */
 export async function deleteAdminTable(id: string): Promise<Either<ApiError, { success: boolean }>> {
-  return hardenedFetch(`/admin/tables/${id}`, z.object({ success: z.boolean() }), {
+  return apiTransport(`/admin/tables/${id}`, DeleteResponseSchema, {
     method: 'DELETE',
   });
 }
@@ -123,13 +118,13 @@ export async function deleteAdminTable(id: string): Promise<Either<ApiError, { s
 // TABLE ZONES APIs
 // -------------------------------------------------------------
 export async function getAdminTableZones(): Promise<Either<ApiError, TableZoneData[]>> {
-  return hardenedFetch('/admin/table-zones', TableZoneListSchema);
+  return apiTransport('/admin/table-zones', TableZoneListSchema);
 }
 
 export async function createAdminTableZone(
   payload: TableZoneFormInput
 ): Promise<Either<ApiError, TableZoneData>> {
-  return hardenedFetch('/admin/table-zones', TableZoneSchema, {
+  return apiTransport('/admin/table-zones', TableZoneSchema, {
     method: 'POST',
     body: payload,
   });
@@ -139,14 +134,14 @@ export async function updateAdminTableZone(
   id: string,
   payload: Partial<TableZoneFormInput>
 ): Promise<Either<ApiError, TableZoneData>> {
-  return hardenedFetch(`/admin/table-zones/${id}`, TableZoneSchema, {
+  return apiTransport(`/admin/table-zones/${id}`, TableZoneSchema, {
     method: 'PUT',
     body: payload,
   });
 }
 
 export async function deleteAdminTableZone(id: string): Promise<Either<ApiError, { success: boolean }>> {
-  return hardenedFetch(`/admin/table-zones/${id}`, z.object({ success: z.boolean() }), {
+  return apiTransport(`/admin/table-zones/${id}`, DeleteResponseSchema, {
     method: 'DELETE',
   });
 }

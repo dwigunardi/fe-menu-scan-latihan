@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createPaginatedResponseSchema } from './pagination.schema';
 
 export const TableStatusSchema = z.enum([
   'VACANT',
@@ -34,6 +35,8 @@ export const TableZoneSchema = z.object({
 });
 
 export type TableZoneData = z.infer<typeof TableZoneSchema>;
+
+export const TableZoneListSchema = z.array(TableZoneSchema);
 
 export const TableZoneFormSchema = z.object({
   name: z.string().min(1, 'Nama zona wajib diisi'),
@@ -72,6 +75,11 @@ export const TableSchema = z.preprocess(
     updatedAt: z.string().optional(),
   })
 );
+
+export const TableListSchema = z.union([
+  createPaginatedResponseSchema(TableSchema),
+  z.array(TableSchema),
+]);
 
 export const TableFormSchema = z.object({
   tableNumber: z.string().min(1, 'Nomor meja wajib diisi'),

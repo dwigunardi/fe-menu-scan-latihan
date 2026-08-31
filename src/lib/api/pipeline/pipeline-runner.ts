@@ -1,6 +1,7 @@
 import { Either, left, right } from '../either';
 import { ApiError } from '../api-error';
-import { CustomFetchOptions, performHandshake } from '../custom-fetch';
+import { ApiTransportOptions } from '../types';
+import { performHandshake } from '../handshake-session';
 import { PipelineContext, Middleware } from './types';
 import { loggerMiddleware } from './logger-middleware';
 import { authMiddleware } from './auth-middleware';
@@ -76,7 +77,7 @@ async function attemptSilentTokenRefresh(): Promise<boolean> {
  */
 export async function executePipeline<T = unknown>(
   endpoint: string,
-  options: CustomFetchOptions = {},
+  options: ApiTransportOptions = {},
   customMiddlewares: Middleware[] = defaultMiddlewares
 ): Promise<Either<ApiError, T>> {
   const fullUrl = endpoint.startsWith('http')

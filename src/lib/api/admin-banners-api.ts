@@ -1,18 +1,13 @@
-import { z } from 'zod';
-import { hardenedFetch } from './hardened-fetch';
-import { customFetch } from './custom-fetch';
+import { apiTransport } from './api-transport';
 import { Either, left, right } from './either';
 import { ApiError } from './api-error';
 import {
   BannerData,
   BannerSchema,
+  BannerListSchema,
+  DeleteBannerResponseSchema,
   BannerFormInput,
 } from '../validations/banner.schema';
-
-const BannerListSchema = z.union([
-  z.array(BannerSchema),
-  z.object({ items: z.array(BannerSchema) }).transform((v) => v.items),
-]);
 
 export interface QueryBannerParams {
   search?: string;
@@ -30,7 +25,7 @@ export async function getAdminBanners(
   if (params?.isActive !== undefined) query.set('isActive', String(params.isActive));
 
   const qs = query.toString() ? `?${query.toString()}` : '';
-  return hardenedFetch(`/admin/banners${qs}`, BannerListSchema, {
+  return apiTransport(`/admin/banners${qs}`, BannerListSchema, {
     method: 'GET',
   });
 }
@@ -39,7 +34,7 @@ export async function getAdminBanners(
  * Fetches active promo banners for public customers
  */
 export async function getPublicBanners(): Promise<Either<ApiError, BannerData[]>> {
-  return hardenedFetch('/public/banners', BannerListSchema, {
+  return apiTransport('/public/banners', BannerListSchema, {
     method: 'GET',
     skipHandshakeToken: true,
   });
@@ -51,7 +46,7 @@ export async function getPublicBanners(): Promise<Either<ApiError, BannerData[]>
 export async function getAdminBannerById(
   id: string
 ): Promise<Either<ApiError, BannerData>> {
-  return hardenedFetch(`/admin/banners/${id}`, BannerSchema, {
+  return apiTransport(`/admin/banners/${id}`, BannerSchema, {
     method: 'GET',
   });
 }
@@ -62,7 +57,7 @@ export async function getAdminBannerById(
 export async function createAdminBanner(
   payload: BannerFormInput
 ): Promise<Either<ApiError, BannerData>> {
-  return hardenedFetch('/admin/banners', BannerSchema, {
+  return apiTransport('/admin/banners', BannerSchema, {
     method: 'POST',
     body: payload,
   });
@@ -75,7 +70,7 @@ export async function updateAdminBanner(
   id: string,
   payload: Partial<BannerFormInput>
 ): Promise<Either<ApiError, BannerData>> {
-  return hardenedFetch(`/admin/banners/${id}`, BannerSchema, {
+  return apiTransport(`/admin/banners/${id}`, BannerSchema, {
     method: 'PUT',
     body: payload,
   });
@@ -97,8 +92,9 @@ export async function toggleAdminBannerStatus(
 export async function deleteAdminBanner(
   id: string
 ): Promise<Either<ApiError, { success: boolean; id: string }>> {
-  const res = await customFetch<{ success?: boolean; message?: string }>(
+  const res = await apiTransport(
     `/admin/banners/${id}`,
+    DeleteBannerResponseSchema,
     {
       method: 'DELETE',
     }

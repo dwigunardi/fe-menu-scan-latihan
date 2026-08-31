@@ -1,23 +1,24 @@
 import { z } from 'zod';
 import { Either, left, right } from './either';
 import { ApiError } from './api-error';
-import { customFetch, CustomFetchOptions } from './custom-fetch';
+import { executePipeline } from './pipeline/pipeline-runner';
+import { ApiTransportOptions } from './types';
 import { logger } from '@/lib/logger';
 
 /**
- * Hardened API Request:
- * 1. Executes secure transport via Interceptor Pipeline
+ * Universal 2-Layer API Transport:
+ * 1. Executes secure transport via Interceptor Pipeline Runner (Layer 2)
  * 2. Hardens and validates the response data structure with Zod at runtime
  * 3. Logs contract violations without leaking sensitive details
- * 4. Returns Either<ApiError, z.infer<TSchema>>
+ * 4. Returns type-safe Either<ApiError, z.infer<TSchema>>
  */
-export async function hardenedFetch<TSchema extends z.ZodTypeAny>(
+export async function apiTransport<TSchema extends z.ZodTypeAny>(
   endpoint: string,
   schema: TSchema,
-  options: CustomFetchOptions = {}
+  options: ApiTransportOptions = {}
 ): Promise<Either<ApiError, z.infer<TSchema>>> {
-  // 1. Execute secure fetch
-  const rawResult = await customFetch<unknown>(endpoint, options);
+  // 1. Execute secure pipeline transport directly
+  const rawResult = await executePipeline<unknown>(endpoint, options);
 
   if (rawResult.isLeft()) {
     return left(rawResult.value);
@@ -46,3 +47,8 @@ export async function hardenedFetch<TSchema extends z.ZodTypeAny>(
   // 3. Return 100% type-safe and verified data in Right
   return right(parseResult.data);
 }
+
+/**
+ * Alias for backward compatibility during migration.
+ */
+export const hardenedFetch = apiTransport;

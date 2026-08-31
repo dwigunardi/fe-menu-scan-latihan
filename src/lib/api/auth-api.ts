@@ -1,4 +1,4 @@
-import { hardenedFetch } from './hardened-fetch';
+import { apiTransport } from './api-transport';
 import { Either, left } from './either';
 import { ApiError } from './api-error';
 import {
@@ -34,7 +34,7 @@ export async function loginStaff(credentials: {
 }): Promise<Either<ApiError, LoginResponse>> {
   const email = normalizeStaffEmail(credentials.usernameOrEmail);
 
-  return hardenedFetch('/auth/login', LoginResponseSchema, {
+  return apiTransport('/auth/login', LoginResponseSchema, {
     method: 'POST',
     body: {
       email,
@@ -51,7 +51,7 @@ export async function loginStaff(credentials: {
 export async function refreshTokenApi(
   refreshToken: string
 ): Promise<Either<ApiError, RefreshTokenResponse>> {
-  return hardenedFetch('/auth/refresh', RefreshTokenResponseSchema, {
+  return apiTransport('/auth/refresh', RefreshTokenResponseSchema, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${refreshToken}`,

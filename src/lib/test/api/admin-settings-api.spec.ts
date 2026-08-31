@@ -5,12 +5,13 @@ import {
   updateStoreStatus,
   fetchPublicBranchLocation,
 } from '@/lib/api/admin-settings-api';
-import * as hardenedFetchModule from '@/lib/api/hardened-fetch';
+import * as apiTransportModule from '@/lib/api/api-transport';
 import { right, left } from '@/lib/api/either';
 import { ApiError } from '@/lib/api/api-error';
 import { STORE_MODE } from '@/lib/constants/branch-settings';
 
-vi.mock('@/lib/api/hardened-fetch', () => ({
+vi.mock('@/lib/api/api-transport', () => ({
+  apiTransport: vi.fn(),
   hardenedFetch: vi.fn(),
 }));
 
@@ -49,7 +50,7 @@ describe('Admin Settings API Client', () => {
 
   describe('fetchAdminBranchSetting', () => {
     it('returns parsed BranchSetting on success', async () => {
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockSettingData));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(right(mockSettingData));
 
       const result = await fetchAdminBranchSetting();
 
@@ -61,7 +62,7 @@ describe('Admin Settings API Client', () => {
     });
 
     it('returns error when request fails', async () => {
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(left(ApiError.networkError()));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(left(ApiError.networkError()));
 
       const result = await fetchAdminBranchSetting();
 
@@ -84,7 +85,7 @@ describe('Admin Settings API Client', () => {
     };
 
     it('sends PUT request with payload and returns updated setting', async () => {
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(
         right({ ...mockSettingData, ...updatePayload })
       );
 
@@ -98,7 +99,7 @@ describe('Admin Settings API Client', () => {
     });
 
     it('returns error when request fails during update', async () => {
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(left(ApiError.networkError()));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(left(ApiError.networkError()));
 
       const result = await updateAdminBranchSetting(updatePayload);
       expect(result.isLeft()).toBe(true);
@@ -114,7 +115,7 @@ describe('Admin Settings API Client', () => {
         emergencyReason: 'Perbaikan Mesin',
       };
 
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(updatedSetting));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(right(updatedSetting));
 
       const result = await updateStoreStatus({
         isStoreOpen: false,
@@ -132,7 +133,7 @@ describe('Admin Settings API Client', () => {
 
   describe('fetchPublicBranchLocation', () => {
     it('returns public location on success', async () => {
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockPublicLocation));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(right(mockPublicLocation));
 
       const result = await fetchPublicBranchLocation();
 
@@ -144,7 +145,7 @@ describe('Admin Settings API Client', () => {
     });
 
     it('returns error when public fetch fails', async () => {
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(left(ApiError.networkError()));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(left(ApiError.networkError()));
 
       const result = await fetchPublicBranchLocation();
       expect(result.isLeft()).toBe(true);

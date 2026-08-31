@@ -1,4 +1,4 @@
-import { hardenedFetch } from './hardened-fetch';
+import { apiTransport } from './api-transport';
 import { Either } from './either';
 import { ApiError } from './api-error';
 import {
@@ -16,7 +16,7 @@ const BASE_URL = '/admin/settings/branch';
  * Fetch branch settings & geofence configuration for admin.
  */
 export async function fetchAdminBranchSetting(): Promise<Either<ApiError, BranchSetting>> {
-  return hardenedFetch(BASE_URL, BranchSettingSchema, {
+  return apiTransport(BASE_URL, BranchSettingSchema, {
     method: 'GET',
   });
 }
@@ -27,7 +27,7 @@ export async function fetchAdminBranchSetting(): Promise<Either<ApiError, Branch
 export async function updateAdminBranchSetting(
   payload: UpdateBranchSettingInput
 ): Promise<Either<ApiError, BranchSetting>> {
-  return hardenedFetch(BASE_URL, BranchSettingSchema, {
+  return apiTransport(BASE_URL, BranchSettingSchema, {
     method: 'PUT',
     body: payload,
   });
@@ -39,7 +39,7 @@ export async function updateAdminBranchSetting(
 export async function updateStoreStatus(
   payload: UpdateStoreStatusInput
 ): Promise<Either<ApiError, BranchSetting>> {
-  return hardenedFetch(`${BASE_URL}/store-status`, BranchSettingSchema, {
+  return apiTransport(`${BASE_URL}/store-status`, BranchSettingSchema, {
     method: 'PUT',
     body: payload,
   });
@@ -51,7 +51,7 @@ export async function updateStoreStatus(
 export async function fetchPublicBranchLocation(): Promise<
   Either<ApiError, PublicBranchLocation>
 > {
-  return hardenedFetch('/public/branch/location', PublicBranchLocationSchema, {
+  return apiTransport('/public/branch/location', PublicBranchLocationSchema, {
     method: 'GET',
     skipHandshakeToken: true,
   });

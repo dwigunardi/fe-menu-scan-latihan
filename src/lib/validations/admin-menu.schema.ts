@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createPaginatedResponseSchema } from './pagination.schema';
 
 export const NumericCoerce = z.coerce.number();
 
@@ -40,6 +41,11 @@ export const CategorySchema = z.object({
   updatedAt: z.string().optional(),
 });
 
+export const CategoryListSchema = z.union([
+  createPaginatedResponseSchema(CategorySchema),
+  z.array(CategorySchema),
+]);
+
 export const AdminMenuItemSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -58,6 +64,18 @@ export const AdminMenuItemSchema = z.object({
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
 });
+
+export const MenuListSchema = z.union([
+  createPaginatedResponseSchema(AdminMenuItemSchema),
+  z.array(AdminMenuItemSchema),
+]);
+
+export const ToggleStatusResponseSchema = z.union([
+  AdminMenuItemSchema,
+  z.object({
+    item: AdminMenuItemSchema,
+  }).transform((val) => val.item),
+]);
 
 export const MenuFormSchema = z.object({
   id: z.string().optional(),

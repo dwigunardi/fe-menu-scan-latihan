@@ -1,4 +1,4 @@
-import { hardenedFetch } from './hardened-fetch';
+import { apiTransport } from './api-transport';
 import { Either, left, right } from './either';
 import { ApiError } from './api-error';
 import {
@@ -63,7 +63,7 @@ function appendLocalHistory(shift: ShiftItem) {
  * Retrieves the currently active cashier shift.
  */
 export async function getCurrentShift(): Promise<Either<ApiError, ShiftItem | null>> {
-  const result = await hardenedFetch('/admin/shifts/current', ShiftItemSchema.nullable());
+  const result = await apiTransport('/admin/shifts/current', ShiftItemSchema.nullable());
 
   if (result.isRight()) {
     setLocalActiveShift(result.value);
@@ -83,7 +83,7 @@ export async function openShift(
 ): Promise<Either<ApiError, ShiftItem>> {
   const user = useAuthStore.getState().user;
 
-  const result = await hardenedFetch('/admin/shifts/open', ShiftItemSchema, {
+  const result = await apiTransport('/admin/shifts/open', ShiftItemSchema, {
     method: 'POST',
     body: payload,
   });
@@ -125,7 +125,7 @@ export async function closeShift(
   shiftId: string,
   payload: CloseShiftInput
 ): Promise<Either<ApiError, ShiftItem>> {
-  const result = await hardenedFetch(`/admin/shifts/${shiftId}/close`, ShiftItemSchema, {
+  const result = await apiTransport(`/admin/shifts/${shiftId}/close`, ShiftItemSchema, {
     method: 'POST',
     body: payload,
   });
@@ -172,7 +172,7 @@ export async function getShiftHistory(
   if (params.endDate) query.append('endDate', params.endDate);
   if (params.status) query.append('status', params.status);
 
-  const result = await hardenedFetch(`/admin/shifts?${query.toString()}`, ShiftHistoryResponseSchema);
+  const result = await apiTransport(`/admin/shifts?${query.toString()}`, ShiftHistoryResponseSchema);
 
   if (result.isRight()) {
     return result;

@@ -1,20 +1,27 @@
-import { z } from 'zod';
-import { hardenedFetch } from './hardened-fetch';
-import { customFetch } from './custom-fetch';
+import { z } from 'zod';
+import { apiTransport } from './api-transport';
 import { Either, right } from './either';
 import { ApiError } from './api-error';
 import {
   CategoryData,
   CategorySchema,
+  CategoryListSchema,
   AdminMenuItemSchema,
   AdminMenuItemType,
+  MenuListSchema,
+  ToggleStatusResponseSchema,
   MenuFormInput,
 } from '../validations/admin-menu.schema';
 import { createPaginatedResponseSchema } from '../validations/pagination.schema';
+import { DeleteResponseSchema } from '../validations/common.schema';
+import {
+  UploadImageResponseSchema,
+  UploadImageResponse,
+} from '../validations/media.schema';
 import { PaginatedResult } from '@/types/pagination';
 
 export type AdminMenuItem = AdminMenuItemType;
-export type { CategoryData };
+export type { CategoryData, UploadImageResponse };
 
 export interface QueryMenuParams {
   page?: number;
@@ -26,28 +33,11 @@ export interface QueryMenuParams {
   sortOrder?: 'asc' | 'desc';
 }
 
-const CategoryListSchema = z.union([
-  createPaginatedResponseSchema(CategorySchema),
-  z.array(CategorySchema),
-]);
-
-const ToggleStatusResponseSchema = z.union([
-  AdminMenuItemSchema,
-  z.object({
-    item: AdminMenuItemSchema,
-  }).transform((val) => val.item),
-]);
-
-const MenuListSchema = z.union([
-  createPaginatedResponseSchema(AdminMenuItemSchema),
-  z.array(AdminMenuItemSchema),
-]);
-
 /**
  * Fetches all categories (unbounded via limit: -1).
  */
 export async function getAdminCategories(): Promise<Either<ApiError, CategoryData[]>> {
-  const res = await hardenedFetch('/public/categories?limit=-1', CategoryListSchema);
+  const res = await apiTransport('/public/categories?limit=-1', CategoryListSchema);
   if (res.isLeft()) return res as Either<ApiError, CategoryData[]>;
   const data = res.value;
   const items = Array.isArray(data) ? data : (data?.items || []);
@@ -61,7 +51,7 @@ export async function createAdminCategory(payload: {
   name: string;
   sortOrder?: number;
 }): Promise<Either<ApiError, CategoryData>> {
-  return hardenedFetch('/admin/categories', CategorySchema, {
+  return apiTransport('/admin/categories', CategorySchema, {
     method: 'POST',
     body: payload,
   });
@@ -77,7 +67,7 @@ export async function updateAdminCategory(
     sortOrder?: number;
   }
 ): Promise<Either<ApiError, CategoryData>> {
-  return hardenedFetch(`/admin/categories/${id}`, CategorySchema, {
+  return apiTransport(`/admin/categories/${id}`, CategorySchema, {
     method: 'PUT',
     body: payload,
   });
@@ -87,7 +77,7 @@ export async function updateAdminCategory(
  * Deletes a category.
  */
 export async function deleteAdminCategory(id: string): Promise<Either<ApiError, { success: boolean }>> {
-  return customFetch<{ success: boolean }>(`/admin/categories/${id}`, {
+  return apiTransport(`/admin/categories/${id}`, DeleteResponseSchema, {
     method: 'DELETE',
   });
 }
@@ -97,7 +87,7 @@ export async function deleteAdminCategory(id: string): Promise<Either<ApiError, 
  */
 export async function getAdminMenus(categoryId?: string): Promise<Either<ApiError, AdminMenuItem[]>> {
   const catQuery = categoryId && categoryId !== 'ALL' ? `&categoryId=${categoryId}` : '';
-  const res = await hardenedFetch(`/public/menus?limit=-1${catQuery}`, MenuListSchema);
+  const res = await apiTransport(`/public/menus?limit=-1${catQuery}`, MenuListSchema);
   if (res.isLeft()) return res as Either<ApiError, AdminMenuItem[]>;
   const data = res.value;
   const items = Array.isArray(data) ? data : (data?.items || []);
@@ -121,7 +111,7 @@ export async function getAdminMenusPaginated(
   if (params.sortOrder) query.set('sortOrder', params.sortOrder);
 
   const qs = query.toString();
-  return hardenedFetch(
+  return apiTransport(
     `/admin/menus${qs ? `?${qs}` : ''}`,
     createPaginatedResponseSchema(AdminMenuItemSchema)
   );
@@ -131,7 +121,7 @@ export async function getAdminMenusPaginated(
  * Fetches single menu detail for preview or edit.
  */
 export async function getAdminMenuDetail(id: string): Promise<Either<ApiError, AdminMenuItem>> {
-  return hardenedFetch(`/public/menus/${id}`, AdminMenuItemSchema);
+  return apiTransport(`/public/menus/${id}`, AdminMenuItemSchema);
 }
 
 /**
@@ -140,7 +130,7 @@ export async function getAdminMenuDetail(id: string): Promise<Either<ApiError, A
 export async function createAdminMenu(
   payload: MenuFormInput
 ): Promise<Either<ApiError, AdminMenuItem>> {
-  return hardenedFetch('/admin/menus', AdminMenuItemSchema, {
+  return apiTransport('/admin/menus', AdminMenuItemSchema, {
     method: 'POST',
     body: payload,
   });
@@ -153,7 +143,7 @@ export async function updateAdminMenu(
   id: string,
   payload: Partial<MenuFormInput>
 ): Promise<Either<ApiError, AdminMenuItem>> {
-  return hardenedFetch(`/admin/menus/${id}`, AdminMenuItemSchema, {
+  return apiTransport(`/admin/menus/${id}`, AdminMenuItemSchema, {
     method: 'PUT',
     body: payload,
   });
@@ -166,7 +156,7 @@ export async function toggleMenuAvailability(
   id: string,
   isAvailable: boolean
 ): Promise<Either<ApiError, AdminMenuItem>> {
-  return hardenedFetch(`/admin/menus/${id}/status`, ToggleStatusResponseSchema as z.ZodType<AdminMenuItem>, {
+  return apiTransport(`/admin/menus/${id}/status`, ToggleStatusResponseSchema as z.ZodType<AdminMenuItem>, {
     method: 'PUT',
     body: { isAvailable },
   });
@@ -176,19 +166,9 @@ export async function toggleMenuAvailability(
  * Deletes a menu item.
  */
 export async function deleteAdminMenu(id: string): Promise<Either<ApiError, { success: boolean }>> {
-  return customFetch<{ success: boolean }>(`/admin/menus/${id}`, {
+  return apiTransport(`/admin/menus/${id}`, DeleteResponseSchema, {
     method: 'DELETE',
   });
-}
-
-
-export interface UploadImageResponse {
-  url: string;
-  filename: string;
-  size: number;
-  mimeType: string;
-  width?: number;
-  height?: number;
 }
 
 /**
@@ -231,7 +211,7 @@ export async function uploadAdminMenuImage(
   const formData = new FormData();
   formData.append('file', file);
 
-  return customFetch<UploadImageResponse>('/admin/uploads/image', {
+  return apiTransport('/admin/uploads/image', UploadImageResponseSchema, {
     method: 'POST',
     body: formData,
     skipEncryption: true,

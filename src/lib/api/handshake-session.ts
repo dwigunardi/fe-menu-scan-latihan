@@ -6,20 +6,9 @@ import {
   exportPublicKeyHex,
   importServerPublicKey,
   deriveSessionKey,
-  encryptPayload,
-  decryptPayload,
   bufToHex,
 } from '../crypto/ecdh';
 import { useHandshakeStore } from '../../store/use-handshake-store';
-import { useAuthStore } from '../../store/use-auth-store';
-
-export interface CustomFetchOptions extends Omit<RequestInit, 'body'> {
-  body?: unknown;
-  skipEncryption?: boolean;
-  skipHandshakeToken?: boolean;
-  retryOnHandshakeExpired?: boolean;
-  retryOnTokenExpired?: boolean;
-}
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
@@ -116,6 +105,10 @@ export async function performHandshake(): Promise<
   }
 }
 
+/**
+ * Ensures active ECDH session key & token are available in RAM cache.
+ * If expired or absent, performs a new handshake transparently.
+ */
 export async function ensureHandshakeSession(): Promise<
   Either<ApiError, { sessionKey: CryptoKey; handshakeToken: string }>
 > {
@@ -129,20 +122,4 @@ export async function ensureHandshakeSession(): Promise<
   }
 
   return performHandshake();
-}
-
-/**
- * Universal Secure Fetch wrapper with:
- * - Automatic JWT Bearer token injection from useAuthStore
- * - Handshake Session Key management
- * - Zero-Trust payload encryption / decryption
- * - Auto-retry on token expiration
- */
-export async function customFetch<T = unknown>(
-  endpoint: string,
-  options: CustomFetchOptions = {}
-): Promise<Either<ApiError, T>> {
-  // Delegate to modular Interceptor Middleware Pipeline
-  const { executePipeline } = await import('./pipeline/pipeline-runner');
-  return executePipeline<T>(endpoint, options);
 }

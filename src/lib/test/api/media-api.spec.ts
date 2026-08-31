@@ -1,11 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { uploadMediaImage } from '@/lib/api/media-api';
 import { useAuthStore } from '@/store/use-auth-store';
+import { server } from '@/test/mocks/server';
+import { http, HttpResponse } from 'msw';
 import { ErrorCode } from '@/lib/api/error-codes';
+
+const API_BASE = 'http://localhost:5000/api/v1';
 
 describe('Media API Client (uploadMediaImage)', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     useAuthStore.getState().logout();
   });
 
@@ -16,22 +19,22 @@ describe('Media API Client (uploadMediaImage)', () => {
     );
 
     const mockFile = new File(['dummy-content'], 'test-image.jpg', { type: 'image/jpeg' });
-    const mockResponse = {
-      data: {
-        url: 'http://localhost:5000/uploads/test-image.jpg',
-        filename: 'test-image.jpg',
-        size: 1024,
-        mimeType: 'image/jpeg',
-        width: 1200,
-        height: 675,
-      },
-    };
 
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockResponse,
-    });
-    vi.stubGlobal('fetch', fetchMock);
+    server.use(
+      http.post(`${API_BASE}/admin/uploads/image`, () => {
+        return HttpResponse.json({
+          statusCode: 201,
+          data: {
+            url: 'http://localhost:5000/uploads/test-image.jpg',
+            filename: 'test-image.jpg',
+            size: 1024,
+            mimeType: 'image/jpeg',
+            width: 1200,
+            height: 675,
+          },
+        });
+      })
+    );
 
     const result = await uploadMediaImage(mockFile);
     expect(result.isRight()).toBe(true);
@@ -43,15 +46,20 @@ describe('Media API Client (uploadMediaImage)', () => {
 
   it('uploads media image without token and uses payload fallbacks', async () => {
     const mockFile = new File(['content'], 'custom.png', { type: 'image/png' });
-    const mockResponse = {
-      url: 'http://localhost:5000/uploads/custom.png',
-    };
 
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockResponse,
-    });
-    vi.stubGlobal('fetch', fetchMock);
+    server.use(
+      http.post(`${API_BASE}/admin/uploads/image`, () => {
+        return HttpResponse.json({
+          statusCode: 200,
+          data: {
+            url: 'http://localhost:5000/uploads/custom.png',
+            filename: 'custom.png',
+            size: 512,
+            mimeType: 'image/png',
+          },
+        });
+      })
+    );
 
     const result = await uploadMediaImage(mockFile);
     expect(result.isRight()).toBe(true);
@@ -63,15 +71,18 @@ describe('Media API Client (uploadMediaImage)', () => {
 
   it('returns ApiError Left when server responds with error status and json', async () => {
     const mockFile = new File(['bad-content'], 'bad.exe', { type: 'application/octet-stream' });
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 400,
-      json: async () => ({
-        code: ErrorCode.FILE_TOO_LARGE,
-        message: 'Ukuran file melebihi batas 2MB.',
-      }),
-    });
-    vi.stubGlobal('fetch', fetchMock);
+
+    server.use(
+      http.post(`${API_BASE}/admin/uploads/image`, () => {
+        return HttpResponse.json(
+          {
+            code: ErrorCode.FILE_TOO_LARGE,
+            message: 'Ukuran file melebihi batas 2MB.',
+          },
+          { status: 400 }
+        );
+      })
+    );
 
     const result = await uploadMediaImage(mockFile);
     expect(result.isLeft()).toBe(true);
@@ -83,14 +94,18 @@ describe('Media API Client (uploadMediaImage)', () => {
 
   it('returns ApiError Left when fetch rejects with network exception', async () => {
     const mockFile = new File(['content'], 'test.jpg', { type: 'image/jpeg' });
-    const fetchMock = vi.fn().mockRejectedValue(new Error('Network disconnected'));
-    vi.stubGlobal('fetch', fetchMock);
+
+    server.use(
+      http.post(`${API_BASE}/admin/uploads/image`, () => {
+        return HttpResponse.error();
+      })
+    );
 
     const result = await uploadMediaImage(mockFile);
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) {
-      expect(result.value.statusCode).toBe(500);
-      expect(result.value.message).toContain('Network disconnected');
+      expect(result.value.statusCode).toBe(0);
+      expect(result.value.errorTitle).toBe('Network Error');
     }
   });
 });

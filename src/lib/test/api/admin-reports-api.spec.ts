@@ -4,11 +4,12 @@ import {
   getAdminRevenueReport,
   getAdminTopSellingReport,
 } from '@/lib/api/admin-reports-api';
-import * as hardenedFetchModule from '@/lib/api/hardened-fetch';
+import * as apiTransportModule from '@/lib/api/api-transport';
 import { right, left } from '@/lib/api/either';
 import { ApiError } from '@/lib/api/api-error';
 
-vi.mock('@/lib/api/hardened-fetch', () => ({
+vi.mock('@/lib/api/api-transport', () => ({
+  apiTransport: vi.fn(),
   hardenedFetch: vi.fn(),
 }));
 
@@ -34,7 +35,7 @@ describe('Admin Reports API Client', () => {
         topSellingToday: [],
       };
 
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockOverview));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(right(mockOverview));
 
       const result = await getAdminDashboardOverview();
 
@@ -46,7 +47,7 @@ describe('Admin Reports API Client', () => {
     });
 
     it('returns ApiError on failure', async () => {
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(left(ApiError.networkError()));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(left(ApiError.networkError()));
 
       const result = await getAdminDashboardOverview();
 
@@ -63,7 +64,7 @@ describe('Admin Reports API Client', () => {
         ordersByStatus: [{ status: 'COMPLETED', count: 75 }],
       };
 
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockRevenue));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(right(mockRevenue));
 
       const result = await getAdminRevenueReport({
         startDate: '2026-01-01',
@@ -89,7 +90,7 @@ describe('Admin Reports API Client', () => {
         },
       ];
 
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockTopSelling));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(right(mockTopSelling));
 
       const result = await getAdminTopSellingReport({ limit: 5 });
 

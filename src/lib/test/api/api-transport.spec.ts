@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { hardenedFetch } from '@/lib/api/hardened-fetch';
+import { apiTransport } from '@/lib/api/api-transport';
 import { server } from '@/test/mocks/server';
 import { http, HttpResponse } from 'msw';
 
 const API_BASE = 'http://localhost:5000/api/v1';
 
-describe('hardenedFetch', () => {
+describe('apiTransport (Universal Transport Layer)', () => {
   const UserSchema = z.object({
     id: z.string(),
     name: z.string(),
@@ -26,7 +26,7 @@ describe('hardenedFetch', () => {
       })
     );
 
-    const result = await hardenedFetch('/test/valid-user', UserSchema, {
+    const result = await apiTransport('/test/valid-user', UserSchema, {
       skipHandshakeToken: true,
       skipEncryption: true,
     });
@@ -51,7 +51,7 @@ describe('hardenedFetch', () => {
       })
     );
 
-    const result = await hardenedFetch('/test/invalid-user', UserSchema, {
+    const result = await apiTransport('/test/invalid-user', UserSchema, {
       skipHandshakeToken: true,
       skipEncryption: true,
     });
@@ -65,7 +65,7 @@ describe('hardenedFetch', () => {
     }
   });
 
-  it('returns Left if underlying customFetch fails with HTTP error', async () => {
+  it('returns Left if underlying pipeline fails with HTTP error', async () => {
     server.use(
       http.get(`${API_BASE}/test/error`, () => {
         return HttpResponse.json(
@@ -75,7 +75,7 @@ describe('hardenedFetch', () => {
       })
     );
 
-    const result = await hardenedFetch('/test/error', UserSchema, {
+    const result = await apiTransport('/test/error', UserSchema, {
       skipHandshakeToken: true,
       skipEncryption: true,
     });

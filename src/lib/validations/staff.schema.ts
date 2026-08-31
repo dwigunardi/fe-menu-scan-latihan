@@ -66,7 +66,6 @@ export const UpdateStaffInputSchema = z.object({
   dailyShiftHours: z.coerce.number().min(1).max(24).default(8),
 });
 
-
 export type UpdateStaffInput = z.infer<typeof UpdateStaffInputSchema>;
 
 export const UpdateStaffPinInputSchema = z.object({
@@ -74,6 +73,19 @@ export const UpdateStaffPinInputSchema = z.object({
 });
 
 export type UpdateStaffPinInput = z.infer<typeof UpdateStaffPinInputSchema>;
+
+export const PinUpdateResponseSchema = z.object({
+  success: z.boolean().default(true),
+  message: z.string().default('PIN 4-digit karyawan berhasil diperbarui'),
+}).passthrough();
+
+export type PinUpdateResponse = z.infer<typeof PinUpdateResponseSchema>;
+
+export const DeleteStaffResponseSchema = z.object({
+  success: z.boolean().default(true),
+}).passthrough();
+
+export type DeleteStaffResponse = z.infer<typeof DeleteStaffResponseSchema>;
 
 export interface StaffQueryParams {
   page?: number;

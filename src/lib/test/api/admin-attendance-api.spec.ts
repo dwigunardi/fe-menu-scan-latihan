@@ -6,13 +6,14 @@ import {
   recordClockOut,
   createLeaveRequest,
 } from '@/lib/api/admin-attendance-api';
-import * as hardenedFetchModule from '@/lib/api/hardened-fetch';
+import * as apiTransportModule from '@/lib/api/api-transport';
 import { right, left } from '@/lib/api/either';
 import { ApiError } from '@/lib/api/api-error';
 import { ATTENDANCE_STATUS, LEAVE_TYPE } from '@/lib/constants/attendance';
 import { ROLE } from '@/lib/constants/roles';
 
-vi.mock('@/lib/api/hardened-fetch', () => ({
+vi.mock('@/lib/api/api-transport', () => ({
+  apiTransport: vi.fn(),
   hardenedFetch: vi.fn(),
 }));
 
@@ -56,7 +57,7 @@ describe('admin-attendance-api', () => {
         },
       };
 
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockResponse));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(right(mockResponse));
 
       const result = await getAdminAttendancePaginated({
         page: 1,
@@ -69,7 +70,7 @@ describe('admin-attendance-api', () => {
       });
 
       expect(result.isRight()).toBe(true);
-      expect(hardenedFetchModule.hardenedFetch).toHaveBeenCalledWith(
+      expect(apiTransportModule.apiTransport).toHaveBeenCalledWith(
         expect.stringContaining('startDate=2026-01-01&endDate=2026-01-07&status=ON_TIME&role=KITCHEN&search=Budi'),
         expect.anything(),
         expect.anything()
@@ -81,7 +82,7 @@ describe('admin-attendance-api', () => {
     });
 
     it('returns ApiError on network failure', async () => {
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(left(ApiError.networkError()));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(left(ApiError.networkError()));
 
       const result = await getAdminAttendancePaginated();
       expect(result.isLeft()).toBe(true);
@@ -101,7 +102,7 @@ describe('admin-attendance-api', () => {
         attendanceRatePercent: 80,
       };
 
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockSummary));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(right(mockSummary));
 
       // Without date
       const resultDefault = await getAdminAttendanceSummary();
@@ -110,7 +111,7 @@ describe('admin-attendance-api', () => {
       // With date
       const resultWithDate = await getAdminAttendanceSummary({ date: '2026-01-01' });
       expect(resultWithDate.isRight()).toBe(true);
-      expect(hardenedFetchModule.hardenedFetch).toHaveBeenCalledWith(
+      expect(apiTransportModule.apiTransport).toHaveBeenCalledWith(
         expect.stringContaining('/summary?date=2026-01-01'),
         expect.anything(),
         expect.anything()
@@ -124,7 +125,7 @@ describe('admin-attendance-api', () => {
 
   describe('recordClockIn and recordClockOut', () => {
     it('records clock-in successfully', async () => {
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockAttendanceItem));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(right(mockAttendanceItem));
 
       const result = await recordClockIn({
         staffId: 'staff-1',
@@ -140,7 +141,7 @@ describe('admin-attendance-api', () => {
     });
 
     it('records clock-out successfully', async () => {
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(right(mockAttendanceItem));
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(right(mockAttendanceItem));
 
       const result = await recordClockOut({
         staffId: 'staff-1',
@@ -155,7 +156,7 @@ describe('admin-attendance-api', () => {
 
   describe('createLeaveRequest', () => {
     it('submits leave request successfully', async () => {
-      vi.mocked(hardenedFetchModule.hardenedFetch).mockResolvedValue(
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(
         right({ success: true, message: 'Izin berhasil diajukan' })
       );
 

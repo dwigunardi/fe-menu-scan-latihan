@@ -16,6 +16,8 @@ export const ShiftTemplateItemSchema = z.object({
 
 export type ShiftTemplateItem = z.infer<typeof ShiftTemplateItemSchema>;
 
+export const ShiftTemplatesListSchema = z.array(ShiftTemplateItemSchema);
+
 export const CreateShiftTemplateInputSchema = z.object({
   name: z.string().min(2, 'Nama template shift minimal 2 karakter'),
   code: z.string().min(2, 'Kode shift minimal 2 karakter'),

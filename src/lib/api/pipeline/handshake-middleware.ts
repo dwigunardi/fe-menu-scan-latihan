@@ -1,4 +1,4 @@
-import { ensureHandshakeSession } from '../custom-fetch';
+import { ensureHandshakeSession } from '../handshake-session';
 import { Middleware } from './types';
 
 /**

@@ -1,4 +1,4 @@
-import { hardenedFetch } from './hardened-fetch';
+import { apiTransport } from './api-transport';
 import { Either } from './either';
 import { ApiError } from './api-error';
 import {
@@ -18,7 +18,7 @@ import {
 export async function getAdminDashboardOverview(): Promise<
   Either<ApiError, DashboardOverviewData>
 > {
-  return hardenedFetch(
+  return apiTransport(
     '/admin/reports/dashboard-overview',
     DashboardOverviewSchema
   );
@@ -35,7 +35,7 @@ export async function getAdminRevenueReport(
   if (params.endDate) query.set('endDate', params.endDate);
 
   const qs = query.toString();
-  return hardenedFetch(
+  return apiTransport(
     `/admin/reports/revenue${qs ? `?${qs}` : ''}`,
     RevenueReportSchema
   );
@@ -53,7 +53,7 @@ export async function getAdminTopSellingReport(
   if (params.endDate) query.set('endDate', params.endDate);
 
   const qs = query.toString();
-  return hardenedFetch(
+  return apiTransport(
     `/admin/reports/top-selling${qs ? `?${qs}` : ''}`,
     TopSellingReportSchema
   );

@@ -1,5 +1,4 @@
-import { hardenedFetch } from './hardened-fetch';
-import { customFetch } from './custom-fetch';
+import { apiTransport } from './api-transport';
 import { Either, right, left } from './either';
 import { ApiError } from './api-error';
 
@@ -12,6 +11,8 @@ import {
   CreateStaffInput,
   UpdateStaffInput,
   UpdateStaffPinInput,
+  PinUpdateResponseSchema,
+  DeleteStaffResponseSchema,
 } from '../validations/staff.schema';
 import { ROLE } from '../constants/roles';
 
@@ -118,7 +119,7 @@ export async function getAdminStaffPaginated(
   if (params?.isActive !== undefined) query.append('isActive', String(params.isActive));
 
   const endpoint = `/admin/staff${query.toString() ? `?${query.toString()}` : ''}`;
-  const response = await hardenedFetch(endpoint, StaffPaginatedResponseSchema);
+  const response = await apiTransport(endpoint, StaffPaginatedResponseSchema);
 
   if (response.isRight()) {
     return response;
@@ -169,7 +170,7 @@ export async function getAdminStaffPaginated(
 export async function createAdminStaff(
   payload: CreateStaffInput
 ): Promise<Either<ApiError, StaffItem>> {
-  const response = await hardenedFetch('/admin/staff', StaffItemSchema, {
+  const response = await apiTransport('/admin/staff', StaffItemSchema, {
     method: 'POST',
     body: payload,
   });
@@ -207,7 +208,7 @@ export async function updateAdminStaff(
   id: string,
   payload: UpdateStaffInput
 ): Promise<Either<ApiError, StaffItem>> {
-  const response = await hardenedFetch(`/admin/staff/${id}`, StaffItemSchema, {
+  const response = await apiTransport(`/admin/staff/${id}`, StaffItemSchema, {
     method: 'PUT',
     body: payload,
   });
@@ -223,7 +224,6 @@ export async function updateAdminStaff(
   if (index === -1) {
     return left(new ApiError(404, 'Not Found', 'Karyawan tidak ditemukan'));
   }
-
 
   const existing = allStaff[index];
   const updatedItem: StaffItem = {
@@ -247,8 +247,9 @@ export async function updateAdminStaffPin(
   id: string,
   payload: UpdateStaffPinInput
 ): Promise<Either<ApiError, { success: boolean; message: string }>> {
-  const response = await customFetch<{ success: boolean; message: string }>(
+  const response = await apiTransport(
     `/admin/staff/${id}/pin`,
+    PinUpdateResponseSchema,
     {
       method: 'PUT',
       body: payload,
@@ -278,9 +279,13 @@ export async function updateAdminStaffPin(
 export async function deleteAdminStaff(
   id: string
 ): Promise<Either<ApiError, { success: boolean }>> {
-  const response = await customFetch<{ success: boolean }>(`/admin/staff/${id}`, {
-    method: 'DELETE',
-  });
+  const response = await apiTransport(
+    `/admin/staff/${id}`,
+    DeleteStaffResponseSchema,
+    {
+      method: 'DELETE',
+    }
+  );
 
   if (response.isRight()) {
     return response;

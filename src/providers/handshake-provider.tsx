@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode, useEffect } from 'react';
-import { ensureHandshakeSession } from '@/lib/api/custom-fetch';
+import { ensureHandshakeSession } from '@/lib/api/handshake-session';
 
 export function HandshakeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {

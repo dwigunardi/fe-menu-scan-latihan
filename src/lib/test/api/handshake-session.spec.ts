@@ -1,15 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { customFetch, performHandshake, ensureHandshakeSession } from '@/lib/api/custom-fetch';
+import { performHandshake, ensureHandshakeSession } from '@/lib/api/handshake-session';
+import { executePipeline } from '@/lib/api/pipeline/pipeline-runner';
 import { useAuthStore } from '@/store/use-auth-store';
 import { useHandshakeStore } from '@/store/use-handshake-store';
 import { server } from '@/test/mocks/server';
 import { http, HttpResponse } from 'msw';
-import { encryptPayload, generateClientKeyPair } from '@/lib/crypto/ecdh';
+import { encryptPayload } from '@/lib/crypto/ecdh';
 import * as ecdhModule from '@/lib/crypto/ecdh';
 
 const API_BASE = 'http://localhost:5000/api/v1';
 
-describe('customFetch & Handshake Architecture', () => {
+describe('Handshake Session & Pipeline Runner Architecture', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     useAuthStore.getState().logout();
@@ -92,7 +93,7 @@ describe('customFetch & Handshake Architecture', () => {
     });
   });
 
-  describe('customFetch Core Functionality', () => {
+  describe('executePipeline Core Functionality', () => {
     it('performs successful GET request and returns Right(data)', async () => {
       server.use(
         http.get(`${API_BASE}/test/ping`, () => {
@@ -100,7 +101,7 @@ describe('customFetch & Handshake Architecture', () => {
         })
       );
 
-      const result = await customFetch<{ pong: boolean }>('/test/ping', {
+      const result = await executePipeline<{ pong: boolean }>('/test/ping', {
         skipHandshakeToken: true,
         skipEncryption: true,
       });
@@ -118,7 +119,7 @@ describe('customFetch & Handshake Architecture', () => {
         })
       );
 
-      const result = await customFetch<{ directValue: number }>(
+      const result = await executePipeline<{ directValue: number }>(
         'http://localhost:5000/api/v1/test/absolute',
         {
           skipHandshakeToken: true,
@@ -142,7 +143,7 @@ describe('customFetch & Handshake Architecture', () => {
         })
       );
 
-      const result = await customFetch('/test/string-body', {
+      const result = await executePipeline('/test/string-body', {
         method: 'POST',
         body: 'raw string test',
         skipEncryption: true,
@@ -168,7 +169,7 @@ describe('customFetch & Handshake Architecture', () => {
         'store-token'
       );
 
-      await customFetch('/test/custom-auth', {
+      await executePipeline('/test/custom-auth', {
         headers: { authorization: 'Basic custom_basic_auth' },
         skipHandshakeToken: true,
         skipEncryption: true,
@@ -192,7 +193,7 @@ describe('customFetch & Handshake Architecture', () => {
         })
       );
 
-      const result = await customFetch<typeof secretPayload>('/test/encrypted-response');
+      const result = await executePipeline<typeof secretPayload>('/test/encrypted-response');
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
         expect(result.value.secretCardNumber).toBe('1234-5678-9012-3456');
@@ -214,7 +215,7 @@ describe('customFetch & Handshake Architecture', () => {
         })
       );
 
-      const result = await customFetch('/test/corrupt-encryption');
+      const result = await executePipeline('/test/corrupt-encryption');
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
         expect(result.value.statusCode).toBe(500);
@@ -222,14 +223,14 @@ describe('customFetch & Handshake Architecture', () => {
       }
     });
 
-    it('returns Left(ApiError) when handshake fails during customFetch', async () => {
+    it('returns Left(ApiError) when handshake fails during executePipeline', async () => {
       server.use(
         http.post(`${API_BASE}/auth/handshake`, () => {
           return HttpResponse.error();
         })
       );
 
-      const result = await customFetch('/test/protected-feature');
+      const result = await executePipeline('/test/protected-feature');
       expect(result.isLeft()).toBe(true);
     });
 
@@ -246,7 +247,7 @@ describe('customFetch & Handshake Architecture', () => {
         })
       );
 
-      const result = await customFetch('/test/handshake-retry-fail');
+      const result = await executePipeline('/test/handshake-retry-fail');
       expect(result.isLeft()).toBe(true);
     });
   });

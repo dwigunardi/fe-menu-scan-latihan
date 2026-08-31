@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as hardenedFetchModule from '@/lib/api/hardened-fetch';
+import * as apiTransportModule from '@/lib/api/api-transport';
 import {
   getCurrentShift,
   openShift,
@@ -43,7 +43,7 @@ describe('Admin Shifts API Client', () => {
 
   describe('getCurrentShift', () => {
     it('getCurrentShift calls /admin/shifts/current and returns active shift', async () => {
-      vi.spyOn(hardenedFetchModule, 'hardenedFetch').mockResolvedValueOnce(right(mockShift));
+      vi.spyOn(apiTransportModule, 'apiTransport').mockResolvedValueOnce(right(mockShift));
 
       const result = await getCurrentShift();
       expect(result.isRight()).toBe(true);
@@ -55,7 +55,7 @@ describe('Admin Shifts API Client', () => {
 
     it('falls back to local storage when network fetch fails', async () => {
       localStorage.setItem('kumpul_cafe_active_shift', JSON.stringify(mockShift));
-      vi.spyOn(hardenedFetchModule, 'hardenedFetch').mockResolvedValueOnce(
+      vi.spyOn(apiTransportModule, 'apiTransport').mockResolvedValueOnce(
         left(ApiError.networkError())
       );
 
@@ -69,7 +69,7 @@ describe('Admin Shifts API Client', () => {
 
   describe('openShift', () => {
     it('openShift calls /admin/shifts/open with payload', async () => {
-      vi.spyOn(hardenedFetchModule, 'hardenedFetch').mockResolvedValueOnce(right(mockShift));
+      vi.spyOn(apiTransportModule, 'apiTransport').mockResolvedValueOnce(right(mockShift));
 
       const result = await openShift({ openingCash: 200000, notes: 'Modal pagi' });
       expect(result.isRight()).toBe(true);
@@ -79,7 +79,7 @@ describe('Admin Shifts API Client', () => {
     });
 
     it('falls back to local shift creation when fetch fails', async () => {
-      vi.spyOn(hardenedFetchModule, 'hardenedFetch').mockResolvedValueOnce(
+      vi.spyOn(apiTransportModule, 'apiTransport').mockResolvedValueOnce(
         left(ApiError.networkError())
       );
 
@@ -102,7 +102,7 @@ describe('Admin Shifts API Client', () => {
         closedAt: '2026-08-25T16:00:00.000Z',
       };
 
-      vi.spyOn(hardenedFetchModule, 'hardenedFetch').mockResolvedValueOnce(right(closedShift));
+      vi.spyOn(apiTransportModule, 'apiTransport').mockResolvedValueOnce(right(closedShift));
 
       const result = await closeShift(mockShift.id, { actualCash: 350000 });
       expect(result.isRight()).toBe(true);
@@ -114,7 +114,7 @@ describe('Admin Shifts API Client', () => {
 
     it('falls back to closing local active shift when network fails', async () => {
       localStorage.setItem('kumpul_cafe_active_shift', JSON.stringify(mockShift));
-      vi.spyOn(hardenedFetchModule, 'hardenedFetch').mockResolvedValueOnce(
+      vi.spyOn(apiTransportModule, 'apiTransport').mockResolvedValueOnce(
         left(ApiError.networkError())
       );
 
@@ -128,7 +128,7 @@ describe('Admin Shifts API Client', () => {
     });
 
     it('returns error Left when no local active shift exists on network failure', async () => {
-      vi.spyOn(hardenedFetchModule, 'hardenedFetch').mockResolvedValueOnce(
+      vi.spyOn(apiTransportModule, 'apiTransport').mockResolvedValueOnce(
         left(ApiError.networkError())
       );
 
@@ -151,7 +151,7 @@ describe('Admin Shifts API Client', () => {
         },
       };
 
-      vi.spyOn(hardenedFetchModule, 'hardenedFetch').mockResolvedValueOnce(right(mockResponse));
+      vi.spyOn(apiTransportModule, 'apiTransport').mockResolvedValueOnce(right(mockResponse));
 
       const result = await getShiftHistory({ page: 1, limit: 10, startDate: '2026-01-01', endDate: '2026-01-31', status: 'CLOSED' });
       expect(result.isRight()).toBe(true);
@@ -169,7 +169,7 @@ describe('Admin Shifts API Client', () => {
           { ...mockShift, id: 'shift-2' },
         ])
       );
-      vi.spyOn(hardenedFetchModule, 'hardenedFetch').mockResolvedValueOnce(
+      vi.spyOn(apiTransportModule, 'apiTransport').mockResolvedValueOnce(
         left(ApiError.networkError())
       );
 
