@@ -7,6 +7,7 @@ import { CommonHeader } from '@/components/common/common-header';
 import { CommonBottomNav } from '@/components/common/common-bottom-nav';
 import { SessionExpiredModal } from '@/components/common/session-expired-modal';
 import { ErrorBoundary } from '@/components/common/error-boundary';
+import { DynamicBreadcrumb } from '@/components/common/dynamic-breadcrumb';
 
 export default function DashboardLayout({
   children,
@@ -23,7 +24,8 @@ export default function DashboardLayout({
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
           <CommonHeader />
           <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 md:p-8 pb-24 md:pb-8">
-            <div className="max-w-7xl w-full mx-auto">
+            <div className="max-w-7xl w-full mx-auto space-y-4">
+              <DynamicBreadcrumb />
               <ErrorBoundary moduleName="DashboardContent">
                 {children}
               </ErrorBoundary>
