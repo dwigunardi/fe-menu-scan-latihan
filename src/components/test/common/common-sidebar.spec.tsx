@@ -67,8 +67,8 @@ describe('CommonSidebar Component', () => {
       </TooltipProvider>
     );
 
-    expect(screen.getByText('Denah Meja & Kasir')).toBeInTheDocument();
-    expect(screen.getByText('Monitor Antrean KDS')).toBeInTheDocument();
+    expect(screen.getByText('Workstation Kasir')).toBeInTheDocument();
+    expect(screen.getByText('Kitchen Display (KDS)')).toBeInTheDocument();
     expect(screen.queryByText('Dashboard Omset')).not.toBeInTheDocument();
   });
 

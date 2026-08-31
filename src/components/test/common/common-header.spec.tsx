@@ -13,6 +13,14 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+vi.mock('@/components/attendance/clock-in-modal', () => ({
+  ClockInModal: () => null,
+}));
+
+vi.mock('@/components/shifts/shift-handover-modal', () => ({
+  ShiftHandoverModal: () => null,
+}));
+
 vi.mock('sonner', () => ({
   toast: {
     success: vi.fn(),
