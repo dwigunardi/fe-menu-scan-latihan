@@ -206,7 +206,8 @@ describe('Attendance UI Components', () => {
           totalPages={1}
           onPageChange={vi.fn()}
           onLimitChange={onLimitChange}
-        />
+        />,
+        { wrapper: createQueryWrapper() }
       );
 
       expect(screen.getByText('Budi Barista')).toBeInTheDocument();
@@ -288,6 +289,11 @@ describe('Attendance UI Components', () => {
   describe('AttendanceView Coordinator', () => {
     beforeEach(() => {
       vi.spyOn(settingsHooks, 'useAdminBranchSettingQuery').mockReturnValue({
+        data: { id: 'b-1', name: 'Kumpul Cafe', latitude: -6.22, longitude: 106.85, geofenceRadius: 100 },
+        isLoading: false,
+      } as any);
+
+      vi.spyOn(settingsHooks, 'usePublicBranchLocationQuery').mockReturnValue({
         data: { id: 'b-1', name: 'Kumpul Cafe', latitude: -6.22, longitude: 106.85, geofenceRadius: 100 },
         isLoading: false,
       } as any);

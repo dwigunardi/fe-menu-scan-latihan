@@ -51,6 +51,11 @@ describe('ClockInModal Component', () => {
       isLoading: false,
     } as any);
 
+    vi.spyOn(settingsHooks, 'usePublicBranchLocationQuery').mockReturnValue({
+      data: mockBranchSetting,
+      isLoading: false,
+    } as any);
+
     vi.spyOn(staffHooks, 'useAdminStaffPaginatedQuery').mockReturnValue({
       data: { items: mockStaff, total: 2 },
       isLoading: false,
@@ -83,13 +88,18 @@ describe('ClockInModal Component', () => {
     });
   });
 
-  it('renders modal with geofence indicator and staff options (filters out inactive staff)', () => {
+  it('renders modal with geofence indicator and staff options (filters out inactive staff)', async () => {
     render(<ClockInModal isOpen={true} onClose={vi.fn()} />);
 
     expect(screen.getByText('Terminal Presensi Staf Kafe')).toBeInTheDocument();
     expect(screen.getByText('Posisi Dalam Jangkauan Kafe')).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: /Rian Barista/i })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: /Inaktif Staf/i })).not.toBeInTheDocument();
+    
+    const trigger = screen.getByRole('combobox');
+    expect(trigger).toBeInTheDocument();
+    fireEvent.click(trigger);
+    
+    expect(await screen.findByText(/Rian Barista/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Inaktif Staf/i)).not.toBeInTheDocument();
   });
 
   it('handles fallback when branchSetting and staffData are undefined', () => {
@@ -177,7 +187,7 @@ describe('ClockInModal Component', () => {
     expect(screen.getByText(/Browser tidak mendukung/i)).toBeInTheDocument();
   });
 
-  it('disables submit button when staff is not selected or PIN is incomplete', () => {
+  it('disables submit button when staff is not selected or PIN is incomplete', async () => {
     render(<ClockInModal isOpen={true} onClose={vi.fn()} />);
 
     const submitBtn = screen.getByRole('button', { name: /Konfirmasi Clock-In/i });
@@ -185,7 +195,9 @@ describe('ClockInModal Component', () => {
 
     // Select staff
     const staffSelect = screen.getByRole('combobox');
-    fireEvent.change(staffSelect, { target: { value: 'staff-1' } });
+    fireEvent.click(staffSelect);
+    const staffOption = await screen.findByText(/Rian Barista/i);
+    fireEvent.click(staffOption);
     expect(submitBtn).toBeDisabled();
 
     // Enter partial PIN (2 digits)
@@ -199,7 +211,7 @@ describe('ClockInModal Component', () => {
     expect(submitBtn).not.toBeDisabled();
   });
 
-  it('validates outside geofence boundary warning and disables submit button', () => {
+  it('validates outside geofence boundary warning and disables submit button', async () => {
     Object.defineProperty(global.navigator, 'geolocation', {
       value: {
         getCurrentPosition: vi.fn((success) =>
@@ -220,7 +232,9 @@ describe('ClockInModal Component', () => {
     expect(screen.getByText(/Posisi di Luar Jangkauan/i)).toBeInTheDocument();
 
     const staffSelect = screen.getByRole('combobox');
-    fireEvent.change(staffSelect, { target: { value: 'staff-1' } });
+    fireEvent.click(staffSelect);
+    const staffOption = await screen.findByText(/Rian Barista/i);
+    fireEvent.click(staffOption);
 
     fireEvent.click(screen.getByRole('button', { name: '1' }));
     fireEvent.click(screen.getByRole('button', { name: '2' }));
@@ -250,7 +264,9 @@ describe('ClockInModal Component', () => {
 
     // Select staff
     const staffSelect = screen.getByRole('combobox');
-    fireEvent.change(staffSelect, { target: { value: 'staff-1' } });
+    fireEvent.click(staffSelect);
+    const staffOption = await screen.findByText(/Rian Barista/i);
+    fireEvent.click(staffOption);
 
     // Enter PIN 1, 2, 3, 0
     fireEvent.click(screen.getByRole('button', { name: '1' }));
@@ -287,7 +303,9 @@ describe('ClockInModal Component', () => {
 
     // Select staff
     const staffSelect = screen.getByRole('combobox');
-    fireEvent.change(staffSelect, { target: { value: 'staff-1' } });
+    fireEvent.click(staffSelect);
+    const staffOption = await screen.findByText(/Rian Barista/i);
+    fireEvent.click(staffOption);
 
     // Press PIN numbers 1, 2, 3, 4
     fireEvent.click(screen.getByRole('button', { name: '1' }));
@@ -318,7 +336,9 @@ describe('ClockInModal Component', () => {
     render(<ClockInModal isOpen={true} onClose={onClose} />);
 
     const staffSelect = screen.getByRole('combobox');
-    fireEvent.change(staffSelect, { target: { value: 'staff-1' } });
+    fireEvent.click(staffSelect);
+    const staffOption = await screen.findByText(/Rian Barista/i);
+    fireEvent.click(staffOption);
 
     fireEvent.click(screen.getByRole('button', { name: '1' }));
     fireEvent.click(screen.getByRole('button', { name: '2' }));
