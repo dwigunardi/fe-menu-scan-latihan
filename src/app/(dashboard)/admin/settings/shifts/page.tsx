@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { RoleGuard } from '@/components/common/role-guard';
 import { ROLE } from '@/store/use-auth-store';
-import { useAdminBranchSettingQuery, useUpdateBranchSettingMutation } from '@/hooks/queries/use-admin-settings';
+import { useAdminBranchSettingQuery } from '@/hooks/queries/use-admin-settings';
 import {
   useShiftTemplatesQuery,
   useDeleteShiftTemplateMutation,
@@ -24,12 +24,9 @@ import {
   Coffee,
   Loader2,
   AlertCircle,
-  CheckCircle2,
-  HelpCircle,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 export default function AdminShiftsSettingsPage() {
   return (
@@ -50,16 +47,10 @@ const BADGE_COLOR_MAP: Record<string, string> = {
 
 function AdminShiftsSettingsContent() {
   const { data: setting, isLoading: isSettingLoading } = useAdminBranchSettingQuery();
-  const { data: templates = [], isLoading: isTemplatesLoading, refetch } = useShiftTemplatesQuery();
+  const { data: templates = [], isLoading: isTemplatesLoading } = useShiftTemplatesQuery();
 
-  const updateBranchMutation = useUpdateBranchSettingMutation();
   const deleteMutation = useDeleteShiftTemplateMutation();
   const seedMutation = useSeedDefaultShiftTemplatesMutation();
-
-  // Local Store Hours Form
-  const [openTime, setOpenTime] = useState('');
-  const [closeTime, setCloseTime] = useState('');
-  const [isHoursDirty, setIsHoursDirty] = useState(false);
 
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,34 +58,8 @@ function AdminShiftsSettingsContent() {
   const [templateToDelete, setTemplateToDelete] = useState<ShiftTemplateItem | null>(null);
   const [isSeedConfirmOpen, setIsSeedConfirmOpen] = useState(false);
 
-  React.useEffect(() => {
-    if (setting) {
-      setOpenTime(setting.openTime || '08:00');
-      setCloseTime(setting.closeTime || '22:00');
-    }
-  }, [setting]);
-
-  const handleSaveStoreHours = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!setting || !openTime || !closeTime) return;
-
-    await updateBranchMutation.mutateAsync({
-      name: setting.name,
-      address: setting.address,
-      latitude: setting.latitude,
-      longitude: setting.longitude,
-      geofenceRadius: setting.geofenceRadius,
-      openTime,
-      closeTime,
-      lateGracePeriod: setting.lateGracePeriod,
-      storeMode: setting.storeMode,
-      timezone: setting.timezone,
-      phone: setting.phone,
-      email: setting.email,
-      schedules: setting.schedules,
-    });
-    setIsHoursDirty(false);
-  };
+  const currentOpenTime = setting?.openTime || '08:00';
+  const currentCloseTime = setting?.closeTime || '22:00';
 
   const handleConfirmDelete = async () => {
     if (!templateToDelete) return;
@@ -104,8 +69,8 @@ function AdminShiftsSettingsContent() {
 
   const handleConfirmSeed = async () => {
     await seedMutation.mutateAsync({
-      openTime: openTime || '08:00',
-      closeTime: closeTime || '22:00',
+      openTime: currentOpenTime,
+      closeTime: currentCloseTime,
     });
     setIsSeedConfirmOpen(false);
   };
@@ -146,11 +111,11 @@ function AdminShiftsSettingsContent() {
                 <Clock className="h-5 w-5" />
               </div>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900 dark:text-zinc-50">
-                Master Shift & Jam Operasional Toko
+                Master Shift Karyawan
               </h1>
             </div>
             <p className="text-xs text-stone-500 dark:text-zinc-400">
-              Kelola template shift kerja karyawan, jam operasional buka-tutup kafe, dan alokasi waktu istirahat.
+              Kelola daftar master template shift kerja (Pagi, Middle, Closing) dan alokasi waktu istirahat staf.
             </p>
           </div>
 
@@ -159,7 +124,7 @@ function AdminShiftsSettingsContent() {
               variant="outline"
               size="sm"
               onClick={() => setIsSeedConfirmOpen(true)}
-              disabled={seedMutation.isPending}
+              disabled={seedMutation.isPending || isLoading}
               className="h-9 px-3 text-xs font-bold gap-1.5 rounded-xl border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 cursor-pointer"
             >
               <Sparkles className="h-4 w-4" />
@@ -180,96 +145,71 @@ function AdminShiftsSettingsContent() {
           </div>
         </div>
 
-        {/* 1. Store Hours Card */}
-        <div className="p-5 rounded-2xl border border-stone-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-sm font-bold text-stone-900 dark:text-zinc-100 flex items-center gap-2">
-                <Clock className="h-4 w-4 text-amber-600" />
-                Jam Buka & Tutup Cabang Kafe
+        {/* 1. Read-Only Guide Banner: Jam Buka Toko Acuan */}
+        <div className="p-4 sm:p-5 rounded-2xl border border-stone-200/80 dark:border-zinc-800 bg-linear-to-r from-amber-50/70 via-white to-stone-50/60 dark:from-amber-950/20 dark:via-zinc-900 dark:to-zinc-900 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <h3 className="text-xs font-bold text-stone-900 dark:text-zinc-100">
+                Jam Operasional Kafe Saat Ini:
               </h3>
-              <p className="text-xs text-stone-500 dark:text-zinc-400 mt-0.5">
-                Jam operasional default kafe yang menjadi batas acuan shift opening dan closing
-              </p>
-            </div>
-
-            {isHoursDirty && (
-              <span className="text-[11px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-md animate-pulse">
-                Ada perubahan belum disimpan
+              <span className="font-mono font-bold text-xs text-amber-700 dark:text-amber-300 px-2.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/80">
+                {currentOpenTime} - {currentCloseTime}
               </span>
-            )}
+            </div>
+            <p className="text-xs text-stone-500 dark:text-zinc-400 leading-relaxed">
+              Jam operasional toko dikelola secara terpusat di menu Kebijakan Toko. Jam ini menjadi batas acuan shift pembuka dan penutup.
+            </p>
           </div>
 
-          <form onSubmit={handleSaveStoreHours} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end pt-1">
-            <div className="space-y-1.5">
-              <Label htmlFor="store-open-time" className="text-xs font-semibold text-stone-700 dark:text-zinc-300">
-                Jam Buka (Opening)
-              </Label>
-              <Input
-                id="store-open-time"
-                type="time"
-                value={openTime}
-                onChange={(e) => {
-                  setOpenTime(e.target.value);
-                  setIsHoursDirty(true);
-                }}
-                className="h-9 text-xs font-mono font-bold rounded-xl"
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="store-close-time" className="text-xs font-semibold text-stone-700 dark:text-zinc-300">
-                Jam Tutup (Closing)
-              </Label>
-              <Input
-                id="store-close-time"
-                type="time"
-                value={closeTime}
-                onChange={(e) => {
-                  setCloseTime(e.target.value);
-                  setIsHoursDirty(true);
-                }}
-                className="h-9 text-xs font-mono font-bold rounded-xl"
-                required
-              />
-            </div>
-
+          <Link href="/admin/settings/policies" className="shrink-0">
             <Button
-              type="submit"
-              disabled={!isHoursDirty || updateBranchMutation.isPending}
-              className="h-9 text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white cursor-pointer"
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 text-xs font-semibold gap-1.5 rounded-xl border-stone-200 dark:border-zinc-700 text-stone-700 dark:text-zinc-300 hover:text-amber-600 cursor-pointer"
             >
-              {updateBranchMutation.isPending ? 'Menyimpan...' : 'Simpan Jam Toko'}
+              <span>Ubah di Kebijakan Toko</span>
+              <ExternalLink className="h-3 w-3" />
             </Button>
-          </form>
+          </Link>
         </div>
 
         {/* 2. Master Shift Templates List */}
         <div className="p-5 rounded-2xl border border-stone-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs space-y-4">
-          <div>
-            <h3 className="text-sm font-bold text-stone-900 dark:text-zinc-100 flex items-center gap-2">
-              <Coffee className="h-4 w-4 text-amber-600" />
-              Daftar Master Template Shift Kerja
-            </h3>
-            <p className="text-xs text-stone-500 dark:text-zinc-400 mt-0.5">
-              Template shift ini akan digunakan saat menyusun roster jadwal mingguan karyawan di modul Staf
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-bold text-stone-900 dark:text-zinc-100 flex items-center gap-2">
+                <Coffee className="h-4 w-4 text-amber-600" />
+                Daftar Master Template Shift Kerja
+              </h3>
+              <p className="text-xs text-stone-500 dark:text-zinc-400 mt-0.5">
+                Template shift ini digunakan saat menyusun jadwal roster mingguan karyawan di modul Staf
+              </p>
+            </div>
+
+            <span className="text-xs font-bold font-mono text-stone-600 dark:text-zinc-300 bg-stone-100 dark:bg-zinc-800 px-2.5 py-1 rounded-full self-start sm:self-auto">
+              {templates.length} Template Terdaftar
+            </span>
           </div>
 
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-16 space-y-2">
               <Loader2 className="h-6 w-6 text-amber-600 animate-spin" />
-              <p className="text-xs text-stone-500">Memuat template shift...</p>
+              <p className="text-xs text-stone-500 font-medium">Memuat template shift...</p>
             </div>
           ) : templates.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-14 border border-dashed border-stone-200 dark:border-zinc-800 rounded-2xl space-y-3">
+            <div className="flex flex-col items-center justify-center py-14 border border-dashed border-stone-200 dark:border-zinc-800 rounded-2xl space-y-3 text-center p-6">
               <AlertCircle className="h-8 w-8 text-stone-400" />
-              <p className="text-xs text-stone-500">Belum ada master shift yang terdaftar.</p>
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-stone-700 dark:text-zinc-300">Belum ada master shift yang terdaftar.</p>
+                <p className="text-xs text-stone-500 dark:text-zinc-400 max-w-sm">
+                  Anda dapat membuat template manual atau membuat 3 shift standar otomatis yang selaras dengan jam kafe.
+                </p>
+              </div>
               <Button
                 size="sm"
                 onClick={() => setIsSeedConfirmOpen(true)}
-                className="text-xs font-bold rounded-xl bg-amber-600 text-white"
+                className="text-xs font-bold rounded-xl bg-amber-600 hover:bg-amber-700 text-white cursor-pointer"
               >
                 Auto-Generate Shift Standar
               </Button>
@@ -341,6 +281,7 @@ function AdminShiftsSettingsContent() {
                                 setIsModalOpen(true);
                               }}
                               className="h-8 w-8 text-stone-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-zinc-800 rounded-lg cursor-pointer"
+                              title="Edit Template Shift"
                             >
                               <Edit2 className="h-3.5 w-3.5" />
                             </Button>
@@ -350,6 +291,7 @@ function AdminShiftsSettingsContent() {
                               size="icon"
                               onClick={() => setTemplateToDelete(tmpl)}
                               className="h-8 w-8 text-stone-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-zinc-800 rounded-lg cursor-pointer"
+                              title="Hapus Template Shift"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -392,7 +334,7 @@ function AdminShiftsSettingsContent() {
       <ConfirmationDialog
         isOpen={isSeedConfirmOpen}
         title="Sinkronkan Template Shift Standar"
-        description={`Sistem akan membuat 3 template shift standar (Pagi: ${openTime}-16:00, Middle: 11:00-19:00, Sore: 14:00-${closeTime}) yang otomatis selaras dengan jam buka kafe.`}
+        description={`Sistem akan membuat 3 template shift standar (Pagi: ${currentOpenTime}-16:00, Middle: 11:00-19:00, Sore: 14:00-${currentCloseTime}) yang otomatis selaras dengan jam buka kafe saat ini.`}
         confirmText="Sinkronkan Sekarang"
         cancelText="Batal"
         variant="info"

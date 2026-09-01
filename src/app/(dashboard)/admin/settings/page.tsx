@@ -24,7 +24,7 @@ export default function AdminSettingsPage() {
 }
 
 function AdminSettingsHubContent() {
-  const { data: setting, isLoading: isSettingLoading, isError } = useAdminBranchSettingQuery();
+  const { data: setting, isLoading: isSettingLoading } = useAdminBranchSettingQuery();
   const { data: templates = [], isLoading: isTemplatesLoading } = useShiftTemplatesQuery();
 
   const isLoading = isSettingLoading || isTemplatesLoading;
@@ -42,8 +42,8 @@ function AdminSettingsHubContent() {
     },
     {
       id: 'shifts',
-      title: 'Master Template Shift & Jam Operasional',
-      description: 'Kelola template master shift kerja (Pagi, Middle, Sore), konfigurasi jam buka-tutup kafe, dan pembagian waktu istirahat karyawan.',
+      title: 'Master Template Shift Karyawan',
+      description: 'Kelola template master shift kerja (Pagi, Middle, Closing), jam kerja efektif, alokasi waktu istirahat, dan sinkronisasi ke jam toko.',
       icon: Clock,
       href: '/admin/settings/shifts',
       badge: `${templates.length} Template Shift Aktif`,
@@ -52,11 +52,11 @@ function AdminSettingsHubContent() {
     },
     {
       id: 'policies',
-      title: 'Kebijakan Toko & Toleransi Presensi',
-      description: 'Pilih mode operasional (Shift-Driven POS / Jam Digital), toleransi keterlambatan presensi (Grace Period), dan kontingensi darurat.',
+      title: 'Kebijakan Operasional Toko',
+      description: 'Pilih mode operasional toko (POS Kasir / Jam Digital), toleransi keterlambatan presensi, saklar buka/tutup darurat, dan jam buka mingguan.',
       icon: ShieldCheck,
       href: '/admin/settings/policies',
-      badge: setting ? `Toleransi ${setting.lateGracePeriod ?? 15} Menit` : 'Kebijakan Toko',
+      badge: setting ? `${setting.openTime} - ${setting.closeTime}` : 'Kebijakan Toko',
       accentColor: 'text-blue-600 dark:text-blue-400 bg-blue-500/10 border-blue-500/20',
       hoverBorder: 'hover:border-blue-500/50',
     },
@@ -87,8 +87,9 @@ function AdminSettingsHubContent() {
           {setting && (
             <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl border border-stone-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs text-xs font-bold self-start sm:self-auto">
               <span
-                className={`h-2.5 w-2.5 rounded-full ${setting.isStoreOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
-                  }`}
+                className={`h-2.5 w-2.5 rounded-full ${
+                  setting.isStoreOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
+                }`}
               />
               <span className="text-stone-800 dark:text-zinc-200">
                 {setting.isStoreOpen ? 'Toko BUKA' : 'Toko TUTUP'}

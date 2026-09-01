@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { BranchSettingsForm } from '@/components/settings/branch-settings-form';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { BranchSetting, STORE_MODE, DAY_OF_WEEK } from '@/lib/validations/branch-settings.schema';
@@ -15,12 +14,17 @@ vi.mock('@/components/settings/branch-map-picker', () => ({
       <span>Radius: {radiusMeters}m</span>
       <button
         type="button"
-        onClick={() => onChangeCoordinates(-6.23, 106.86)}
+        onClick={() => onChangeCoordinates(-6.23, 106.86, 'Jl. Tebet Baru No. 10')}
       >
         Set Coords
       </button>
     </div>
   ),
+}));
+
+// Mock reverse geocode
+vi.mock('@/lib/utils/geocoding', () => ({
+  reverseGeocode: vi.fn().mockResolvedValue('Jl. Tebet Raya Sinkron No. 99'),
 }));
 
 describe('BranchSettingsForm Component', () => {
@@ -69,57 +73,41 @@ describe('BranchSettingsForm Component', () => {
 
     expect(screen.getByDisplayValue('Kumpul Cafe - Cabang Pusat')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Jl. Tebet Raya No. 45, Jakarta Selatan')).toBeInTheDocument();
-    expect(screen.getByText('100 meter')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('081234567890')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('admin@menuscan.com')).toBeInTheDocument();
+    expect(screen.getByText('100 Meter')).toBeInTheDocument();
     expect(screen.getByTestId('mock-map-picker')).toBeInTheDocument();
   });
 
-  it('allows changing geofence radius via slider and coordinates via map picker', () => {
+  it('allows changing geofence radius via slider and preset buttons', () => {
     render(
       <TooltipProvider>
         <BranchSettingsForm initialData={mockInitialData} />
       </TooltipProvider>
     );
 
-    const slider = screen.getByLabelText(/Radius Aman Geofence:/i);
+    const slider = screen.getByLabelText(/Radius Batas Absensi:/i);
     fireEvent.change(slider, { target: { value: '250' } });
 
-    expect(screen.getByText('250 meter')).toBeInTheDocument();
+    expect(screen.getByText('250 Meter')).toBeInTheDocument();
+
+    const presetBtn = screen.getByRole('button', { name: '200m' });
+    fireEvent.click(presetBtn);
+    expect(screen.getByText('200 Meter')).toBeInTheDocument();
+  });
+
+  it('updates coordinates and address when map picker changes', () => {
+    render(
+      <TooltipProvider>
+        <BranchSettingsForm initialData={mockInitialData} />
+      </TooltipProvider>
+    );
 
     const setCoordsBtn = screen.getByRole('button', { name: /Set Coords/i });
     fireEvent.click(setCoordsBtn);
+
     expect(screen.getByText('Lat: -6.23')).toBeInTheDocument();
-  });
-
-  it('switches between navigation tabs and interacts with schedule and store mode options', async () => {
-    const user = userEvent.setup();
-
-    render(
-      <TooltipProvider>
-        <BranchSettingsForm initialData={mockInitialData} />
-      </TooltipProvider>
-    );
-
-    // Switch to Schedule Tab
-    const scheduleTab = screen.getByRole('tab', { name: /Jam Buka & Absensi/i });
-    await user.click(scheduleTab);
-
-    expect(await screen.findByText('Toleransi Absensi Staf')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('15')).toBeInTheDocument();
-
-    const applySameHoursBtn = screen.getByRole('button', { name: /Samakan Jam untuk Semua Hari/i });
-    fireEvent.click(applySameHoursBtn);
-
-    // Switch to Mode Tab
-    const modeTab = screen.getByRole('tab', { name: /Mode Operasi Toko/i });
-    await user.click(modeTab);
-
-    expect(await screen.findByText(/Mode A: Shift-Driven/i)).toBeInTheDocument();
-    expect(screen.getByText(/Mode B: Clock-Driven/i)).toBeInTheDocument();
-    expect(screen.getByText(/Mode C: QRIS \/ Self-Service Only/i)).toBeInTheDocument();
-
-    // Select Mode B
-    const modeBCard = screen.getByText(/Mode B: Clock-Driven/i);
-    fireEvent.click(modeBCard);
+    expect(screen.getByDisplayValue('Jl. Tebet Baru No. 10')).toBeInTheDocument();
   });
 
   it('submits form with updated name and values', async () => {
@@ -134,7 +122,8 @@ describe('BranchSettingsForm Component', () => {
     const nameInput = screen.getByDisplayValue('Kumpul Cafe - Cabang Pusat');
     fireEvent.change(nameInput, { target: { value: 'Kumpul Cafe Tebet Baru' } });
 
-    const submitBtn = screen.getByRole('button', { name: /^Simpan/i });
+    // Floating save bar appears when dirty
+    const submitBtn = await screen.findByRole('button', { name: /Simpan Cabang/i });
     fireEvent.click(submitBtn);
 
     await waitFor(() => {

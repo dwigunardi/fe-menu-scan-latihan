@@ -9,3 +9,4 @@ export * from './operational-not-found';
 export * from './pagination';
 export * from './session-expired-modal';
 export * from './dynamic-breadcrumb';
+export * from './unsaved-changes-dialog';
