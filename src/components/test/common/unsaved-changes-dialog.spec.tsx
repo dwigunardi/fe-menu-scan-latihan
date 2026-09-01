@@ -86,6 +86,25 @@ describe('UnsavedChangesDialog Component & Guard', () => {
     expect(mockPush).toHaveBeenCalledWith('/admin/dashboard');
   });
 
+  it('intercepts browser Back button (popstate) and prompts confirmation dialog', async () => {
+    const historyBackSpy = vi.spyOn(window.history, 'back').mockImplementation(() => {});
+
+    render(<UnsavedChangesDialog isDirty={true} />);
+
+    // Simulate browser Back button click
+    fireEvent(window, new PopStateEvent('popstate'));
+
+    // Dialog appears
+    expect(await screen.findByText('Perubahan Belum Disimpan')).toBeInTheDocument();
+
+    // Confirm leaving
+    const confirmBtn = await screen.findByRole('button', { name: /Lanjutkan Keluar/i });
+    fireEvent.click(confirmBtn);
+
+    expect(historyBackSpy).toHaveBeenCalled();
+    historyBackSpy.mockRestore();
+  });
+
   it('attaches and detaches beforeunload event listener based on isDirty', () => {
     const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
     const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');

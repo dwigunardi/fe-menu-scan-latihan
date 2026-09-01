@@ -118,12 +118,19 @@ export function useUnsavedChangesGuard({
   useEffect(() => {
     if (!shouldBlock) return;
 
+    // Push guard state if not already on a guard entry
+    if (typeof window !== 'undefined' && !window.history.state?.__isGuard) {
+      window.history.pushState(
+        { ...window.history.state, __isGuard: true },
+        '',
+        window.location.href
+      );
+    }
+
     const handlePopState = () => {
       if (isNavigatingRef.current) return;
 
-      // Push state back to prevent navigation until confirmed
-      window.history.pushState(null, '', window.location.href);
-
+      // The browser popped back from the guard state
       pendingNavigationRef.current = () => {
         isNavigatingRef.current = true;
         window.history.back();
@@ -131,12 +138,19 @@ export function useUnsavedChangesGuard({
       setIsOpen(true);
     };
 
-    // Push initial dummy state so popstate can be intercepted reliably
-    window.history.pushState(null, '', window.location.href);
     window.addEventListener('popstate', handlePopState);
 
     return () => {
       window.removeEventListener('popstate', handlePopState);
+      // Clean up guard state when unmounting or when shouldBlock becomes false
+      if (
+        typeof window !== 'undefined' &&
+        window.history.state?.__isGuard &&
+        !isNavigatingRef.current
+      ) {
+        isNavigatingRef.current = true;
+        window.history.back();
+      }
     };
   }, [shouldBlock]);
 
@@ -152,6 +166,14 @@ export function useUnsavedChangesGuard({
   const cancelLeave = useCallback(() => {
     setIsOpen(false);
     pendingNavigationRef.current = null;
+    // Re-push guard state if user cancelled leaving via browser back
+    if (typeof window !== 'undefined' && !window.history.state?.__isGuard) {
+      window.history.pushState(
+        { ...window.history.state, __isGuard: true },
+        '',
+        window.location.href
+      );
+    }
   }, []);
 
   return {
