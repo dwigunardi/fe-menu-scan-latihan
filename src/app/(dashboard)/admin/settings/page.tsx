@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import Link from 'next/link';
 import { RoleGuard } from '@/components/common/role-guard';
 import { ROLE } from '@/store/use-auth-store';
@@ -13,13 +12,8 @@ import {
   Clock,
   ShieldCheck,
   ArrowRight,
-  Store,
-  Layers,
-  Sparkles,
   Loader2,
-  AlertCircle,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 export default function AdminSettingsPage() {
   return (
@@ -93,9 +87,8 @@ function AdminSettingsHubContent() {
           {setting && (
             <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl border border-stone-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs text-xs font-bold self-start sm:self-auto">
               <span
-                className={`h-2.5 w-2.5 rounded-full ${
-                  setting.isStoreOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
-                }`}
+                className={`h-2.5 w-2.5 rounded-full ${setting.isStoreOpen ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'
+                  }`}
               />
               <span className="text-stone-800 dark:text-zinc-200">
                 {setting.isStoreOpen ? 'Toko BUKA' : 'Toko TUTUP'}
