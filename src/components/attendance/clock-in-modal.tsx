@@ -32,10 +32,13 @@ import {
   Navigation,
   User,
   X,
+  Lock,
 } from 'lucide-react';
 import { usePublicBranchLocationQuery } from '@/hooks/queries/use-admin-settings';
 import { useAdminStaffPaginatedQuery } from '@/hooks/queries/use-admin-staff';
 import { useClockInMutation, useClockOutMutation } from '@/hooks/queries/use-admin-attendance';
+import { useAuthStore, ROLE } from '@/store/use-auth-store';
+import { getInitials } from '@/lib/utils/get-initials';
 import { checkGeofence, GeofenceCheckResult } from '@/lib/utils/haversine';
 import { ATTENDANCE_TYPE, AttendanceType } from '@/lib/constants/attendance';
 import { cn } from '@/lib/utils/cn';
@@ -47,6 +50,10 @@ interface ClockInModalProps {
 }
 
 export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === ROLE.ADMIN;
+  const [isSupervisorSelectMode, setIsSupervisorSelectMode] = useState<boolean>(false);
+
   const { data: branchSetting } = usePublicBranchLocationQuery();
   const { data: staffData } = useAdminStaffPaginatedQuery({ limit: 50 });
   const clockInMutation = useClockInMutation();
@@ -56,6 +63,8 @@ export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const [selectedStaffId, setSelectedStaffId] = useState<string>('');
   const [pinCode, setPinCode] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
+
+  const effectiveStaffId = user && !isSupervisorSelectMode ? user.id : selectedStaffId;
 
   // GPS Geolocation state
   const [isLocating, setIsLocating] = useState<boolean>(false);
@@ -104,9 +113,15 @@ export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     if (isOpen) {
       setPinCode('');
       setNotes('');
+      setIsSupervisorSelectMode(false);
+      if (user?.id) {
+        setSelectedStaffId(user.id);
+      } else {
+        setSelectedStaffId('');
+      }
       requestGpsPosition();
     }
-  }, [isOpen, requestGpsPosition]);
+  }, [isOpen, user?.id, requestGpsPosition]);
 
   // Recalculate geofence immediately when branchSetting arrives or updates
   useEffect(() => {
@@ -135,7 +150,9 @@ export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!selectedStaffId) {
+    const targetStaffId = (user && !isSupervisorSelectMode) ? user.id : selectedStaffId;
+
+    if (!targetStaffId) {
       toast.error('Pilih nama staf terlebih dahulu');
       return;
     }
@@ -160,7 +177,7 @@ export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     try {
       if (mode === ATTENDANCE_TYPE.CLOCK_IN) {
         await clockInMutation.mutateAsync({
-          staffId: selectedStaffId,
+          staffId: targetStaffId,
           pinCode,
           latitude: userCoords.lat,
           longitude: userCoords.lon,
@@ -168,7 +185,7 @@ export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         });
       } else {
         await clockOutMutation.mutateAsync({
-          staffId: selectedStaffId,
+          staffId: targetStaffId,
           pinCode,
           latitude: userCoords.lat,
           longitude: userCoords.lon,
@@ -181,6 +198,8 @@ export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       // Error handled in notifyApiError
     }
   }, [
+    user,
+    isSupervisorSelectMode,
     selectedStaffId,
     pinCode,
     userCoords,
@@ -215,7 +234,8 @@ export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         onClose();
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        if (selectedStaffId && pinCode.length === 4 && (!geofenceResult || geofenceResult.isInside)) {
+        const targetStaffId = (user && !isSupervisorSelectMode) ? user.id : selectedStaffId;
+        if (targetStaffId && pinCode.length === 4 && (!geofenceResult || geofenceResult.isInside)) {
           handleSubmit();
         }
       }
@@ -225,6 +245,8 @@ export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     isOpen,
+    user,
+    isSupervisorSelectMode,
     selectedStaffId,
     pinCode,
     geofenceResult,
@@ -395,33 +417,92 @@ export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                 </div>
               </div>
 
-              {/* 1. Select Staff using Shadcn UI Select */}
-              <div className="space-y-1">
-                <Label htmlFor="staff-select" className="text-xs font-bold text-stone-700 dark:text-zinc-300 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Nama Karyawan *</span>
-                </Label>
-                <Select
-                  value={selectedStaffId}
-                  onValueChange={(val) => setSelectedStaffId(val)}
-                >
-                  <SelectTrigger id="staff-select" className="w-full h-9.5 px-3 text-xs font-medium rounded-xl border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-stone-900 dark:text-zinc-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden cursor-pointer shadow-2xs">
-                    <SelectValue placeholder="-- Pilih Nama Staf --" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl max-h-60 z-[60]">
-                    {activeStaffList.map((staff) => (
-                      <SelectItem key={staff.id} value={staff.id} className="text-xs py-2 rounded-xl cursor-pointer">
-                        <div className="flex items-center justify-between w-full gap-2">
-                          <span className="font-semibold text-stone-900 dark:text-zinc-100">{staff.name}</span>
-                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                            {staff.role}
+              {/* 1. Staff Identity / Selection Section */}
+              {user && !isSupervisorSelectMode ? (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold text-stone-700 dark:text-zinc-300 flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Identitas Karyawan (Akun Personal)</span>
+                    </Label>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSupervisorSelectMode(true);
+                          setSelectedStaffId('');
+                        }}
+                        className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                      >
+                        Mode Supervisor: Pilih Staf Lain
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="p-3 rounded-2xl border border-amber-200/80 dark:border-amber-900/40 bg-gradient-to-r from-amber-500/5 via-amber-500/10 to-transparent flex items-center justify-between gap-3 shadow-2xs">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-2xl bg-amber-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
+                        {getInitials(user.name)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="font-bold text-sm text-stone-900 dark:text-zinc-100 truncate">
+                            {user.name}
+                          </h4>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                            {user.role}
                           </span>
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                        <div className="flex items-center gap-1 text-[11px] text-stone-500 dark:text-zinc-400 mt-0.5">
+                          <Lock className="w-3 h-3 text-amber-600 shrink-0" />
+                          <span className="truncate">Terkunci ke akun personal Anda</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="staff-select" className="text-xs font-bold text-stone-700 dark:text-zinc-300 flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 text-amber-600" />
+                      <span>{isAdmin ? 'Pilih Staf (Mode Supervisor Admin) *' : 'Nama Karyawan *'}</span>
+                    </Label>
+                    {isAdmin && isSupervisorSelectMode && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsSupervisorSelectMode(false);
+                          if (user?.id) setSelectedStaffId(user.id);
+                        }}
+                        className="text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                      >
+                        Kembali ke Akun Saya
+                      </button>
+                    )}
+                  </div>
+                  <Select
+                    value={selectedStaffId}
+                    onValueChange={(val) => setSelectedStaffId(val)}
+                  >
+                    <SelectTrigger id="staff-select" className="w-full h-9.5 px-3 text-xs font-medium rounded-xl border border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-stone-900 dark:text-zinc-100 focus:ring-2 focus:ring-amber-500 focus:outline-hidden cursor-pointer shadow-2xs">
+                      <SelectValue placeholder="-- Pilih Nama Staf --" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl max-h-60 z-[60]">
+                      {activeStaffList.map((staff) => (
+                        <SelectItem key={staff.id} value={staff.id} className="text-xs py-2 rounded-xl cursor-pointer">
+                          <div className="flex items-center justify-between w-full gap-2">
+                            <span className="font-semibold text-stone-900 dark:text-zinc-100">{staff.name}</span>
+                            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                              {staff.role}
+                            </span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* 2. 4-Digit PIN Display & Keypad */}
               <div className="space-y-2 text-center pt-0.5">
@@ -523,7 +604,7 @@ export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                 onClick={handleSubmit}
                 disabled={
                   isSubmitting ||
-                  !selectedStaffId ||
+                  !effectiveStaffId ||
                   pinCode.length !== 4 ||
                   (geofenceResult !== null && !geofenceResult.isInside)
                 }

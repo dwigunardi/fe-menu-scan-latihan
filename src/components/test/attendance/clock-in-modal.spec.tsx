@@ -4,6 +4,7 @@ import { ClockInModal } from '@/components/attendance/clock-in-modal';
 import * as settingsHooks from '@/hooks/queries/use-admin-settings';
 import * as staffHooks from '@/hooks/queries/use-admin-staff';
 import * as attendanceHooks from '@/hooks/queries/use-admin-attendance';
+import { useAuthStore } from '@/store/use-auth-store';
 import { ROLE } from '@/lib/constants/roles';
 
 describe('ClockInModal Component', () => {
@@ -45,6 +46,9 @@ describe('ClockInModal Component', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    useAuthStore.setState({ user: null, isAuthenticated: false });
+    mockClockInMutate.mockResolvedValue({ success: true } as any);
+    mockClockOutMutate.mockResolvedValue({ success: true } as any);
 
     vi.spyOn(settingsHooks, 'useAdminBranchSettingQuery').mockReturnValue({
       data: mockBranchSetting,
@@ -375,5 +379,109 @@ describe('ClockInModal Component', () => {
     const cancelBtn = screen.getByRole('button', { name: 'Batal' });
     fireEvent.click(cancelBtn);
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('locks to personal user identity when logged in as non-admin (hides dropdown, sends user.id)', async () => {
+    // Mock user login as Cashier (Dendi)
+    useAuthStore.setState({
+      user: {
+        id: 'cashier-dendi',
+        name: 'Dendi Kasir',
+        role: ROLE.CASHIER,
+      },
+      isAuthenticated: true,
+    });
+
+    const onClose = vi.fn();
+    render(<ClockInModal isOpen={true} onClose={onClose} />);
+
+    // 1. Dropdown select should NOT be present
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+
+    // 2. Personal Identity Card should be visible with name, role, and lock indicator
+    expect(screen.getByText('Dendi Kasir')).toBeInTheDocument();
+    expect(screen.getByText(ROLE.CASHIER)).toBeInTheDocument();
+    expect(screen.getByText('Terkunci ke akun personal Anda')).toBeInTheDocument();
+    expect(screen.queryByText('Mode Supervisor: Pilih Staf Lain')).not.toBeInTheDocument();
+
+    // Wait for GPS detection to finish
+    await screen.findByText('Posisi Dalam Jangkauan Kafe');
+
+    // 3. Enter 4-digit PIN
+    fireEvent.click(screen.getByRole('button', { name: '1' }));
+    fireEvent.click(screen.getByRole('button', { name: '2' }));
+    fireEvent.click(screen.getByRole('button', { name: '3' }));
+    fireEvent.click(screen.getByRole('button', { name: '4' }));
+
+    // 4. Submit
+    const submitBtn = screen.getByRole('button', { name: /Konfirmasi Clock-In/i });
+    expect(submitBtn).not.toBeDisabled();
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockClockInMutate).toHaveBeenCalledWith({
+        staffId: 'cashier-dendi',
+        pinCode: '1234',
+        latitude: -6.2297465,
+        longitude: 106.8557342,
+        notes: undefined,
+      });
+      expect(onClose).toHaveBeenCalled();
+    });
+  });
+
+  it('allows admin to toggle supervisor mode to pick another staff', async () => {
+    // Mock user login as Admin (Owner)
+    useAuthStore.setState({
+      user: {
+        id: 'admin-1',
+        name: 'Dewi Sartika (Admin)',
+        role: ROLE.ADMIN,
+      },
+      isAuthenticated: true,
+    });
+
+    render(<ClockInModal isOpen={true} onClose={vi.fn()} />);
+
+    // By default, displays Admin's personal card with supervisor button
+    expect(screen.getByText('Dewi Sartika (Admin)')).toBeInTheDocument();
+    const supervisorBtn = screen.getByRole('button', { name: /Mode Supervisor: Pilih Staf Lain/i });
+    expect(supervisorBtn).toBeInTheDocument();
+
+    // Click supervisor mode
+    fireEvent.click(supervisorBtn);
+
+    // Now dropdown combobox appears
+    const staffSelect = screen.getByRole('combobox');
+    expect(staffSelect).toBeInTheDocument();
+
+    // And button to return to personal card appears
+    const returnBtn = screen.getByRole('button', { name: /Kembali ke Akun Saya/i });
+    expect(returnBtn).toBeInTheDocument();
+
+    // Select another staff (Rian Barista)
+    fireEvent.click(staffSelect);
+    const staffOption = await screen.findByText(/Rian Barista/i);
+    fireEvent.click(staffOption);
+
+    // Enter PIN
+    fireEvent.click(screen.getByRole('button', { name: '9' }));
+    fireEvent.click(screen.getByRole('button', { name: '9' }));
+    fireEvent.click(screen.getByRole('button', { name: '9' }));
+    fireEvent.click(screen.getByRole('button', { name: '9' }));
+
+    // Submit
+    const submitBtn = screen.getByRole('button', { name: /Konfirmasi Clock-In/i });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(mockClockInMutate).toHaveBeenCalledWith({
+        staffId: 'staff-1',
+        pinCode: '9999',
+        latitude: -6.2297465,
+        longitude: 106.8557342,
+        notes: undefined,
+      });
+    });
   });
 });
