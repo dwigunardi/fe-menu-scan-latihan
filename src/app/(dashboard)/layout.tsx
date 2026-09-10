@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { AuthGuard } from '@/components/common/auth-guard';
 import { CommonSidebar } from '@/components/common/common-sidebar';
 import { CommonHeader } from '@/components/common/common-header';
@@ -14,6 +15,22 @@ export default function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
+  const pathname = usePathname();
+  const isKioskRoute = pathname.includes('/kiosk');
+
+  if (isKioskRoute) {
+    return (
+      <AuthGuard>
+        <div className="min-h-screen w-full bg-[#FAF7F2] dark:bg-zinc-950 text-foreground transition-colors">
+          <ErrorBoundary moduleName="KioskContent">
+            {children}
+          </ErrorBoundary>
+        </div>
+        <SessionExpiredModal />
+      </AuthGuard>
+    );
+  }
+
   return (
     <AuthGuard>
       <div className="h-[100dvh] w-full flex overflow-hidden bg-[#FAF7F2] dark:bg-zinc-950 text-foreground transition-colors">
@@ -41,3 +58,4 @@ export default function DashboardLayout({
     </AuthGuard>
   );
 }
+

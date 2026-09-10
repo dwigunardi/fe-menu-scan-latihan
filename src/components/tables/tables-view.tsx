@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import {
   Plus,
   Search,
@@ -14,6 +15,7 @@ import {
   MapPin,
   ChevronDown,
   X,
+  Monitor,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -245,6 +247,18 @@ export function TablesView({
 
         {allowManagement && (
           <div className="flex items-center gap-2 shrink-0">
+            <Link href="/cashier/kiosk">
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs font-semibold rounded-xl border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 bg-purple-50/60 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/50 cursor-pointer h-9"
+                id="btn-open-kiosk-mode"
+              >
+                <Monitor className="h-3.5 w-3.5 mr-1.5 text-purple-600 dark:text-purple-400" />
+                Mode Kios
+              </Button>
+            </Link>
+
             <Button
               size="sm"
               variant="outline"

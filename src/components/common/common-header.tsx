@@ -10,6 +10,7 @@ import {
   PanelLeftOpen,
   Clock,
   ArrowRightLeft,
+  Monitor,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
@@ -83,6 +84,22 @@ export function CommonHeader({
         </div>
 
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Quick Mode Kios Trigger (Cashier / Admin only) */}
+          {(user?.role === ROLE.CASHIER || user?.role === ROLE.KASIR || user?.role === ROLE.ADMIN) && (
+            <SimpleTooltip content="Buka Mode Kios Absensi Toko (Layar Penuh)" side="bottom">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push('/cashier/kiosk')}
+                className="h-8.5 px-2.5 sm:px-3 text-xs font-semibold text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-950/30 hover:bg-purple-100 dark:hover:bg-purple-900/40 cursor-pointer"
+                id="header-kiosk-mode-btn"
+              >
+                <Monitor className="h-3.5 w-3.5 sm:mr-1 shrink-0" />
+                <span className="hidden md:inline">Mode Kios</span>
+              </Button>
+            </SimpleTooltip>
+          )}
+
           {/* Quick Presensi (Clock In/Out) Trigger */}
           <SimpleTooltip content="Presensi Masuk / Pulang (GPS Geofence)" side="bottom">
             <Button
