@@ -34,13 +34,40 @@ import {
   Coffee,
   ChefHat,
   ConciergeBell,
+  IdCard,
+  RotateCcw,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
+
+function generateSecureTemporaryPassword(): string {
+  if (typeof window === 'undefined' || !window.crypto?.getRandomValues) {
+    return 'Kumpul#2026';
+  }
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghijkmnpqrstuvwxyz';
+  const numbers = '23456789';
+  const all = upper + lower + numbers;
+
+  const randomBytes = new Uint8Array(10);
+  window.crypto.getRandomValues(randomBytes);
+
+  let pass =
+    upper[randomBytes[0] % upper.length] +
+    lower[randomBytes[1] % lower.length] +
+    numbers[randomBytes[2] % numbers.length];
+
+  for (let i = 3; i < 10; i++) {
+    pass += all[randomBytes[i] % all.length];
+  }
+  return pass;
+}
 
 interface StaffFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   staffToEdit?: StaffItem | null;
-  onSubmitCreate: (data: CreateStaffInput) => void;
+  onSubmitCreate: (data: CreateStaffInput, temporaryPassword?: string) => void;
   onSubmitUpdate: (id: string, data: UpdateStaffInput) => void;
   isSubmitting: boolean;
 }
@@ -54,6 +81,7 @@ export function StaffFormModal({
   isSubmitting,
 }: StaffFormModalProps) {
   const isEditMode = Boolean(staffToEdit);
+  const [showPassword, setShowPassword] = React.useState<boolean>(false);
 
   const {
     register,
@@ -65,6 +93,7 @@ export function StaffFormModal({
   } = useForm<CreateStaffInput>({
     resolver: zodResolver(isEditMode ? UpdateStaffInputSchema : CreateStaffInputSchema) as any,
     defaultValues: {
+      employeeId: '',
       name: '',
       email: '',
       phone: '',
@@ -76,10 +105,17 @@ export function StaffFormModal({
   });
 
   const selectedRole = watch('role');
+  const currentPassword = watch('password');
+
+  const handleRegeneratePassword = () => {
+    const newPass = generateSecureTemporaryPassword();
+    setValue('password', newPass, { shouldValidate: true });
+  };
 
   useEffect(() => {
     if (staffToEdit) {
       reset({
+        employeeId: staffToEdit.employeeId || '',
         name: staffToEdit.name,
         email: staffToEdit.email,
         phone: staffToEdit.phone || '',
@@ -92,11 +128,12 @@ export function StaffFormModal({
     }
 
     reset({
+      employeeId: '',
       name: '',
       email: '',
       phone: '',
       role: ROLE.CASHIER as StaffRole,
-      password: '',
+      password: generateSecureTemporaryPassword(),
       pinCode: '',
       dailyShiftHours: 8,
     });
@@ -105,6 +142,7 @@ export function StaffFormModal({
   const onFormSubmit = (data: CreateStaffInput) => {
     if (isEditMode && staffToEdit) {
       onSubmitUpdate(staffToEdit.id, {
+        employeeId: data.employeeId || undefined,
         name: data.name,
         email: data.email,
         phone: data.phone || '',
@@ -115,7 +153,7 @@ export function StaffFormModal({
       return;
     }
 
-    onSubmitCreate(data);
+    onSubmitCreate(data, data.password);
   };
 
   return (
@@ -140,20 +178,38 @@ export function StaffFormModal({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onFormSubmit)} className="px-6 py-5 space-y-4">
-          {/* Nama Lengkap */}
-          <div className="space-y-1.5">
-            <Label htmlFor="name" className="text-xs font-semibold text-foreground">
-              Nama Lengkap Karyawan <span className="text-rose-500">*</span>
-            </Label>
-            <Input
-              id="name"
-              placeholder="Contoh: Ahmad Syahripudin"
-              {...register('name')}
-              className="h-10 text-sm"
-            />
-            {errors.name && (
-              <p className="text-xs text-rose-500">{errors.name.message}</p>
-            )}
+          {/* NIK / ID Karyawan & Nama Lengkap */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="space-y-1.5 sm:col-span-1">
+              <Label htmlFor="employeeId" className="text-xs font-semibold text-foreground flex items-center gap-1">
+                <IdCard className="w-3.5 h-3.5 text-muted-foreground" />
+                NIK / ID Karyawan
+              </Label>
+              <Input
+                id="employeeId"
+                placeholder="Contoh: KC-001"
+                {...register('employeeId')}
+                className="h-10 text-sm font-mono uppercase"
+              />
+              {errors.employeeId && (
+                <p className="text-xs text-rose-500">{errors.employeeId.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="name" className="text-xs font-semibold text-foreground">
+                Nama Lengkap Karyawan <span className="text-rose-500">*</span>
+              </Label>
+              <Input
+                id="name"
+                placeholder="Contoh: Ahmad Syahripudin"
+                {...register('name')}
+                className="h-10 text-sm"
+              />
+              {errors.name && (
+                <p className="text-xs text-rose-500">{errors.name.message}</p>
+              )}
+            </div>
           </div>
 
           {/* Grid Email & WhatsApp */}
@@ -229,43 +285,49 @@ export function StaffFormModal({
             )}
           </div>
 
-          {/* Password & PIN (Hanya saat Create) */}
+          {/* Password Sementara & Informasi Onboarding (Hanya saat Create) */}
           {!isEditMode && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div className="space-y-1.5">
-                <Label htmlFor="password" className="text-xs font-semibold text-foreground flex items-center gap-1">
-                  <Lock className="w-3.5 h-3.5 text-muted-foreground" />
-                  Password Akun <span className="text-rose-500">*</span>
+            <div className="p-3.5 rounded-2xl border border-amber-200/80 dark:border-amber-900/40 bg-amber-500/5 dark:bg-amber-500/10 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Password Sementara (Auto-Generated) *</span>
                 </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Min. 6 karakter"
-                  {...register('password')}
-                  className="h-10 text-sm"
-                />
-                {errors.password && (
-                  <p className="text-xs text-rose-500">{errors.password.message}</p>
-                )}
+                <button
+                  type="button"
+                  onClick={handleRegeneratePassword}
+                  className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Generate Ulang</span>
+                </button>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="pinCode" className="text-xs font-semibold text-foreground flex items-center gap-1">
-                  <KeyRound className="w-3.5 h-3.5 text-muted-foreground" />
-                  PIN Clock-In (4 Angka)
-                </Label>
-                <Input
-                  id="pinCode"
-                  type="password"
-                  maxLength={4}
-                  placeholder="Contoh: 1234"
-                  {...register('pinCode')}
-                  className="h-10 text-sm font-mono text-center tracking-widest"
-                />
-                {errors.pinCode && (
-                  <p className="text-xs text-rose-500">{errors.pinCode.message}</p>
-                )}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="Password sementara"
+                    {...register('password')}
+                    className="h-10 text-sm font-mono tracking-wider pr-10 bg-white dark:bg-zinc-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                    title={showPassword ? 'Sembunyikan' : 'Tampilkan'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
+              {errors.password && (
+                <p className="text-xs text-rose-500">{errors.password.message}</p>
+              )}
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                💡 Password sementara ini dapat disalin atau dikirimkan via WhatsApp ke staf setelah pendaftaran. Staf wajib mengganti password dan membuat PIN 4-digit saat pertama kali login.
+              </p>
             </div>
           )}
 

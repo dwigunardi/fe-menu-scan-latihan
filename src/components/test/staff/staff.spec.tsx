@@ -141,6 +141,9 @@ describe('Staff Domain Components', () => {
 
       expect(screen.getByText('Tambah Karyawan Baru')).toBeInTheDocument();
 
+      fireEvent.change(screen.getByPlaceholderText('Contoh: KC-001'), {
+        target: { value: 'KC-009' },
+      });
       fireEvent.change(screen.getByPlaceholderText('Contoh: Ahmad Syahripudin'), {
         target: { value: 'Budi Hartono' },
       });
@@ -150,11 +153,8 @@ describe('Staff Domain Components', () => {
       fireEvent.change(screen.getByPlaceholderText('081234567890'), {
         target: { value: '081299998888' },
       });
-      fireEvent.change(screen.getByPlaceholderText('Min. 6 karakter'), {
+      fireEvent.change(screen.getByPlaceholderText('Password sementara'), {
         target: { value: 'password123' },
-      });
-      fireEvent.change(screen.getByPlaceholderText('Contoh: 1234'), {
-        target: { value: '1234' },
       });
 
       fireEvent.click(screen.getByText('Daftarkan Karyawan'));
@@ -162,12 +162,13 @@ describe('Staff Domain Components', () => {
       await waitFor(() => {
         expect(onSubmitCreate).toHaveBeenCalledWith(
           expect.objectContaining({
+            employeeId: 'KC-009',
             name: 'Budi Hartono',
             email: 'budi@kumpulcafe.com',
             phone: '081299998888',
             password: 'password123',
-            pinCode: '1234',
-          })
+          }),
+          'password123'
         );
       });
     });

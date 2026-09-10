@@ -13,10 +13,14 @@ export const UserRoleSchema = z.enum([
 
 export const StaffUserSchema = z.object({
   id: z.string(),
+  employeeId: z.string().optional().nullable(),
   name: z.string(),
   username: z.string().optional().nullable(),
   email: z.email().optional().nullable(),
+  phone: z.string().optional().nullable(),
   role: UserRoleSchema,
+  needsOnboarding: z.boolean().optional(),
+  pinCodeSet: z.boolean().optional(),
 });
 
 export const LoginResponseSchema = z.object({

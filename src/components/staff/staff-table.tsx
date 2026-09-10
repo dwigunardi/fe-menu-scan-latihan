@@ -163,8 +163,15 @@ export function StaffTable({
                             {getInitials(item.name)}
                           </div>
                           <div>
-                            <div className="font-bold text-stone-900 dark:text-zinc-100 text-sm">
-                              {item.name}
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-stone-900 dark:text-zinc-100 text-sm">
+                                {item.name}
+                              </span>
+                              {item.employeeId && (
+                                <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                                  {item.employeeId}
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-stone-500 dark:text-zinc-400 font-mono mt-0.5">
                               {item.email}

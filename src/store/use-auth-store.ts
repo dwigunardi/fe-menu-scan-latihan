@@ -13,10 +13,14 @@ export type { UserRole };
 
 export interface StaffUser {
   id: string;
+  employeeId?: string | null;
   username?: string | null;
   email?: string | null;
+  phone?: string | null;
   name: string;
   role: UserRole;
+  needsOnboarding?: boolean;
+  pinCodeSet?: boolean;
 }
 
 interface AuthState {
@@ -29,6 +33,7 @@ interface AuthState {
   setHasHydrated: (state: boolean) => void;
   setAuth: (user: StaffUser, accessToken: string, refreshToken?: string | null) => void;
   updateTokens: (accessToken: string, refreshToken?: string | null) => void;
+  completeOnboarding: (updatedUser?: Partial<StaffUser>) => void;
   openReauthModal: () => void;
   closeReauthModal: () => void;
   logout: () => void;
@@ -66,6 +71,19 @@ export const useAuthStore = create<AuthState>()(
           refreshToken: refreshToken || state.refreshToken,
           isAuthenticated: true,
           isReauthModalOpen: false,
+        }));
+      },
+
+      completeOnboarding: (updatedUser) => {
+        set((state) => ({
+          user: state.user
+            ? {
+                ...state.user,
+                ...updatedUser,
+                needsOnboarding: false,
+                pinCodeSet: true,
+              }
+            : null,
         }));
       },
 

@@ -21,11 +21,13 @@ const STAFF_STORAGE_KEY = 'menuscan_staff_fallback_v1';
 const INITIAL_MOCK_STAFF: StaffItem[] = [
   {
     id: 'staff-1',
+    employeeId: 'KC-001',
     name: 'Budi Santoso (Admin)',
     email: 'admin@menuscan.com',
     phone: '+6281234567890',
     role: ROLE.ADMIN,
     pinCodeSet: true,
+    needsOnboarding: false,
     dailyShiftHours: 8,
     isActive: true,
     avatarUrl: null,
@@ -37,11 +39,13 @@ const INITIAL_MOCK_STAFF: StaffItem[] = [
   },
   {
     id: 'staff-2',
+    employeeId: 'KC-002',
     name: 'Siti Rahmawati (Kasir)',
     email: 'cashier@menuscan.com',
     phone: '+6281298765432',
     role: ROLE.CASHIER,
     pinCodeSet: true,
+    needsOnboarding: false,
     dailyShiftHours: 8,
     isActive: true,
     avatarUrl: null,
@@ -53,11 +57,13 @@ const INITIAL_MOCK_STAFF: StaffItem[] = [
   },
   {
     id: 'staff-3',
+    employeeId: 'KC-003',
     name: 'Ahmad Syahripudin (Barista & Chef)',
     email: 'kitchen@menuscan.com',
     phone: '+6281355554444',
     role: ROLE.KITCHEN,
     pinCodeSet: true,
+    needsOnboarding: false,
     dailyShiftHours: 8,
     isActive: true,
     avatarUrl: null,
@@ -69,11 +75,13 @@ const INITIAL_MOCK_STAFF: StaffItem[] = [
   },
   {
     id: 'staff-4',
+    employeeId: 'KC-004',
     name: 'Dewi Lestari (Pelayan)',
     email: 'waiter@menuscan.com',
     phone: '+6281377778888',
     role: ROLE.WAITER,
     pinCodeSet: false,
+    needsOnboarding: false,
     dailyShiftHours: 8,
     isActive: true,
     avatarUrl: null,
@@ -135,6 +143,7 @@ export async function getAdminStaffPaginated(
       (item) =>
         item.name.toLowerCase().includes(s) ||
         item.email.toLowerCase().includes(s) ||
+        (item.employeeId && item.employeeId.toLowerCase().includes(s)) ||
         (item.phone && item.phone.includes(s))
     );
   }
@@ -183,11 +192,13 @@ export async function createAdminStaff(
   const allStaff = getStoredStaff();
   const newStaff: StaffItem = {
     id: `staff-${Date.now()}`,
+    employeeId: payload.employeeId || null,
     name: payload.name,
     email: payload.email,
     phone: payload.phone || null,
     role: payload.role,
     pinCodeSet: Boolean(payload.pinCode && payload.pinCode.length === 4),
+    needsOnboarding: true,
     dailyShiftHours: payload.dailyShiftHours,
     isActive: true,
     avatarUrl: null,
@@ -228,6 +239,7 @@ export async function updateAdminStaff(
   const existing = allStaff[index];
   const updatedItem: StaffItem = {
     ...existing,
+    employeeId: payload.employeeId !== undefined ? (payload.employeeId || null) : existing.employeeId,
     name: payload.name,
     email: payload.email,
     phone: payload.phone || null,

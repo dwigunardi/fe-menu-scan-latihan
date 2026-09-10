@@ -89,3 +89,29 @@ export async function reloginStaff(
 
   return result;
 }
+
+/**
+ * Completes mandatory first-time staff onboarding via POST /auth/onboard.
+ * Takes current temporary password, new secure personal password, and 4-digit attendance PIN.
+ * Updates auth session with new tokens and needsOnboarding: false.
+ */
+export async function onboardStaff(payload: {
+  currentPassword: string;
+  newPassword: string;
+  pinCode: string;
+}): Promise<Either<ApiError, LoginResponse>> {
+  const result = await apiTransport('/auth/onboard', LoginResponseSchema, {
+    method: 'POST',
+    body: payload,
+    skipEncryption: true,
+    skipHandshakeToken: true,
+  });
+
+  if (result.isRight()) {
+    const { user, accessToken, refreshToken } = result.value;
+    useAuthStore.getState().setAuth(user, accessToken, refreshToken);
+  }
+
+  return result;
+}
+

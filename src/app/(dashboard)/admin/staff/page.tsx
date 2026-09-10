@@ -7,6 +7,7 @@ import {
   StaffTable,
   StaffFormModal,
   StaffPinModal,
+  StaffCredentialModal,
 } from '@/components/staff';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { Pagination } from '@/components/common/pagination';
@@ -47,6 +48,10 @@ export default function AdminStaffPage() {
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [staffForPin, setStaffForPin] = useState<StaffItem | null>(null);
   const [staffToDelete, setStaffToDelete] = useState<StaffItem | null>(null);
+  const [createdCredential, setCreatedCredential] = useState<{
+    staff: StaffItem;
+    temporaryPassword?: string;
+  } | null>(null);
 
   // Queries & Mutations
   const queryParams = {
@@ -102,9 +107,15 @@ export default function AdminStaffPage() {
     });
   };
 
-  const handleFormSubmitCreate = (input: CreateStaffInput) => {
+  const handleFormSubmitCreate = (input: CreateStaffInput, temporaryPassword?: string) => {
     createMutation.mutate(input, {
-      onSuccess: () => setIsFormModalOpen(false),
+      onSuccess: (createdStaff) => {
+        setIsFormModalOpen(false);
+        setCreatedCredential({
+          staff: createdStaff,
+          temporaryPassword: temporaryPassword || input.password,
+        });
+      },
     });
   };
 
@@ -310,6 +321,14 @@ export default function AdminStaffPage() {
           staff={staffForPin}
           onSubmitPin={handlePinSubmit}
           isSubmitting={updatePinMutation.isPending}
+        />
+
+        {/* Modal Kredensial Staf Baru (WhatsApp & Copy) */}
+        <StaffCredentialModal
+          isOpen={Boolean(createdCredential)}
+          onClose={() => setCreatedCredential(null)}
+          staff={createdCredential?.staff ?? null}
+          temporaryPassword={createdCredential?.temporaryPassword}
         />
 
         {/* Dialog Konfirmasi Hapus */}

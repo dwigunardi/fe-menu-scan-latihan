@@ -61,4 +61,37 @@ describe('AuthGuard', () => {
     expect(mockReplace).not.toHaveBeenCalled();
     expect(screen.getByTestId('login-content')).toBeInTheDocument();
   });
+
+  it('quarantines user to /onboarding when needsOnboarding is true', () => {
+    currentPathname = '/kitchen/orders';
+    useAuthStore.getState().setAuth(
+      { id: '1', username: 'kitchen', name: 'Chef', role: 'KITCHEN', needsOnboarding: true },
+      'test-token'
+    );
+
+    render(
+      <AuthGuard>
+        <div data-testid="protected-content">Kitchen Orders</div>
+      </AuthGuard>
+    );
+
+    expect(mockReplace).toHaveBeenCalledWith('/onboarding');
+    expect(screen.getByText(/Mengarahkan ke Aktivasi Akun/i)).toBeInTheDocument();
+  });
+
+  it('redirects already onboarded user away from /onboarding', () => {
+    currentPathname = '/onboarding';
+    useAuthStore.getState().setAuth(
+      { id: '1', username: 'admin', name: 'Admin', role: 'ADMIN', needsOnboarding: false },
+      'test-token'
+    );
+
+    render(
+      <AuthGuard>
+        <div data-testid="onboard-content">Onboarding Setup</div>
+      </AuthGuard>
+    );
+
+    expect(mockReplace).toHaveBeenCalledWith('/admin/dashboard');
+  });
 });
