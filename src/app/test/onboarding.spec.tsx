@@ -156,10 +156,21 @@ describe('OnboardingPage Flow', () => {
       expect(screen.getByText(/Workstation: Kasir Front POS/i)).toBeInTheDocument();
     });
 
+    // New tokens are stored immediately, but the user stays in onboarding until Step 3 is
+    // finished, so AuthGuard must not redirect away (regression: it used to send every
+    // role to /admin/dashboard here).
+    const midState = useAuthStore.getState();
+    expect(midState.accessToken).toBe('new-token-secure');
+    expect(midState.refreshToken).toBe('new-refresh-secure');
+    expect(midState.user?.needsOnboarding).toBe(true);
+    expect(mockReplace).not.toHaveBeenCalled();
+
     // Finish and redirect
     const finishBtn = screen.getByRole('button', { name: /Mulai Bertugas Sekarang 🚀/i });
     fireEvent.click(finishBtn);
 
+    expect(useAuthStore.getState().user?.needsOnboarding).toBe(false);
     expect(mockReplace).toHaveBeenCalledWith('/cashier/tables');
+    expect(mockReplace).not.toHaveBeenCalledWith('/admin/dashboard');
   });
 });

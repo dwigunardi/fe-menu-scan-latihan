@@ -1,6 +1,7 @@
 import { apiTransport } from './api-transport';
 import { Either, left, right } from './either';
 import { ApiError } from './api-error';
+import { shouldUseMockFallback } from './mock-fallback';
 import {
   ShiftItem,
   ShiftItemSchema,
@@ -69,8 +70,9 @@ export async function getCurrentShift(): Promise<Either<ApiError, ShiftItem | nu
     setLocalActiveShift(result.value);
     return result;
   }
+  if (!shouldUseMockFallback(result.value)) return result;
 
-  // Graceful Local Fallback if backend endpoint is in deployment/mock mode
+  // Dev-only local fallback (NEXT_PUBLIC_ENABLE_MOCK_FALLBACK=true, backend unreachable)
   const localShift = getLocalActiveShift();
   return right(localShift);
 }
@@ -92,8 +94,9 @@ export async function openShift(
     setLocalActiveShift(result.value);
     return result;
   }
+  if (!shouldUseMockFallback(result.value)) return result;
 
-  // Graceful Local Shift Creation Fallback
+  // Dev-only local shift creation fallback
   const newShift: ShiftItem = {
     id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `shift-${Date.now()}`,
     branchId: 'default-branch',
@@ -135,8 +138,9 @@ export async function closeShift(
     appendLocalHistory(result.value);
     return result;
   }
+  if (!shouldUseMockFallback(result.value)) return result;
 
-  // Graceful Local Shift Close Fallback
+  // Dev-only local shift close fallback
   const current = getLocalActiveShift();
   if (!current) {
     return left(new ApiError(404, 'Shift Not Found', 'Tidak ada shift aktif yang ditemukan.'));
@@ -174,11 +178,11 @@ export async function getShiftHistory(
 
   const result = await apiTransport(`/admin/shifts?${query.toString()}`, ShiftHistoryResponseSchema);
 
-  if (result.isRight()) {
+  if (result.isRight() || !shouldUseMockFallback(result.value)) {
     return result;
   }
 
-  // Graceful Local History Fallback
+  // Dev-only local history fallback
   const allHistory = getLocalHistory();
   const page = params.page || 1;
   const limit = params.limit || 10;

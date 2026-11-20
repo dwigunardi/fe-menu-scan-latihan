@@ -9,12 +9,31 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Lock, ShieldAlert, X, Delete, Loader2, KeyRound } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { StaffUser, useAuthStore } from '@/store/use-auth-store';
+import { Lock, ShieldAlert, X, Delete, Loader2 } from 'lucide-react';
+import { useAuthStore } from '@/store/use-auth-store';
 import { playErrorBeep } from '@/lib/utils/audio-feedback';
-import { reloginStaff } from '@/lib/api/auth-api';
+import { verifyStaffPin } from '@/lib/api/auth-api';
+import { ApiError } from '@/lib/api/api-error';
 import { cn } from '@/lib/utils/cn';
+
+const WRONG_PIN_MESSAGE = 'PIN kasir salah. Akses keluar ditolak.';
+
+/** Maps a verify-pin API failure to a message for the cashier. */
+function describeVerifyError(error: ApiError): string {
+  if (error.statusCode === 0) {
+    return 'Tidak dapat terhubung ke server. Coba lagi.';
+  }
+  if (error.statusCode === 404 || error.statusCode === 501) {
+    return 'Verifikasi PIN belum tersedia di server.';
+  }
+  if (error.statusCode === 429) {
+    return 'Terlalu banyak percobaan. Tunggu sebentar.';
+  }
+  if (error.statusCode >= 400 && error.statusCode < 500) {
+    return WRONG_PIN_MESSAGE;
+  }
+  return 'Gagal memverifikasi PIN. Coba lagi.';
+}
 
 interface KioskExitDialogProps {
   isOpen: boolean;
@@ -47,23 +66,20 @@ export function KioskExitDialog({
       setIsVerifying(true);
       setErrorMessage(null);
 
-      // In hospitalities/POS environments, the device is authenticated under the cashier session.
-      // An exit PIN of 4 digits must be verified.
-      // If the cashier has configured a PIN, or fallback test PINs (like '1234' or any valid 4-digit PIN configured in staff profile).
-      // We check if the entered PIN matches the staff's PIN or validates via relogin or pattern.
-      // In local testing/mock, any valid 4-digit PIN or cashier pin succeeds; if less than 4 or all zeros/dummy failure we deny.
+      // The kiosk runs under the cashier's session. Leaving kiosk mode requires the PIN of
+      // that logged-in cashier, verified server-side (POST /auth/verify-pin).
       try {
-        // Minimum check: must be exactly 4 digits
         if (!/^\d{4}$/.test(enteredPin)) {
           throw new Error('PIN kasir harus 4 angka');
         }
 
-        // Simulate secure verification delay
-        await new Promise((resolve) => setTimeout(resolve, 350));
+        const res = await verifyStaffPin(enteredPin);
 
-        // Let's verify: In mock/dev environment, test fail with '0000'
-        if (enteredPin === '0000') {
-          throw new Error('PIN kasir salah. Akses keluar ditolak.');
+        if (res.isLeft()) {
+          throw new Error(describeVerifyError(res.value));
+        }
+        if (!res.value.valid) {
+          throw new Error(WRONG_PIN_MESSAGE);
         }
 
         onConfirmExit();

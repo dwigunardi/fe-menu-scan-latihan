@@ -53,8 +53,8 @@ async function attemptSilentTokenRefresh(): Promise<boolean> {
 
       // 3. If no user session at all -> Clean logout and redirect to login
       useAuthStore.getState().logout();
-      if (typeof window !== 'undefined' && window.location?.pathname !== '/admin/login') {
-        window.location.href = '/admin/login';
+      if (typeof window !== 'undefined' && window.location?.pathname !== '/login') {
+        window.location.href = '/login';
       }
       return false;
     } catch {

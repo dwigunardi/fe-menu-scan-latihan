@@ -2,10 +2,24 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { KioskExitDialog } from '@/components/kiosk/kiosk-exit-dialog';
 import { useAuthStore, ROLE } from '@/store/use-auth-store';
+import * as authApi from '@/lib/api/auth-api';
+import { left, right } from '@/lib/api/either';
+import { ApiError } from '@/lib/api/api-error';
+
+function enterPin(digits: string) {
+  for (const d of digits) {
+    fireEvent.click(screen.getByRole('button', { name: d }));
+  }
+}
+
+function renderDialog(onConfirmExit = vi.fn()) {
+  render(<KioskExitDialog isOpen={true} onClose={vi.fn()} onConfirmExit={onConfirmExit} />);
+  return onConfirmExit;
+}
 
 describe('KioskExitDialog Component', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
     useAuthStore.setState({
       user: {
         id: 'cashier-1',
@@ -21,59 +35,63 @@ describe('KioskExitDialog Component', () => {
   });
 
   it('renders cashier details properly in exit guard modal', () => {
-    render(
-      <KioskExitDialog
-        isOpen={true}
-        onClose={vi.fn()}
-        onConfirmExit={vi.fn()}
-      />
-    );
+    renderDialog();
 
     expect(screen.getByText('Proteksi Keluar Kios')).toBeInTheDocument();
     expect(screen.getByText('Dendi Kasir')).toBeInTheDocument();
     expect(screen.getByText(/Masukkan 4-digit PIN/i)).toBeInTheDocument();
   });
 
-  it('allows entering 4 digits and confirms exit on valid PIN', async () => {
-    const handleConfirmExit = vi.fn();
+  it('verifies the PIN with the backend and exits when it is valid', async () => {
+    const verifySpy = vi
+      .spyOn(authApi, 'verifyStaffPin')
+      .mockResolvedValue(right({ valid: true }));
+    const onConfirmExit = renderDialog();
 
-    render(
-      <KioskExitDialog
-        isOpen={true}
-        onClose={vi.fn()}
-        onConfirmExit={handleConfirmExit}
-      />
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: '1' }));
-    fireEvent.click(screen.getByRole('button', { name: '2' }));
-    fireEvent.click(screen.getByRole('button', { name: '3' }));
-    fireEvent.click(screen.getByRole('button', { name: '4' }));
+    enterPin('8520');
 
     await waitFor(() => {
-      expect(handleConfirmExit).toHaveBeenCalled();
+      expect(onConfirmExit).toHaveBeenCalled();
     });
+    expect(verifySpy).toHaveBeenCalledWith('8520');
   });
 
-  it('rejects forbidden test pin 0000 and displays error', async () => {
-    const handleConfirmExit = vi.fn();
+  it('stays locked when the backend says the PIN is wrong', async () => {
+    vi.spyOn(authApi, 'verifyStaffPin').mockResolvedValue(right({ valid: false }));
+    const onConfirmExit = renderDialog();
 
-    render(
-      <KioskExitDialog
-        isOpen={true}
-        onClose={vi.fn()}
-        onConfirmExit={handleConfirmExit}
-      />
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: '0' }));
-    fireEvent.click(screen.getByRole('button', { name: '0' }));
-    fireEvent.click(screen.getByRole('button', { name: '0' }));
-    fireEvent.click(screen.getByRole('button', { name: '0' }));
+    // Any 4-digit PIN used to be accepted without verification.
+    enterPin('1234');
 
     await waitFor(() => {
       expect(screen.getByText(/PIN kasir salah/i)).toBeInTheDocument();
-      expect(handleConfirmExit).not.toHaveBeenCalled();
     });
+    expect(onConfirmExit).not.toHaveBeenCalled();
+  });
+
+  it('stays locked and shows a connection message when the server is unreachable', async () => {
+    vi.spyOn(authApi, 'verifyStaffPin').mockResolvedValue(left(ApiError.networkError()));
+    const onConfirmExit = renderDialog();
+
+    enterPin('8520');
+
+    await waitFor(() => {
+      expect(screen.getByText(/Tidak dapat terhubung ke server/i)).toBeInTheDocument();
+    });
+    expect(onConfirmExit).not.toHaveBeenCalled();
+  });
+
+  it('stays locked when the backend rejects the PIN with a 4xx error', async () => {
+    vi.spyOn(authApi, 'verifyStaffPin').mockResolvedValue(
+      left(new ApiError(400, 'Bad Request', 'Invalid PIN'))
+    );
+    const onConfirmExit = renderDialog();
+
+    enterPin('0000');
+
+    await waitFor(() => {
+      expect(screen.getByText(/PIN kasir salah/i)).toBeInTheDocument();
+    });
+    expect(onConfirmExit).not.toHaveBeenCalled();
   });
 });

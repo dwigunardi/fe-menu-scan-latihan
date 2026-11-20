@@ -94,4 +94,21 @@ describe('AuthGuard', () => {
 
     expect(mockReplace).toHaveBeenCalledWith('/admin/dashboard');
   });
+
+  it('redirects already onboarded non-admin user to their own workstation, not the admin dashboard', () => {
+    currentPathname = '/onboarding';
+    useAuthStore.getState().setAuth(
+      { id: '2', username: 'waiter', name: 'Pelayan', role: 'WAITER', needsOnboarding: false },
+      'test-token'
+    );
+
+    render(
+      <AuthGuard>
+        <div data-testid="onboard-content">Onboarding Setup</div>
+      </AuthGuard>
+    );
+
+    expect(mockReplace).toHaveBeenCalledWith('/waiter/tables');
+    expect(mockReplace).not.toHaveBeenCalledWith('/admin/dashboard');
+  });
 });

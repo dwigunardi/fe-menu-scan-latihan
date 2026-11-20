@@ -1,6 +1,7 @@
 import { apiTransport } from './api-transport';
 import { Either, right, left } from './either';
 import { ApiError } from './api-error';
+import { shouldUseMockFallback } from './mock-fallback';
 
 import {
   StaffItem,
@@ -16,6 +17,10 @@ import {
 } from '../validations/staff.schema';
 import { ROLE } from '../constants/roles';
 
+/**
+ * Dev-only mock data, used ONLY when NEXT_PUBLIC_ENABLE_MOCK_FALLBACK=true and the backend
+ * is unreachable / the endpoint is not implemented. See ./mock-fallback.ts.
+ */
 const STAFF_STORAGE_KEY = 'menuscan_staff_fallback_v1';
 
 const INITIAL_MOCK_STAFF: StaffItem[] = [
@@ -129,7 +134,7 @@ export async function getAdminStaffPaginated(
   const endpoint = `/admin/staff${query.toString() ? `?${query.toString()}` : ''}`;
   const response = await apiTransport(endpoint, StaffPaginatedResponseSchema);
 
-  if (response.isRight()) {
+  if (response.isRight() || !shouldUseMockFallback(response.value)) {
     return response;
   }
 
@@ -184,7 +189,7 @@ export async function createAdminStaff(
     body: payload,
   });
 
-  if (response.isRight()) {
+  if (response.isRight() || !shouldUseMockFallback(response.value)) {
     return response;
   }
 
@@ -224,7 +229,7 @@ export async function updateAdminStaff(
     body: payload,
   });
 
-  if (response.isRight()) {
+  if (response.isRight() || !shouldUseMockFallback(response.value)) {
     return response;
   }
 
@@ -268,7 +273,7 @@ export async function updateAdminStaffPin(
     }
   );
 
-  if (response.isRight()) {
+  if (response.isRight() || !shouldUseMockFallback(response.value)) {
     return response;
   }
 
@@ -299,7 +304,7 @@ export async function deleteAdminStaff(
     }
   );
 
-  if (response.isRight()) {
+  if (response.isRight() || !shouldUseMockFallback(response.value)) {
     return response;
   }
 

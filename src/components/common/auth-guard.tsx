@@ -3,6 +3,7 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/use-auth-store';
+import { getRoleHomePath } from '@/lib/constants/roles';
 
 export function AuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -32,11 +33,11 @@ export function AuthGuard({ children }: { children: ReactNode }) {
 
       // 2. If user already completed onboarding, block access to /onboarding
       if (!user?.needsOnboarding && pathname === '/onboarding') {
-        router.replace('/admin/dashboard');
+        router.replace(getRoleHomePath(user?.role));
         return;
       }
     }
-  }, [isClientReady, _hasHydrated, isAuthenticated, user?.needsOnboarding, pathname, router]);
+  }, [isClientReady, _hasHydrated, isAuthenticated, user?.needsOnboarding, user?.role, pathname, router]);
 
   // Show loading spinner during hydration / auth verification or during quarantine redirect
   const isQuarantineRedirect = isAuthenticated && user?.needsOnboarding && pathname !== '/onboarding';

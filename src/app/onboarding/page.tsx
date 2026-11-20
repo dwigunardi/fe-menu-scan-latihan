@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore, ROLE, UserRole } from '@/store/use-auth-store';
+import { useAuthStore, ROLE, UserRole, StaffUser } from '@/store/use-auth-store';
+import { getRoleHomePath } from '@/lib/constants/roles';
 import { AuthGuard } from '@/components/common/auth-guard';
 import { onboardStaff } from '@/lib/api/auth-api';
 import { Button } from '@/components/ui/button';
@@ -43,9 +44,10 @@ export default function OnboardingPage() {
 
 function OnboardingContent() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, updateTokens, completeOnboarding } = useAuthStore();
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  const [onboardedUser, setOnboardedUser] = useState<StaffUser | null>(null);
 
   // Step 1: Password State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -139,6 +141,13 @@ function OnboardingContent() {
         return;
       }
 
+      // Store the new tokens right away (the old password-based session may be revoked),
+      // but keep needsOnboarding until the user finishes Step 3 — otherwise AuthGuard
+      // redirects away from /onboarding before the briefing is shown.
+      const { user: onboarded, accessToken, refreshToken } = res.value;
+      updateTokens(accessToken, refreshToken);
+      setOnboardedUser(onboarded);
+
       toast.success('Aktivasi akun berhasil! Selamat datang di Kumpul Cafe');
       setCurrentStep(3);
     } catch {
@@ -149,25 +158,9 @@ function OnboardingContent() {
   };
 
   const handleFinishAndNavigate = () => {
-    const role = user?.role;
-    switch (role) {
-      case ROLE.CASHIER:
-      case ROLE.KASIR:
-        router.replace('/cashier/tables');
-        break;
-      case ROLE.KITCHEN:
-      case ROLE.DAPUR:
-        router.replace('/kitchen/orders');
-        break;
-      case ROLE.WAITER:
-      case ROLE.PELAYAN:
-        router.replace('/waiter/tables');
-        break;
-      case ROLE.ADMIN:
-      default:
-        router.replace('/admin/dashboard');
-        break;
-    }
+    const role = onboardedUser?.role ?? user?.role;
+    completeOnboarding(onboardedUser ?? undefined);
+    router.replace(getRoleHomePath(role));
   };
 
   const handleLogout = () => {

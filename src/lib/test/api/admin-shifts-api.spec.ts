@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as apiTransportModule from '@/lib/api/api-transport';
 import {
   getCurrentShift,
@@ -35,10 +35,16 @@ describe('Admin Shifts API Client', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    // Existing fallback tests below run in dev mock mode; the gate itself is tested at the end.
+    vi.stubEnv('NEXT_PUBLIC_ENABLE_MOCK_FALLBACK', 'true');
     useAuthStore.getState().setAuth(
       { id: 'staff-1', name: 'Budi Kasir', role: 'CASHIER' },
       'test-token'
     );
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   describe('getCurrentShift', () => {
@@ -179,6 +185,31 @@ describe('Admin Shifts API Client', () => {
         expect(result.value.items).toHaveLength(1);
         expect(result.value.meta.totalPages).toBe(2);
         expect(result.value.meta.hasNextPage).toBe(true);
+      }
+    });
+  });
+
+  describe('mock fallback gate', () => {
+    it('returns the real error when NEXT_PUBLIC_ENABLE_MOCK_FALLBACK is not set', async () => {
+      vi.stubEnv('NEXT_PUBLIC_ENABLE_MOCK_FALLBACK', '');
+      vi.spyOn(apiTransportModule, 'apiTransport').mockResolvedValueOnce(
+        left(ApiError.networkError())
+      );
+
+      const result = await openShift({ openingCash: 250000 });
+      expect(result.isLeft()).toBe(true);
+      expect(localStorage.getItem('kumpul_cafe_active_shift')).toBeNull();
+    });
+
+    it('never masks auth / conflict errors with mock data, even when enabled', async () => {
+      vi.spyOn(apiTransportModule, 'apiTransport').mockResolvedValueOnce(
+        left(new ApiError(409, 'Conflict', 'Masih ada shift yang terbuka'))
+      );
+
+      const result = await openShift({ openingCash: 250000 });
+      expect(result.isLeft()).toBe(true);
+      if (result.isLeft()) {
+        expect(result.value.statusCode).toBe(409);
       }
     });
   });

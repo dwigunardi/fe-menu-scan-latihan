@@ -30,6 +30,13 @@ import {
 
 type LoginPresetType = 'form' | 'admin' | 'cashier' | 'kitchen' | 'waiter';
 
+/**
+ * Demo quick-login buttons expose seeded credentials, so they are hidden in production
+ * builds unless explicitly enabled (e.g. for a public demo environment).
+ */
+const SHOW_DEMO_LOGIN =
+  process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_SHOW_DEMO_LOGIN === 'true';
+
 export default function StaffLoginPage() {
   const router = useRouter();
   const { setAuth, isAuthenticated, _hasHydrated, user } = useAuthStore();
@@ -171,7 +178,8 @@ export default function StaffLoginPage() {
           </Button>
         </form>
 
-        {/* 1-Click Quick Demo Login Presets */}
+        {/* 1-Click Quick Demo Login Presets (dev only, or opt-in via NEXT_PUBLIC_SHOW_DEMO_LOGIN) */}
+        {SHOW_DEMO_LOGIN && (
         <div className="w-full mt-6 pt-4 border-t border-stone-200/80 dark:border-zinc-800 space-y-3">
           <div className="flex items-center gap-1.5 justify-center text-[11px] font-bold text-stone-500 dark:text-zinc-400 uppercase tracking-wider">
             <ShieldCheck className="h-3.5 w-3.5 text-amber-600" />
@@ -252,6 +260,7 @@ export default function StaffLoginPage() {
             </Button>
           </div>
         </div>
+        )}
       </div>
     </main>
   );
