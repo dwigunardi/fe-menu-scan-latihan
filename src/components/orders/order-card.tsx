@@ -62,7 +62,7 @@ export function OrderCard({
   onDragEnd,
   isDragging,
   isMobile = false,
-}: OrderCardProps) {
+}: Readonly<OrderCardProps>) {
   const { label: timeLabel, elapsedMinutes } = useMemo(
     () => formatOrderTime(order.createdAt),
     [order.createdAt]

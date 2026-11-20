@@ -74,7 +74,7 @@ interface MenuFormProps {
   mode: 'create' | 'edit';
 }
 
-export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
+export function MenuForm({ initialData, categories, mode }: Readonly<MenuFormProps>) {
   const router = useRouter();
   const createMenuMutation = useCreateMenuMutation();
   const updateMenuMutation = useUpdateMenuMutation();

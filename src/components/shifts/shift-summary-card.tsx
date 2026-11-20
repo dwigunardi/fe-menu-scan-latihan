@@ -28,7 +28,7 @@ export function ShiftSummaryCard({
   isLoading,
   onOpenShiftClick,
   onCloseShiftClick,
-}: ShiftSummaryCardProps) {
+}: Readonly<ShiftSummaryCardProps>) {
   if (isLoading) {
     return (
       <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 shadow-sm animate-pulse space-y-4">

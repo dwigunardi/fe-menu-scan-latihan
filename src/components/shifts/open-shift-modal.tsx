@@ -31,7 +31,7 @@ export interface OpenShiftModalProps {
 
 const CASH_PRESETS = [100000, 200000, 300000, 500000];
 
-export function OpenShiftModal({ isOpen, onClose, onSuccess }: OpenShiftModalProps) {
+export function OpenShiftModal({ isOpen, onClose, onSuccess }: Readonly<OpenShiftModalProps>) {
   const openMutation = useOpenShiftMutation();
 
   const {

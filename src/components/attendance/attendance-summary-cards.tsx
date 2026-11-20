@@ -9,7 +9,7 @@ interface AttendanceSummaryCardsProps {
   isLoading?: boolean;
 }
 
-export function AttendanceSummaryCards({ summary, isLoading }: AttendanceSummaryCardsProps) {
+export function AttendanceSummaryCards({ summary, isLoading }: Readonly<AttendanceSummaryCardsProps>) {
   const cards = [
     {
       title: 'Total Staf Hari Ini',

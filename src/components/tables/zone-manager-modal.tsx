@@ -31,7 +31,7 @@ interface ZoneManagerModalProps {
   onClose: () => void;
 }
 
-export function ZoneManagerModal({ isOpen, onClose }: ZoneManagerModalProps) {
+export function ZoneManagerModal({ isOpen, onClose }: Readonly<ZoneManagerModalProps>) {
   const { data: zones = [], isLoading } = useAdminTableZonesQuery();
   const createMutation = useCreateTableZoneMutation();
   const updateMutation = useUpdateTableZoneMutation();

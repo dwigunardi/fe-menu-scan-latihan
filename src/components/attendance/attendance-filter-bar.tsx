@@ -32,7 +32,7 @@ export function AttendanceFilterBar({
   onDatePresetChange,
   onExportCSV,
   isExporting = false,
-}: AttendanceFilterBarProps) {
+}: Readonly<AttendanceFilterBarProps>) {
   const statusOptions: { key: AttendanceStatus | 'ALL'; label: string }[] = [
     { key: 'ALL', label: 'Semua Status' },
     { key: ATTENDANCE_STATUS.ON_TIME, label: 'Tepat Waktu' },

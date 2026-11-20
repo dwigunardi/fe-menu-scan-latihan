@@ -42,7 +42,7 @@ export function AttendanceTable({
   hasPrevPage = false,
   onPageChange,
   onLimitChange = () => {},
-}: AttendanceTableProps) {
+}: Readonly<AttendanceTableProps>) {
   const [selectedOvertimeAttendance, setSelectedOvertimeAttendance] =
     useState<AttendanceItem | null>(null);
   const [selectedCorrectionAttendance, setSelectedCorrectionAttendance] =

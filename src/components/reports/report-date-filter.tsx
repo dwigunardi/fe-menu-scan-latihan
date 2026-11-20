@@ -18,7 +18,7 @@ interface ReportDateFilterProps {
   disabled?: boolean;
 }
 
-export function ReportDateFilter({ value, onChange, disabled }: ReportDateFilterProps) {
+export function ReportDateFilter({ value, onChange, disabled }: Readonly<ReportDateFilterProps>) {
   const handleSelectPreset = (preset: DateFilterPreset) => {
     if (preset === 'today') {
       const { startDate, endDate } = getTodayRange();

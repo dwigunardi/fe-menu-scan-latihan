@@ -34,7 +34,7 @@ export function KioskPinModal({
   errorMessage,
   onClose,
   onSubmitPin,
-}: KioskPinModalProps) {
+}: Readonly<KioskPinModalProps>) {
   const [pinCode, setPinCode] = useState<string>('');
   const [isShaking, setIsShaking] = useState<boolean>(false);
 

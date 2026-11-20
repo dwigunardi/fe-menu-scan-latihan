@@ -13,7 +13,7 @@ interface RoleGuardProps {
   children: ReactNode;
 }
 
-export function RoleGuard({ allowedRoles, fallbackUrl, children }: RoleGuardProps) {
+export function RoleGuard({ allowedRoles, fallbackUrl, children }: Readonly<RoleGuardProps>) {
   const router = useRouter();
   const { user, _hasHydrated, isAuthenticated } = useAuthStore();
 

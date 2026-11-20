@@ -13,7 +13,7 @@ interface EditBannerPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function EditBannerPage({ params }: EditBannerPageProps) {
+export default function EditBannerPage({ params }: Readonly<EditBannerPageProps>) {
   const resolvedParams = use(params);
   const bannerId = resolvedParams.id;
 

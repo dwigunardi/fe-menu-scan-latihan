@@ -99,7 +99,7 @@ interface OrdersViewProps {
 export function OrdersView({
   pageTitle = 'Kitchen Display System (KDS)',
   pageSubtitle = 'Pantau dan kelola antrean pesanan dapur secara real-time.',
-}: OrdersViewProps) {
+}: Readonly<OrdersViewProps>) {
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [mobileActiveTab, setMobileActiveTab] = useState<OrderStatus>('PENDING');

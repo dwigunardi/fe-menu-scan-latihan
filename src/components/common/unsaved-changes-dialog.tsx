@@ -20,7 +20,7 @@ export function UnsavedChangesDialog({
   description = 'Anda memiliki perubahan formulir yang belum disimpan. Jika meninggalkan halaman ini sekarang, perubahan tersebut akan dibuang.',
   confirmText = 'Lanjutkan Keluar',
   cancelText = 'Tetap di Sini',
-}: UnsavedChangesDialogProps) {
+}: Readonly<UnsavedChangesDialogProps>) {
   const { isOpen, confirmLeave, cancelLeave } = useUnsavedChangesGuard({
     isDirty,
     enabled,

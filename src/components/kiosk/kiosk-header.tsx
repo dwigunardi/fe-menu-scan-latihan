@@ -29,7 +29,7 @@ export function KioskHeader({
   isLocating,
   gpsError,
   onExitClick,
-}: KioskHeaderProps) {
+}: Readonly<KioskHeaderProps>) {
   const [timeStr, setTimeStr] = useState<string>('');
   const [dateStr, setDateStr] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);

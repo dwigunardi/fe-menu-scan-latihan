@@ -50,7 +50,7 @@ export function AbsenceContingencyModal({
   onClose,
   openTime = '08:00',
   lateGracePeriod = 15,
-}: AbsenceContingencyModalProps) {
+}: Readonly<AbsenceContingencyModalProps>) {
   const router = useRouter();
   const { data: staffData } = useAdminStaffPaginatedQuery({ limit: 100 });
   const staffList: StaffItem[] = staffData?.items || [];

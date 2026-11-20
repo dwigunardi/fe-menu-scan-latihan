@@ -23,7 +23,7 @@ export function OrderReceiptModal({
   onClose,
   order,
   onUpdateStatus,
-}: OrderReceiptModalProps) {
+}: Readonly<OrderReceiptModalProps>) {
   if (!order) return null;
 
   const handlePrint = () => {

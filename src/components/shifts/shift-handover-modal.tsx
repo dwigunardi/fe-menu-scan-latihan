@@ -56,7 +56,7 @@ export function ShiftHandoverModal({
   isOpen,
   onClose,
   onSuccess,
-}: ShiftHandoverModalProps) {
+}: Readonly<ShiftHandoverModalProps>) {
   const { user, setAuth, accessToken, refreshToken } = useAuthStore();
   const { data: staffData } = useAdminStaffPaginatedQuery({ limit: 100 });
   const staffList: StaffItem[] = staffData?.items || [];

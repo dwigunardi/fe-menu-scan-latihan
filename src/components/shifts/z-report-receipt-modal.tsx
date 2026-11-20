@@ -24,7 +24,7 @@ export function ZReportReceiptModal({
   isOpen,
   onClose,
   shift,
-}: ZReportReceiptModalProps) {
+}: Readonly<ZReportReceiptModalProps>) {
   const receiptRef = useRef<HTMLDivElement>(null);
 
   if (!shift) return null;

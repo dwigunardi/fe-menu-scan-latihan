@@ -18,7 +18,7 @@ export function PromoCarousel({
   initialBanners,
   autoPlayInterval = 5000,
   className,
-}: PromoCarouselProps) {
+}: Readonly<PromoCarouselProps>) {
   const { data: fetchedBanners, isLoading } = usePublicBannersQuery();
   const banners = initialBanners || fetchedBanners || [];
 

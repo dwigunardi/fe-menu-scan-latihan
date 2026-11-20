@@ -82,7 +82,7 @@ export function StaffTable({
   onChangePin,
   onToggleStatus,
   onDeleteStaff,
-}: StaffTableProps) {
+}: Readonly<StaffTableProps>) {
   return (
     <>
       {/* Desktop Table View */}

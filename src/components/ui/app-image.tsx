@@ -23,7 +23,7 @@ export function AppImage({
   height,
   unoptimized,
   ...props
-}: AppImageProps) {
+}: Readonly<AppImageProps>) {
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 

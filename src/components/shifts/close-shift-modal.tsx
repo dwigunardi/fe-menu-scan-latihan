@@ -37,7 +37,7 @@ export function CloseShiftModal({
   onClose,
   shift,
   onShiftClosed,
-}: CloseShiftModalProps) {
+}: Readonly<CloseShiftModalProps>) {
   const closeMutation = useCloseShiftMutation();
 
   const {

@@ -69,7 +69,7 @@ export function BannerImageUploader({
   onChange,
   onPresetSelect,
   disabled = false,
-}: BannerImageUploaderProps) {
+}: Readonly<BannerImageUploaderProps>) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);

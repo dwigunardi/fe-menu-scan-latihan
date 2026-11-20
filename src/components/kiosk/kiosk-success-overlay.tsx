@@ -23,7 +23,7 @@ export function KioskSuccessOverlay({
   mode,
   onDismiss,
   autoCloseDurationMs = 3200,
-}: KioskSuccessOverlayProps) {
+}: Readonly<KioskSuccessOverlayProps>) {
   const [recordedTime, setRecordedTime] = useState<string>('');
   const [progressPercent, setProgressPercent] = useState<number>(100);
 

@@ -20,7 +20,7 @@ interface TableQrModalProps {
   table: TableData | null;
 }
 
-export function TableQrModal({ isOpen, onClose, table }: TableQrModalProps) {
+export function TableQrModal({ isOpen, onClose, table }: Readonly<TableQrModalProps>) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   if (!table) return null;

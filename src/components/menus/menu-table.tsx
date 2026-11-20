@@ -36,7 +36,7 @@ export function MenuTable({
   isDeletePending,
   onToggleStock,
   onDeleteMenu,
-}: MenuTableProps) {
+}: Readonly<MenuTableProps>) {
   const router = useRouter();
 
   return (

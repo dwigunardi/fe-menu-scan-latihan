@@ -30,7 +30,7 @@ export function BannerCard({
   onDelete,
   isToggling = false,
   isDeleting = false,
-}: BannerCardProps) {
+}: Readonly<BannerCardProps>) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 

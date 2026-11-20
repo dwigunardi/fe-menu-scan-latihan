@@ -17,7 +17,7 @@ export function OperationalNotFound({
   backUrl,
   backLabel,
   description = 'Data atau pesanan yang Anda tuju sudah diproses, dibatalkan, atau tautan tidak valid.',
-}: OperationalNotFoundProps) {
+}: Readonly<OperationalNotFoundProps>) {
   const returnLabel = backLabel || `Kembali ke ${workstationTitle}`;
 
   return (

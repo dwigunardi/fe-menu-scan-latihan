@@ -32,7 +32,7 @@ interface CommonHeaderProps {
 export function CommonHeader({
   portalTitle = 'Portal Operasional',
   breadcrumb,
-}: CommonHeaderProps) {
+}: Readonly<CommonHeaderProps>) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const { setTheme, resolvedTheme } = useTheme();

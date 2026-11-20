@@ -94,7 +94,7 @@ function buildDefaultSchedules(openTime: string, closeTime: string): DaySchedule
   }));
 }
 
-export function StorePoliciesForm({ initialData }: StorePoliciesFormProps) {
+export function StorePoliciesForm({ initialData }: Readonly<StorePoliciesFormProps>) {
   const updateBranchMutation = useUpdateBranchSettingMutation();
   const updateStatusMutation = useUpdateStoreStatusMutation();
   const isPending = updateBranchMutation.isPending || updateStatusMutation.isPending;

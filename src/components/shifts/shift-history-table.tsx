@@ -26,7 +26,7 @@ export function ShiftHistoryTable({
   shifts,
   isLoading,
   onViewZReport,
-}: ShiftHistoryTableProps) {
+}: Readonly<ShiftHistoryTableProps>) {
   return (
     <div className="rounded-3xl border border-stone-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden shadow-xs">
       <div className="p-4 sm:p-5 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between">

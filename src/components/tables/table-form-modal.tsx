@@ -62,7 +62,7 @@ export function TableFormModal({
   onClose,
   tableToEdit,
   onOpenZoneManager,
-}: TableFormModalProps) {
+}: Readonly<TableFormModalProps>) {
   const { data: zones = [] } = useAdminTableZonesQuery();
   const createMutation = useCreateTableMutation();
   const updateMutation = useUpdateTableMutation();

@@ -35,7 +35,7 @@ interface BranchSettingsFormProps {
   initialData: BranchSetting;
 }
 
-export function BranchSettingsForm({ initialData }: BranchSettingsFormProps) {
+export function BranchSettingsForm({ initialData }: Readonly<BranchSettingsFormProps>) {
   const updateMutation = useUpdateBranchSettingMutation();
   const [isSyncingAddress, setIsSyncingAddress] = useState(false);
 

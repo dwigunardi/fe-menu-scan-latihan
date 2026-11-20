@@ -63,7 +63,7 @@ export function ShiftTemplateModal({
   isOpen,
   onClose,
   templateToEdit,
-}: ShiftTemplateModalProps) {
+}: Readonly<ShiftTemplateModalProps>) {
   const isEditing = Boolean(templateToEdit);
 
   const [name, setName] = useState(() => getFormDefaults(templateToEdit).name);

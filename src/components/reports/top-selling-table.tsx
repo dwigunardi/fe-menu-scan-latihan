@@ -10,7 +10,7 @@ interface TopSellingTableProps {
   isLoading?: boolean;
 }
 
-export function TopSellingTable({ items = [], isLoading }: TopSellingTableProps) {
+export function TopSellingTable({ items = [], isLoading }: Readonly<TopSellingTableProps>) {
   if (isLoading) {
     return (
       <div className="p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 space-y-4">

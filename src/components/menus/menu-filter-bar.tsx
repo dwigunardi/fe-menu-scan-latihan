@@ -80,7 +80,7 @@ export function MenuFilterBar({
   categories,
   selectedCategory,
   onSelectCategory,
-}: MenuFilterBarProps) {
+}: Readonly<MenuFilterBarProps>) {
   const sortDirectionInfo = getSortDirectionInfo(sortBy, sortOrder);
 
   return (

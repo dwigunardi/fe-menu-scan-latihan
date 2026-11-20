@@ -35,7 +35,7 @@ export function StaffPinModal({
   staff,
   onSubmitPin,
   isSubmitting,
-}: StaffPinModalProps) {
+}: Readonly<StaffPinModalProps>) {
   const [showPin, setShowPin] = useState(false);
 
   const {

@@ -40,7 +40,7 @@ export function OvertimeReviewModal({
   isOpen,
   onClose,
   attendance,
-}: OvertimeReviewModalProps) {
+}: Readonly<OvertimeReviewModalProps>) {
   const reviewMutation = useReviewOvertimeMutation();
 
   const {

@@ -25,7 +25,7 @@ export function TableDeleteModal({
   table,
   onConfirm,
   isPending,
-}: TableDeleteModalProps) {
+}: Readonly<TableDeleteModalProps>) {
   if (!table) return null;
 
   const displayTableNumber = table.tableNumber.trim().toUpperCase().startsWith('MEJA')

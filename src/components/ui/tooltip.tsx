@@ -50,7 +50,7 @@ export function SimpleTooltip({
   sideOffset = 6,
   delayDuration,
   className,
-}: SimpleTooltipProps) {
+}: Readonly<SimpleTooltipProps>) {
   if (!content) return <>{children}</>;
 
   return (

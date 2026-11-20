@@ -38,7 +38,7 @@ export function Pagination({
   onLimitChange,
   itemLabel = 'item',
   className = '',
-}: PaginationProps) {
+}: Readonly<PaginationProps>) {
   const startItem = totalItems === 0 ? 0 : (page - 1) * (limit === -1 ? totalItems : limit) + 1;
   const endItem = limit === -1 ? totalItems : Math.min(page * limit, totalItems);
 

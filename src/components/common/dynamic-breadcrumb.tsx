@@ -48,7 +48,7 @@ interface DynamicBreadcrumbProps {
 export function DynamicBreadcrumb({
   className,
   rootLabel = 'Kumpul Cafe',
-}: DynamicBreadcrumbProps) {
+}: Readonly<DynamicBreadcrumbProps>) {
   const pathname = usePathname();
   const { user } = useAuthStore();
 

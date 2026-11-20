@@ -28,7 +28,7 @@ export function MenuCardsMobile({
   isDeletePending,
   onToggleStock,
   onDeleteMenu,
-}: MenuCardsMobileProps) {
+}: Readonly<MenuCardsMobileProps>) {
   const router = useRouter();
 
   if (isLoading) {

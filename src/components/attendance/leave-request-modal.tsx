@@ -27,7 +27,7 @@ interface LeaveRequestModalProps {
   onClose: () => void;
 }
 
-export function LeaveRequestModal({ isOpen, onClose }: LeaveRequestModalProps) {
+export function LeaveRequestModal({ isOpen, onClose }: Readonly<LeaveRequestModalProps>) {
   const { data: staffData } = useAdminStaffPaginatedQuery({ limit: 50 });
   const createLeaveMutation = useCreateLeaveRequestMutation();
 

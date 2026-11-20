@@ -41,7 +41,7 @@ interface ClockInModalProps {
   onClose: () => void;
 }
 
-export function ClockInModal({ isOpen, onClose }: ClockInModalProps) {
+export function ClockInModal({ isOpen, onClose }: Readonly<ClockInModalProps>) {
   const { user } = useAuthStore();
   const isAdmin = user?.role === ROLE.ADMIN;
   const [isSupervisorSelectMode, setIsSupervisorSelectMode] = useState<boolean>(false);

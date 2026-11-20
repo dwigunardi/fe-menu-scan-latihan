@@ -45,7 +45,7 @@ export function KioskExitDialog({
   isOpen,
   onClose,
   onConfirmExit,
-}: KioskExitDialogProps) {
+}: Readonly<KioskExitDialogProps>) {
   const { user } = useAuthStore();
   const [pinCode, setPinCode] = useState<string>('');
   const [isVerifying, setIsVerifying] = useState<boolean>(false);

@@ -36,7 +36,7 @@ export function CategoryManagerModal({
   onClose,
   categories,
   onRefresh,
-}: CategoryManagerModalProps) {
+}: Readonly<CategoryManagerModalProps>) {
   const createMutation = useCreateCategoryMutation();
   const deleteMutation = useDeleteCategoryMutation();
 

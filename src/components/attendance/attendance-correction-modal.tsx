@@ -33,7 +33,7 @@ export function AttendanceCorrectionModal({
   isOpen,
   onClose,
   attendance,
-}: AttendanceCorrectionModalProps) {
+}: Readonly<AttendanceCorrectionModalProps>) {
   const correctMutation = useCorrectAttendanceMutation();
 
   const {

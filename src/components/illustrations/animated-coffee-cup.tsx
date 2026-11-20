@@ -6,7 +6,7 @@ interface AnimatedCoffeeCupProps {
   className?: string;
 }
 
-export function AnimatedCoffeeCup({ className = 'w-64 h-64' }: AnimatedCoffeeCupProps) {
+export function AnimatedCoffeeCup({ className = 'w-64 h-64' }: Readonly<AnimatedCoffeeCupProps>) {
   return (
     <div className={`relative flex items-center justify-center select-none ${className}`}>
       {/* Subtle background ambient warm glow */}

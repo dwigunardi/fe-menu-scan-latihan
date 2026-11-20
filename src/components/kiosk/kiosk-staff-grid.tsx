@@ -74,7 +74,7 @@ export function KioskStaffGrid({
   onModeChange,
   onSelectStaff,
   isLoading = false,
-}: KioskStaffGridProps) {
+}: Readonly<KioskStaffGridProps>) {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('ALL');
 

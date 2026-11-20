@@ -17,7 +17,7 @@ export function ExportReportButton({
   topSellingItems = [],
   dateLabel = 'Periode',
   disabled,
-}: ExportReportButtonProps) {
+}: Readonly<ExportReportButtonProps>) {
   const handleExportCSV = () => {
     try {
       const rows: string[][] = [

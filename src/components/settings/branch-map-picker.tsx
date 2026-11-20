@@ -24,7 +24,7 @@ export function BranchMapPicker({
   radiusMeters,
   onChangeCoordinates,
   disabled = false,
-}: BranchMapPickerProps) {
+}: Readonly<BranchMapPickerProps>) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<LeafletMap | null>(null);
   const markerRef = useRef<Marker | null>(null);

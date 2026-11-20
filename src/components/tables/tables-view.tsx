@@ -61,7 +61,7 @@ export function TablesView({
   pageTitle = 'Denah Meja & Sesi Kasir',
   pageSubtitle = 'Visual floor plan real-time, stiker QR fisik permanen, dan 1-tap reset sesi meja.',
   allowManagement = true,
-}: TablesViewProps) {
+}: Readonly<TablesViewProps>) {
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedZoneFilter] = useState<string>('ALL');
   const [searchInput, setSearchInput] = useState<string>('');

@@ -37,7 +37,7 @@ export function StaffCredentialModal({
   onClose,
   staff,
   temporaryPassword = '',
-}: StaffCredentialModalProps) {
+}: Readonly<StaffCredentialModalProps>) {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isCopied, setIsCopied] = useState<boolean>(false);
 

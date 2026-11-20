@@ -80,7 +80,7 @@ export function ConfirmationDialog({
   loadingText,
   children,
   className,
-}: ConfirmationDialogProps) {
+}: Readonly<ConfirmationDialogProps>) {
   const currentVariant = variantStyles[variant];
   const IconComponent = icon || currentVariant.defaultIcon;
 

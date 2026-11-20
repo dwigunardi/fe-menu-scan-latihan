@@ -27,7 +27,7 @@ export function CommonSidebar({
   brandTitle = 'Kumpul Cafe',
   portalSubtitle = 'OPERATIONAL PORTAL',
   customNavItems,
-}: CommonSidebarProps) {
+}: Readonly<CommonSidebarProps>) {
   const pathname = usePathname();
   const { user } = useAuthStore();
   const { isCollapsed, toggleCollapse } = useSidebarStore();

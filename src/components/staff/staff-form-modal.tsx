@@ -78,7 +78,7 @@ export function StaffFormModal({
   onSubmitCreate,
   onSubmitUpdate,
   isSubmitting,
-}: StaffFormModalProps) {
+}: Readonly<StaffFormModalProps>) {
   const isEditMode = Boolean(staffToEdit);
   const [showPassword, setShowPassword] = React.useState<boolean>(false);
 

@@ -25,7 +25,7 @@ export function TableResetModal({
   table,
   onConfirm,
   isPending,
-}: TableResetModalProps) {
+}: Readonly<TableResetModalProps>) {
   if (!table) return null;
 
   const displayTableNumber = table.tableNumber.trim().toUpperCase().startsWith('MEJA')

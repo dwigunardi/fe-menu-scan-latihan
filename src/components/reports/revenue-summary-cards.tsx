@@ -9,7 +9,7 @@ interface RevenueSummaryCardsProps {
   isLoading?: boolean;
 }
 
-export function RevenueSummaryCards({ data, isLoading }: RevenueSummaryCardsProps) {
+export function RevenueSummaryCards({ data, isLoading }: Readonly<RevenueSummaryCardsProps>) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

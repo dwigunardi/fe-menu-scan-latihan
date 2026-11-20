@@ -37,7 +37,7 @@ interface BannerFormProps {
   initialData?: BannerData;
 }
 
-export function BannerForm({ mode, initialData }: BannerFormProps) {
+export function BannerForm({ mode, initialData }: Readonly<BannerFormProps>) {
   const router = useRouter();
   const createMutation = useCreateBannerMutation();
   const updateMutation = useUpdateBannerMutation();
