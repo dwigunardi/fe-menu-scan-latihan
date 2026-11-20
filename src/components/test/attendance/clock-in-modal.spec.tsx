@@ -47,33 +47,33 @@ describe('ClockInModal Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuthStore.setState({ user: null, isAuthenticated: false });
-    mockClockInMutate.mockResolvedValue({ success: true } as any);
-    mockClockOutMutate.mockResolvedValue({ success: true } as any);
+    mockClockInMutate.mockResolvedValue({ success: true });
+    mockClockOutMutate.mockResolvedValue({ success: true });
 
     vi.spyOn(settingsHooks, 'useAdminBranchSettingQuery').mockReturnValue({
       data: mockBranchSetting,
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof settingsHooks.useAdminBranchSettingQuery>);
 
     vi.spyOn(settingsHooks, 'usePublicBranchLocationQuery').mockReturnValue({
       data: mockBranchSetting,
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof settingsHooks.usePublicBranchLocationQuery>);
 
     vi.spyOn(staffHooks, 'useAdminStaffPaginatedQuery').mockReturnValue({
       data: { items: mockStaff, total: 2 },
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof staffHooks.useAdminStaffPaginatedQuery>);
 
     vi.spyOn(attendanceHooks, 'useClockInMutation').mockReturnValue({
       mutateAsync: mockClockInMutate,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof attendanceHooks.useClockInMutation>);
 
     vi.spyOn(attendanceHooks, 'useClockOutMutation').mockReturnValue({
       mutateAsync: mockClockOutMutate,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof attendanceHooks.useClockOutMutation>);
 
     // Mock navigator.geolocation with defineProperty
     Object.defineProperty(global.navigator, 'geolocation', {
@@ -110,11 +110,11 @@ describe('ClockInModal Component', () => {
     vi.spyOn(settingsHooks, 'useAdminBranchSettingQuery').mockReturnValue({
       data: undefined,
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof settingsHooks.useAdminBranchSettingQuery>);
     vi.spyOn(staffHooks, 'useAdminStaffPaginatedQuery').mockReturnValue({
       data: undefined,
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof staffHooks.useAdminStaffPaginatedQuery>);
 
     render(<ClockInModal isOpen={true} onClose={vi.fn()} />);
     expect(screen.getByText(/Radius: 100m/i)).toBeInTheDocument();

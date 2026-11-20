@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Receipt,
-  Coins,
   Calculator,
 } from 'lucide-react';
 import {

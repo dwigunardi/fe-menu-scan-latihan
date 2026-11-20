@@ -130,7 +130,7 @@ export function OrdersView({
 
   const updateStatusMutation = useUpdateOrderStatusMutation();
 
-  const orders = paginatedData?.items || [];
+  const orders = useMemo(() => paginatedData?.items || [], [paginatedData?.items]);
 
   // Track pending orders count to trigger chime on new incoming orders
   const prevPendingCountRef = useRef<number>(0);

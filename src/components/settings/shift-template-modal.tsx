@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,7 +19,7 @@ import {
   useCreateShiftTemplateMutation,
   useUpdateShiftTemplateMutation,
 } from '@/hooks/queries/use-admin-shift-templates';
-import { Clock, Coffee, Sparkles, Tag, Check, Palette } from 'lucide-react';
+import { Clock, Coffee, Sparkles, Check, Palette } from 'lucide-react';
 
 interface ShiftTemplateModalProps {
   isOpen: boolean;
@@ -36,6 +36,29 @@ const BADGE_COLORS = [
   { label: 'Oranye (Orange)', value: 'orange', bg: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20' },
 ];
 
+function getFormDefaults(template: ShiftTemplateItem | null | undefined) {
+  if (template) {
+    return {
+      name: template.name,
+      code: template.code,
+      startTime: template.startTime,
+      endTime: template.endTime,
+      breakMinutes: template.breakMinutes,
+      colorBadge: template.colorBadge || 'emerald',
+      isActive: template.isActive,
+    };
+  }
+  return {
+    name: '',
+    code: '',
+    startTime: '08:00',
+    endTime: '16:00',
+    breakMinutes: 60,
+    colorBadge: 'emerald',
+    isActive: true,
+  };
+}
+
 export function ShiftTemplateModal({
   isOpen,
   onClose,
@@ -43,37 +66,34 @@ export function ShiftTemplateModal({
 }: ShiftTemplateModalProps) {
   const isEditing = Boolean(templateToEdit);
 
-  const [name, setName] = useState('');
-  const [code, setCode] = useState('');
-  const [startTime, setStartTime] = useState('08:00');
-  const [endTime, setEndTime] = useState('16:00');
-  const [breakMinutes, setBreakMinutes] = useState(60);
-  const [colorBadge, setColorBadge] = useState('emerald');
-  const [isActive, setIsActive] = useState(true);
+  const [name, setName] = useState(() => getFormDefaults(templateToEdit).name);
+  const [code, setCode] = useState(() => getFormDefaults(templateToEdit).code);
+  const [startTime, setStartTime] = useState(() => getFormDefaults(templateToEdit).startTime);
+  const [endTime, setEndTime] = useState(() => getFormDefaults(templateToEdit).endTime);
+  const [breakMinutes, setBreakMinutes] = useState(() => getFormDefaults(templateToEdit).breakMinutes);
+  const [colorBadge, setColorBadge] = useState(() => getFormDefaults(templateToEdit).colorBadge);
+  const [isActive, setIsActive] = useState(() => getFormDefaults(templateToEdit).isActive);
 
   const createMutation = useCreateShiftTemplateMutation();
   const updateMutation = useUpdateShiftTemplateMutation();
   const isPending = createMutation.isPending || updateMutation.isPending;
 
-  useEffect(() => {
-    if (templateToEdit) {
-      setName(templateToEdit.name);
-      setCode(templateToEdit.code);
-      setStartTime(templateToEdit.startTime);
-      setEndTime(templateToEdit.endTime);
-      setBreakMinutes(templateToEdit.breakMinutes);
-      setColorBadge(templateToEdit.colorBadge || 'emerald');
-      setIsActive(templateToEdit.isActive);
-    } else {
-      setName('');
-      setCode('');
-      setStartTime('08:00');
-      setEndTime('16:00');
-      setBreakMinutes(60);
-      setColorBadge('emerald');
-      setIsActive(true);
-    }
-  }, [templateToEdit, isOpen]);
+  // Re-seed the form whenever the edited template or the open state changes
+  // (adjusting state during render instead of in an effect).
+  const [prevTemplate, setPrevTemplate] = useState(templateToEdit);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (templateToEdit !== prevTemplate || isOpen !== prevIsOpen) {
+    setPrevTemplate(templateToEdit);
+    setPrevIsOpen(isOpen);
+    const defaults = getFormDefaults(templateToEdit);
+    setName(defaults.name);
+    setCode(defaults.code);
+    setStartTime(defaults.startTime);
+    setEndTime(defaults.endTime);
+    setBreakMinutes(defaults.breakMinutes);
+    setColorBadge(defaults.colorBadge);
+    setIsActive(defaults.isActive);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

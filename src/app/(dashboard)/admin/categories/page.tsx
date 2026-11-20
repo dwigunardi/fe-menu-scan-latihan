@@ -428,7 +428,7 @@ export default function AdminCategoriesPage() {
 
             <p className="text-sm text-stone-600 dark:text-zinc-300 py-2">
               Apakah Anda yakin ingin menghapus kategori{' '}
-              <strong className="text-stone-900 dark:text-white">"{deleteTarget?.name}"</strong>?
+              <strong className="text-stone-900 dark:text-white">&quot;{deleteTarget?.name}&quot;</strong>?
             </p>
 
             <DialogFooter className="pt-4 flex gap-2 sm:justify-end">

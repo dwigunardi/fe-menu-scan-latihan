@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { AbsenceContingencyModal } from '@/components/settings/absence-contingency-modal';
 import * as staffHooks from '@/hooks/queries/use-admin-staff';
 import * as settingsHooks from '@/hooks/queries/use-admin-settings';
@@ -52,12 +51,12 @@ describe('AbsenceContingencyModal Component', () => {
     vi.spyOn(staffHooks, 'useAdminStaffPaginatedQuery').mockReturnValue({
       data: { items: mockStaffList, total: 3, page: 1, limit: 100, totalPages: 1 },
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof staffHooks.useAdminStaffPaginatedQuery>);
 
     vi.spyOn(settingsHooks, 'useUpdateStoreStatusMutation').mockReturnValue({
       mutateAsync: mockMutateAsync,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof settingsHooks.useUpdateStoreStatusMutation>);
   });
 
   it('renders modal header, warning text, and 3 contingency options', () => {

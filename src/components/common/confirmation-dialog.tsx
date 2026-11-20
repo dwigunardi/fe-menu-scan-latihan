@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { LucideIcon, AlertTriangle, AlertCircle, Info, LogOut } from 'lucide-react';
+import { LucideIcon, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 import {
   Dialog,
   DialogContent,

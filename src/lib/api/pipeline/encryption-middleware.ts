@@ -1,4 +1,4 @@
-import { encryptPayload, decryptPayload } from '../../crypto/ecdh';
+import { encryptPayload, decryptPayload, type EncryptedEnvelope } from '../../crypto/ecdh';
 import { ApiError } from '../api-error';
 import { ErrorCode } from '../error-codes';
 import { Middleware } from './types';
@@ -21,7 +21,7 @@ export const encryptionMiddleware: Middleware = async (ctx, next) => {
   await next();
 
   // 2. Incoming Response Decryption
-  const json = ctx.responseData as any;
+  const json = ctx.responseData as Partial<EncryptedEnvelope> | null | undefined;
   if (json?.encrypted && json?.payload && json?.iv && json?.tag) {
     if (!ctx.sessionKey) {
       throw new ApiError(
@@ -33,7 +33,10 @@ export const encryptionMiddleware: Middleware = async (ctx, next) => {
     }
 
     try {
-      ctx.responseData = await decryptPayload(json, ctx.sessionKey);
+      ctx.responseData = await decryptPayload(
+        { iv: json.iv, payload: json.payload, tag: json.tag },
+        ctx.sessionKey
+      );
     } catch {
       throw new ApiError(
         500,

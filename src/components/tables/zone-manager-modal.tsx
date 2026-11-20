@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Dialog,
@@ -49,7 +49,7 @@ export function ZoneManagerModal({ isOpen, onClose }: ZoneManagerModalProps) {
     watch,
     formState: { errors },
   } = useForm<TableZoneFormInput>({
-    resolver: zodResolver(TableZoneFormSchema) as any,
+    resolver: zodResolver(TableZoneFormSchema) as Resolver<TableZoneFormInput>,
     defaultValues: {
       name: '',
       description: '',

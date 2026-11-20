@@ -1,19 +1,16 @@
 'use client';
 
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/use-auth-store';
 import { getRoleHomePath } from '@/lib/constants/roles';
+import { useIsClient } from '@/hooks/use-is-client';
 
 export function AuthGuard({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isAuthenticated, _hasHydrated } = useAuthStore();
-  const [isClientReady, setIsClientReady] = useState(false);
-
-  useEffect(() => {
-    setIsClientReady(true);
-  }, []);
+  const isClientReady = useIsClient();
 
   useEffect(() => {
     // Only perform auth check after client has mounted AND zustand store has hydrated from localStorage

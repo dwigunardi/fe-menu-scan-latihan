@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, Download, Calendar, Filter, Users } from 'lucide-react';
+import { Search, Download, Filter } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { AttendanceStatus, ATTENDANCE_STATUS } from '@/lib/constants/attendance';
@@ -59,7 +59,7 @@ export function AttendanceFilterBar({
 
           <select
             value={selectedRole}
-            onChange={(e) => onRoleChange(e.target.value as any)}
+            onChange={(e) => onRoleChange(e.target.value as StaffRole | 'ALL')}
             className="h-10 px-3 text-xs font-semibold rounded-xl border border-stone-300 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 text-stone-800 dark:text-zinc-200 focus:outline-hidden cursor-pointer"
           >
             <option value="ALL">Semua Peran (Role)</option>

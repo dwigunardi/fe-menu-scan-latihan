@@ -100,7 +100,7 @@ export function MenuFilterBar({
         <div className="flex items-center gap-2">
           <Select
             value={sortBy}
-            onValueChange={(val) => onSortByChange(val as any)}
+            onValueChange={(val) => onSortByChange(val as MenuFilterBarProps['sortBy'])}
           >
             <SelectTrigger className="h-10 min-w-[150px] sm:min-w-[170px] text-xs">
               <div className="flex items-center gap-2 truncate">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { motion } from 'motion/react';
 import {
   Dialog,
@@ -52,14 +52,17 @@ export function KioskExitDialog({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isShaking, setIsShaking] = useState<boolean>(false);
 
-  useEffect(() => {
+  // Reset the keypad each time the dialog opens (adjusting state during render instead of in an effect).
+  const [wasOpen, setWasOpen] = useState<boolean>(isOpen);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (isOpen) {
       setPinCode('');
       setErrorMessage(null);
       setIsShaking(false);
       setIsVerifying(false);
     }
-  }, [isOpen]);
+  }
 
   const verifyExit = useCallback(
     async (enteredPin: string) => {

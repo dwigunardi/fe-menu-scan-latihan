@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   LogOut,
@@ -22,6 +22,7 @@ import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
 import { ClockInModal } from '@/components/attendance/clock-in-modal';
 import { ShiftHandoverModal } from '@/components/shifts/shift-handover-modal';
 import { ROLE } from '@/lib/constants/roles';
+import { useIsClient } from '@/hooks/use-is-client';
 
 interface CommonHeaderProps {
   portalTitle?: string;
@@ -34,16 +35,12 @@ export function CommonHeader({
 }: CommonHeaderProps) {
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const { isCollapsed, toggleCollapse } = useSidebarStore();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsClient();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isClockInModalOpen, setIsClockInModalOpen] = useState(false);
   const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const handleConfirmLogout = () => {
     setIsLogoutModalOpen(false);

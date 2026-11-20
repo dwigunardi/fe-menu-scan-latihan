@@ -9,10 +9,8 @@ import {
   DollarSign,
   Receipt,
   Play,
-  CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { formatRupiah } from '@/lib/utils/format-currency';
 import { formatDateTimeIndo } from '@/lib/utils/date-helpers';
 import { ShiftItem } from '@/lib/validations/shift.schema';
@@ -30,7 +28,6 @@ export function ShiftSummaryCard({
   isLoading,
   onOpenShiftClick,
   onCloseShiftClick,
-  onViewZReportClick,
 }: ShiftSummaryCardProps) {
   if (isLoading) {
     return (

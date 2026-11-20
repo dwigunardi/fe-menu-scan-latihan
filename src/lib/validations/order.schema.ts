@@ -10,9 +10,51 @@ export const OrderStatusSchema = z.enum([
 
 export type OrderStatus = z.infer<typeof OrderStatusSchema>;
 
+/** Raw backend shapes (field names vary between endpoints) normalized by the preprocessors below. */
+interface RawVariantSnapshot {
+  id?: string;
+  groupName?: string;
+  groupNameSnapshot?: string;
+  optionName?: string;
+  optionNameSnapshot?: string;
+  extraPrice?: unknown;
+  extraPriceSnapshot?: unknown;
+}
+
+interface RawOrderItem {
+  id?: string;
+  menuItemId?: string;
+  menuName?: string;
+  menuNameSnapshot?: string;
+  price?: unknown;
+  priceSnapshot?: unknown;
+  quantity?: unknown;
+  subtotal?: unknown;
+  notes?: string | null;
+  selectedVariants?: unknown[];
+}
+
+interface RawOrder {
+  id?: string;
+  orderNumber?: string;
+  tableId?: string;
+  tableNumber?: string;
+  table?: { number?: string; tableNumber?: string; zone?: { name?: string } | null } | null;
+  zoneName?: string | null;
+  customerName?: string;
+  status?: string;
+  totalAmount?: unknown;
+  paidAt?: string | null;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+  orderItems?: unknown[];
+  items?: unknown[];
+}
+
 export const SelectedVariantSnapshotSchema = z.preprocess(
-  (val: any) => {
-    if (val && typeof val === 'object') {
+  (raw: unknown) => {
+    if (raw && typeof raw === 'object') {
+      const val = raw as RawVariantSnapshot;
       return {
         id: val.id || undefined,
         groupName: val.groupName || val.groupNameSnapshot || 'Varian',
@@ -20,7 +62,7 @@ export const SelectedVariantSnapshotSchema = z.preprocess(
         extraPrice: Number(val.extraPrice !== undefined ? val.extraPrice : val.extraPriceSnapshot || 0),
       };
     }
-    return val;
+    return raw;
   },
   z.object({
     id: z.string().optional(),
@@ -33,8 +75,9 @@ export const SelectedVariantSnapshotSchema = z.preprocess(
 export type SelectedVariantSnapshot = z.infer<typeof SelectedVariantSnapshotSchema>;
 
 export const OrderItemSchema = z.preprocess(
-  (val: any) => {
-    if (val && typeof val === 'object') {
+  (raw: unknown) => {
+    if (raw && typeof raw === 'object') {
+      const val = raw as RawOrderItem;
       return {
         id: val.id || undefined,
         menuItemId: val.menuItemId || '',
@@ -46,7 +89,7 @@ export const OrderItemSchema = z.preprocess(
         selectedVariants: val.selectedVariants || [],
       };
     }
-    return val;
+    return raw;
   },
   z.object({
     id: z.string().optional(),
@@ -63,8 +106,9 @@ export const OrderItemSchema = z.preprocess(
 export type OrderItemData = z.infer<typeof OrderItemSchema>;
 
 export const OrderSchema = z.preprocess(
-  (val: any) => {
-    if (val && typeof val === 'object') {
+  (raw: unknown) => {
+    if (raw && typeof raw === 'object') {
+      const val = raw as RawOrder;
       return {
         id: val.id || '',
         orderNumber: val.orderNumber || '#ORD-000',
@@ -80,7 +124,7 @@ export const OrderSchema = z.preprocess(
         orderItems: val.orderItems || val.items || [],
       };
     }
-    return val;
+    return raw;
   },
   z.object({
     id: z.string(),

@@ -38,7 +38,7 @@ describe('audio-chime utility', () => {
       }
     }
 
-    (window as any).AudioContext = MockAudioContext;
+    (window as unknown as { AudioContext: unknown }).AudioContext = MockAudioContext;
 
     expect(() => playOrderChime()).not.toThrow();
   });
@@ -50,7 +50,7 @@ describe('audio-chime utility', () => {
       }
     }
 
-    (window as any).AudioContext = FailingAudioContext;
+    (window as unknown as { AudioContext: unknown }).AudioContext = FailingAudioContext;
 
     expect(() => playOrderChime()).not.toThrow();
   });

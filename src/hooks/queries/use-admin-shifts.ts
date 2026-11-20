@@ -73,7 +73,7 @@ export function useCloseShiftMutation() {
       if (res.isLeft()) throw res.value;
       return res.value;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success('Shift Kasir berhasil ditutup. Z-Report siap dicetak!');
       queryClient.invalidateQueries({ queryKey: adminQueryKeys.shiftsCurrent() });
       queryClient.invalidateQueries({ queryKey: ['admin', 'shifts'] });

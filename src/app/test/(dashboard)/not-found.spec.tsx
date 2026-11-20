@@ -2,7 +2,6 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import DashboardNotFound from '@/app/(dashboard)/not-found';
-import * as navigationModule from 'next/navigation';
 
 let mockCurrentPath = '/admin/unknown-section';
 vi.mock('next/navigation', () => ({

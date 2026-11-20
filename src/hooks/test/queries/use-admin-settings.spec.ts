@@ -12,6 +12,7 @@ import * as settingsApi from '@/lib/api/admin-settings-api';
 import { right, left } from '@/lib/api/either';
 import { ApiError } from '@/lib/api/api-error';
 import { STORE_MODE } from '@/lib/constants/branch-settings';
+import type { BranchSetting } from '@/lib/validations/branch-settings.schema';
 import { toast } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
@@ -196,8 +197,8 @@ describe('use-admin-settings query hooks', () => {
         })
       ).rejects.toBeDefined();
 
-      const setting = queryClient.getQueryData<any>(ADMIN_SETTINGS_QUERY_KEYS.branch());
-      expect(setting.isStoreOpen).toBe(true);
+      const setting = queryClient.getQueryData<BranchSetting>(ADMIN_SETTINGS_QUERY_KEYS.branch());
+      expect(setting?.isStoreOpen).toBe(true);
     });
   });
 

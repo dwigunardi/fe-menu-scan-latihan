@@ -80,14 +80,17 @@ export async function performHandshake(): Promise<
     handshakeStore.setHandshakeSession(sessionKey, handshakeToken, expiresIn);
 
     return right({ sessionKey, handshakeToken });
-  } catch (err: any) {
+  } catch (caught: unknown) {
     handshakeStore.clearHandshake();
 
+    const err: { name?: string; message?: string } =
+      typeof caught === 'object' && caught !== null ? caught : {};
+
     const isNetworkError =
-      err?.name === 'TypeError' ||
-      err?.message?.toLowerCase().includes('failed to fetch') ||
-      err?.message?.toLowerCase().includes('network') ||
-      err?.message?.toLowerCase().includes('connection');
+      err.name === 'TypeError' ||
+      err.message?.toLowerCase().includes('failed to fetch') ||
+      err.message?.toLowerCase().includes('network') ||
+      err.message?.toLowerCase().includes('connection');
 
     if (isNetworkError) {
       return left(

@@ -1,14 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence, PanInfo } from 'motion/react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -20,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  MapPin,
   ShieldCheck,
   AlertTriangle,
   Clock,
@@ -49,7 +41,7 @@ interface ClockInModalProps {
   onClose: () => void;
 }
 
-export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+export function ClockInModal({ isOpen, onClose }: ClockInModalProps) {
   const { user } = useAuthStore();
   const isAdmin = user?.role === ROLE.ADMIN;
   const [isSupervisorSelectMode, setIsSupervisorSelectMode] = useState<boolean>(false);
@@ -70,11 +62,25 @@ export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null);
-  const [geofenceResult, setGeofenceResult] = useState<GeofenceCheckResult | null>(null);
 
   const branchLat = branchSetting?.latitude ?? -6.2297465;
   const branchLon = branchSetting?.longitude ?? 106.8557342;
   const branchRadius = branchSetting?.geofenceRadius ?? 100;
+
+  // Geofence is derived from the latest GPS fix and the latest branch settings.
+  const geofenceResult = useMemo<GeofenceCheckResult | null>(() => {
+    if (!userCoords) return null;
+    if (branchSetting && branchSetting.latitude && branchSetting.longitude) {
+      return checkGeofence(
+        userCoords.lat,
+        userCoords.lon,
+        branchSetting.latitude,
+        branchSetting.longitude,
+        branchSetting.geofenceRadius || 100
+      );
+    }
+    return checkGeofence(userCoords.lat, userCoords.lon, branchLat, branchLon, branchRadius);
+  }, [userCoords, branchSetting, branchLat, branchLon, branchRadius]);
 
   const requestGpsPosition = useCallback(() => {
     if (!navigator.geolocation) {
@@ -87,12 +93,7 @@ export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        setUserCoords({ lat, lon });
-
-        const result = checkGeofence(lat, lon, branchLat, branchLon, branchRadius);
-        setGeofenceResult(result);
+        setUserCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
         setIsLocating(false);
       },
       (err) => {
@@ -107,35 +108,29 @@ export function ClockInModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-  }, [branchLat, branchLon, branchRadius]);
+  }, []);
 
-  useEffect(() => {
+  // Reset the form whenever the modal opens (or the signed-in user changes while open).
+  // Done during render rather than in an effect, per React's "adjusting state when a prop changes".
+  const resetKey = isOpen ? `open:${user?.id ?? ''}` : 'closed';
+  const [prevResetKey, setPrevResetKey] = useState<string>('closed');
+  if (resetKey !== prevResetKey) {
+    setPrevResetKey(resetKey);
     if (isOpen) {
       setPinCode('');
       setNotes('');
       setIsSupervisorSelectMode(false);
-      if (user?.id) {
-        setSelectedStaffId(user.id);
-      } else {
-        setSelectedStaffId('');
-      }
+      setSelectedStaffId(user?.id || '');
+    }
+  }
+
+  // Request a fresh GPS fix whenever the modal is open (external system sync).
+  useEffect(() => {
+    if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- starts an external geolocation request; isLocating/gpsError mirror that request's status
       requestGpsPosition();
     }
-  }, [isOpen, user?.id, requestGpsPosition]);
-
-  // Recalculate geofence immediately when branchSetting arrives or updates
-  useEffect(() => {
-    if (userCoords && branchSetting && branchSetting.latitude && branchSetting.longitude) {
-      const result = checkGeofence(
-        userCoords.lat,
-        userCoords.lon,
-        branchSetting.latitude,
-        branchSetting.longitude,
-        branchSetting.geofenceRadius || 100
-      );
-      setGeofenceResult(result);
-    }
-  }, [userCoords, branchSetting]);
+  }, [isOpen, requestGpsPosition]);
 
   const handleKeypadPress = useCallback((num: string) => {
     setPinCode((prev) => (prev.length < 4 ? prev + num : prev));

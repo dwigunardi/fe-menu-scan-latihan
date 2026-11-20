@@ -10,7 +10,6 @@ import {
   BarChart3,
   ArrowRight,
   Sparkles,
-  Clock,
 } from 'lucide-react';
 import { RoleGuard } from '@/components/common/role-guard';
 import { ROLE } from '@/lib/constants/roles';

@@ -55,12 +55,12 @@ describe('Shifts Domain UI Components', () => {
     vi.spyOn(shiftHooks, 'useOpenShiftMutation').mockReturnValue({
       mutateAsync: mockOpenMutate,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof shiftHooks.useOpenShiftMutation>);
 
     vi.spyOn(shiftHooks, 'useCloseShiftMutation').mockReturnValue({
       mutateAsync: mockCloseMutate,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof shiftHooks.useCloseShiftMutation>);
   });
 
   describe('ShiftSummaryCard', () => {

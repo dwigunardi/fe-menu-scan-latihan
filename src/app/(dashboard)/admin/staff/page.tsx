@@ -30,10 +30,8 @@ import {
   UserPlus,
   Search,
   KeyRound,
-  ShieldCheck,
   Coffee,
   ChefHat,
-  ConciergeBell,
 } from 'lucide-react';
 
 export default function AdminStaffPage() {

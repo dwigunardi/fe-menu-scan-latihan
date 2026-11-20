@@ -3,7 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useForm, useFieldArray, Controller, Resolver } from 'react-hook-form';
+import {
+  useForm,
+  useFieldArray,
+  Controller,
+  Resolver,
+  type Control,
+  type UseFormRegister,
+} from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 function formatRupiahDisplay(val: number | string | null | undefined): string {
@@ -24,7 +31,6 @@ import {
   ImageOff,
   Sparkles,
   Layers,
-  DollarSign,
   UploadCloud,
   Link as LinkIcon,
   FileImage,
@@ -155,7 +161,7 @@ export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
 
       setValue('imageUrl', res.value.url, { shouldValidate: true, shouldDirty: true });
       toast.success('Foto berhasil diunggah & dikompresi ke WebP!');
-    } catch (err: any) {
+    } catch (err: unknown) {
       notifyApiError(err);
       setUploadedFileName(null);
     } finally {
@@ -670,7 +676,7 @@ export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
                       Belum ada variasi untuk menu ini.
                     </p>
                     <p className="text-[11px] text-stone-400 dark:text-zinc-500 mt-0.5">
-                      Klik "+ Buat Grup Ukuran Default" atau "Tambah Grup Variasi" di atas jika menu ini memiliki opsi.
+                      Klik &quot;+ Buat Grup Ukuran Default&quot; atau &quot;Tambah Grup Variasi&quot; di atas jika menu ini memiliki opsi.
                     </p>
                   </div>
                 ) : (
@@ -853,8 +859,8 @@ function VariantOptionList({
   register,
 }: {
   groupIndex: number;
-  control: any;
-  register: any;
+  control: Control<MenuFormInput>;
+  register: UseFormRegister<MenuFormInput>;
 }) {
   const { fields, append, remove } = useFieldArray({
     control,

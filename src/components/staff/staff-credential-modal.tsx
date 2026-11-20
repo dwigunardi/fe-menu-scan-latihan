@@ -43,8 +43,6 @@ export function StaffCredentialModal({
 
   if (!staff) return null;
 
-  const staffUsername = staff.email.split('@')[0] || staff.email;
-
   const credentialText = `Halo ${staff.name}, Selamat bergabung di tim Kumpul Cafe! ☕
 Akun operasional Anda telah aktif:
 - NIK / ID: ${staff.employeeId || '-'}

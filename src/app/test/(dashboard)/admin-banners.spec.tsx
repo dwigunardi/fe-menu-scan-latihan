@@ -56,17 +56,17 @@ describe('Admin Banners Pages', () => {
     vi.spyOn(bannerHooks, 'useAdminBannersQuery').mockReturnValue({
       data: mockBannersList,
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof bannerHooks.useAdminBannersQuery>);
 
     vi.spyOn(bannerHooks, 'useToggleBannerStatusMutation').mockReturnValue({
       mutateAsync: mockToggleMutate,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof bannerHooks.useToggleBannerStatusMutation>);
 
     vi.spyOn(bannerHooks, 'useDeleteBannerMutation').mockReturnValue({
       mutateAsync: mockDeleteMutate,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof bannerHooks.useDeleteBannerMutation>);
   });
 
   describe('AdminBannersPage (List & Management)', () => {
@@ -164,7 +164,7 @@ describe('Admin Banners Pages', () => {
       vi.spyOn(bannerHooks, 'useAdminBannersQuery').mockReturnValue({
         data: [],
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof bannerHooks.useAdminBannersQuery>);
 
       render(<AdminBannersPage />, {
         wrapper: createQueryWrapper(),

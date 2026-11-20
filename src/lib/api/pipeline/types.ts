@@ -16,6 +16,6 @@ export interface PipelineContext<T = unknown> {
 export type NextFunction = () => Promise<void>;
 
 export type Middleware = (
-  ctx: PipelineContext<any>,
+  ctx: PipelineContext<unknown>,
   next: NextFunction
 ) => Promise<void>;

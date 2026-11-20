@@ -1,20 +1,8 @@
 'use client';
 
-import { ComponentType, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  LayoutDashboard,
-  BarChart3,
-  UtensilsCrossed,
-  Grid2X2,
-  BookOpen,
-  Tags,
-  Image as ImageIcon,
-  Clock,
-  Users,
-  CalendarCheck,
-  Settings,
   Sparkles,
   PanelLeftClose,
   PanelLeftOpen,
@@ -24,13 +12,10 @@ import { useAuthStore } from '@/store/use-auth-store';
 import { useSidebarStore } from '@/store/use-sidebar-store';
 import { cn } from '@/lib/utils/cn';
 import { SimpleTooltip } from '@/components/ui/tooltip';
-import {
-  APP_NAVIGATION_ITEMS,
-  NavigationItem,
-  getNavItemsForRole,
-} from '@/lib/constants/navigation';
+import { APP_NAVIGATION_ITEMS, NavigationItem } from '@/lib/constants/navigation';
+import { useIsClient } from '@/hooks/use-is-client';
 
-export interface CommonNavItem extends NavigationItem {}
+export type CommonNavItem = NavigationItem;
 
 interface CommonSidebarProps {
   brandTitle?: string;
@@ -46,11 +31,7 @@ export function CommonSidebar({
   const pathname = usePathname();
   const { user } = useAuthStore();
   const { isCollapsed, toggleCollapse } = useSidebarStore();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useIsClient();
 
   const navList = customNavItems || APP_NAVIGATION_ITEMS;
   const filteredNavItems = navList.filter((item) => {

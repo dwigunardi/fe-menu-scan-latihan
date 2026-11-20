@@ -72,7 +72,7 @@ export function useDeleteCategoryMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, name }: { id: string; name?: string }) => {
+    mutationFn: async ({ id }: { id: string; name?: string }) => {
       const result = await deleteAdminCategory(id);
       if (result.isLeft()) {
         notifyApiError(result.value);

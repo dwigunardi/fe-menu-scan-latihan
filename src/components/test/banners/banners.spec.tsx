@@ -55,17 +55,17 @@ describe('Banner Components', () => {
     vi.spyOn(bannerHooks, 'useCreateBannerMutation').mockReturnValue({
       mutateAsync: mockCreateMutate,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof bannerHooks.useCreateBannerMutation>);
 
     vi.spyOn(bannerHooks, 'useUpdateBannerMutation').mockReturnValue({
       mutateAsync: mockUpdateMutate,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof bannerHooks.useUpdateBannerMutation>);
 
     vi.spyOn(bannerHooks, 'usePublicBannersQuery').mockReturnValue({
       data: mockBanners,
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof bannerHooks.usePublicBannersQuery>);
 
     vi.mocked(mediaApi.uploadMediaImage).mockResolvedValue(
       right({
@@ -417,7 +417,7 @@ describe('Banner Components', () => {
       vi.spyOn(bannerHooks, 'usePublicBannersQuery').mockReturnValue({
         data: undefined,
         isLoading: true,
-      } as any);
+      } as unknown as ReturnType<typeof bannerHooks.usePublicBannersQuery>);
 
       const { container } = render(<PromoCarousel />);
       expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
@@ -427,7 +427,7 @@ describe('Banner Components', () => {
       vi.spyOn(bannerHooks, 'usePublicBannersQuery').mockReturnValue({
         data: [],
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof bannerHooks.usePublicBannersQuery>);
 
       const { container } = render(<PromoCarousel initialBanners={[]} />);
       expect(container.firstChild).toBeNull();

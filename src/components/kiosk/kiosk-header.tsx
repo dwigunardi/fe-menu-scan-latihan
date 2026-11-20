@@ -6,7 +6,6 @@ import {
   Lock,
   Maximize2,
   Minimize2,
-  MapPin,
   ShieldCheck,
   AlertTriangle,
   Clock,

@@ -6,7 +6,6 @@ import {
   Sparkles,
   Plus,
   Search,
-  SlidersHorizontal,
   Image as ImageIcon,
   CheckCircle2,
   Clock,
@@ -24,7 +23,6 @@ import {
   useToggleBannerStatusMutation,
   useDeleteBannerMutation,
 } from '@/hooks/queries/use-admin-banners';
-import { BannerData } from '@/lib/validations/banner.schema';
 
 export default function AdminBannersPage() {
   const { data: banners = [], isLoading } = useAdminBannersQuery();

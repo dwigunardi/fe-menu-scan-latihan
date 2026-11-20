@@ -12,19 +12,7 @@ export function useUnsavedChangesGuard({
   isDirty,
   enabled = true,
 }: UseUnsavedChangesGuardOptions) {
-  let router: { push: (url: string) => void; back: () => void };
-  try {
-    router = useRouter();
-  } catch {
-    router = {
-      push: (href: string) => {
-        if (typeof window !== 'undefined') window.location.href = href;
-      },
-      back: () => {
-        if (typeof window !== 'undefined') window.history.back();
-      },
-    };
-  }
+  const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
   const pendingNavigationRef = useRef<(() => void) | null>(null);

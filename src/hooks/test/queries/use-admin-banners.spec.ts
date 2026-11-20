@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { left, right } from '@/lib/api/either';
 import { ApiError } from '@/lib/api/api-error';
 import { adminQueryKeys } from '@/lib/query-keys';
+import type { BannerData } from '@/lib/validations/banner.schema';
 
 vi.mock('sonner', () => ({
   toast: {
@@ -229,7 +230,7 @@ describe('use-admin-banners hooks', () => {
         })
       ).rejects.toBeDefined();
 
-      const cache = queryClient.getQueryData<any[]>(adminQueryKeys.banners());
+      const cache = queryClient.getQueryData<BannerData[]>(adminQueryKeys.banners());
       expect(cache?.[0].isActive).toBe(true);
     });
   });

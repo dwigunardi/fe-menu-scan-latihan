@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence, PanInfo } from 'motion/react';
@@ -21,32 +21,30 @@ import { cn } from '@/lib/utils/cn';
 import {
   getMobilePrimaryNavItems,
   getMobileMoreNavItems,
-  NavigationItem,
 } from '@/lib/constants/navigation';
 import { ClockInModal } from '@/components/attendance/clock-in-modal';
 import { ShiftHandoverModal } from '@/components/shifts/shift-handover-modal';
+import { useIsClient } from '@/hooks/use-is-client';
 import { toast } from 'sonner';
 
 export function CommonBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuthStore();
-  const { theme, resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
+  const mounted = useIsClient();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Quick Action Modals
   const [isClockInOpen, setIsClockInOpen] = useState(false);
   const [isHandoverOpen, setIsHandoverOpen] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Close drawer on route change
-  useEffect(() => {
+  // Close drawer on route change (adjust state during render instead of in an effect)
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
     setIsDrawerOpen(false);
-  }, [pathname]);
+  }
 
   const primaryItems = getMobilePrimaryNavItems(user?.role);
   const moreItems = getMobileMoreNavItems(user?.role);
@@ -65,7 +63,7 @@ export function CommonBottomNav() {
     router.replace('/login');
   };
 
-  const handleDragEnd = (_: any, info: PanInfo) => {
+  const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.y > 100 || info.velocity.y > 500) {
       setIsDrawerOpen(false);
     }

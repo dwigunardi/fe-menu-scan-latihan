@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { CashierKioskView } from '@/components/kiosk/cashier-kiosk-view';
 import { ROLE } from '@/lib/constants/roles';
-import { ATTENDANCE_TYPE } from '@/lib/constants/attendance';
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({

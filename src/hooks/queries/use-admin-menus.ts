@@ -15,6 +15,9 @@ import { adminQueryKeys } from '@/lib/query-keys';
 import { notifyApiError } from '@/lib/api/notify-error';
 import { toast } from 'sonner';
 
+/** Cached shapes under ['admin', 'menus', ...]: plain lists, paginated results, or other objects left untouched. */
+type MenusQueryCache = AdminMenuItem[] | ({ items?: AdminMenuItem[] } & Record<string, unknown>);
+
 export function useAdminMenusQuery(categoryId?: string) {
   return useQuery({
     queryKey: adminQueryKeys.menus(categoryId),
@@ -131,17 +134,17 @@ export function useToggleMenuAvailabilityMutation() {
         queryKey: ['admin', 'menus'],
       });
 
-      queryClient.setQueriesData<any>(
+      queryClient.setQueriesData<MenusQueryCache>(
         { queryKey: ['admin', 'menus'] },
-        (old: any) => {
+        (old) => {
           if (!old) return old;
           if (Array.isArray(old)) {
-            return old.map((m: any) => (m.id === id ? { ...m, isAvailable } : m));
+            return old.map((m) => (m.id === id ? { ...m, isAvailable } : m));
           }
           if (old.items && Array.isArray(old.items)) {
             return {
               ...old,
-              items: old.items.map((m: any) => (m.id === id ? { ...m, isAvailable } : m)),
+              items: old.items.map((m) => (m.id === id ? { ...m, isAvailable } : m)),
             };
           }
           return old;

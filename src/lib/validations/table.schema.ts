@@ -48,8 +48,14 @@ export const TableZoneFormSchema = z.object({
 export type TableZoneFormInput = z.infer<typeof TableZoneFormSchema>;
 
 export const TableSchema = z.preprocess(
-  (val: any) => {
-    if (val && typeof val === 'object') {
+  (raw: unknown) => {
+    if (raw && typeof raw === 'object') {
+      // Backend may send the table number as `number` instead of `tableNumber`
+      const val = raw as Record<string, unknown> & {
+        tableNumber?: string;
+        number?: string;
+        seatingType?: string;
+      };
       return {
         ...val,
         tableNumber: val.tableNumber || val.number || '01',
@@ -57,7 +63,7 @@ export const TableSchema = z.preprocess(
         tags: Array.isArray(val.tags) ? val.tags : [],
       };
     }
-    return val;
+    return raw;
   },
   z.object({
     id: z.string(),

@@ -1,6 +1,15 @@
 import { logger } from '@/lib/logger';
 import { Middleware } from './types';
 
+/** Optional fields read from a thrown error (ApiError, Error, or anything else). */
+interface LoggedError {
+  statusCode?: number;
+  message?: string;
+  errorTitle?: string;
+  code?: string;
+  details?: unknown;
+}
+
 /**
  * Sanitizes request payload by masking sensitive fields like passwords/tokens.
  */
@@ -15,7 +24,7 @@ function sanitizeRequestBody(body: unknown): unknown {
     }
   }
   if (typeof body === 'object') {
-    const clone: Record<string, any> = { ...(body as Record<string, any>) };
+    const clone: Record<string, unknown> = { ...(body as Record<string, unknown>) };
     if ('password' in clone) clone.password = '***';
     if ('refreshToken' in clone) clone.refreshToken = '***';
     return clone;
@@ -91,25 +100,29 @@ export const loggerMiddleware: Middleware = async (ctx, next) => {
       responseLogPayload,
       `✅ [API Response] ${method} ${url} (${ctx.rawResponse?.status} - ${duration}ms)`
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
     const duration = Math.round(performance.now() - (ctx.startTime || 0));
     ctx.durationMs = duration;
 
-    const status = error?.statusCode || ctx.rawResponse?.status || 500;
+    // Errors here are usually ApiError or fetch/TypeError, but may be anything thrown downstream
+    const err: LoggedError =
+      typeof error === 'object' && error !== null ? (error as LoggedError) : {};
+
+    const status = err.statusCode || ctx.rawResponse?.status || 500;
     const isNetworkError =
-      error?.message?.toLowerCase().includes('failed to fetch') ||
-      error?.message?.toLowerCase().includes('network') ||
+      err.message?.toLowerCase().includes('failed to fetch') ||
+      err.message?.toLowerCase().includes('network') ||
       !ctx.rawResponse;
 
     const logPayload: Record<string, unknown> = {
       method,
       url,
       status,
-      title: error?.errorTitle || 'API Error',
-      code: error?.code || 'UNKNOWN_ERROR',
-      error: error?.message || 'Unknown network/pipeline error',
+      title: err.errorTitle || 'API Error',
+      code: err.code || 'UNKNOWN_ERROR',
+      error: err.message || 'Unknown network/pipeline error',
       durationMs: duration,
-      details: error?.details || undefined,
+      details: err.details || undefined,
     };
 
     if (queryParams) logPayload.params = queryParams;

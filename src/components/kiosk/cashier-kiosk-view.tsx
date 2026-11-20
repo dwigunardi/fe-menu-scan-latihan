@@ -63,11 +63,25 @@ export function CashierKioskView() {
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [userCoords, setUserCoords] = useState<{ lat: number; lon: number } | null>(null);
-  const [geofenceResult, setGeofenceResult] = useState<GeofenceCheckResult | null>(null);
 
   const branchLat = branchSetting?.latitude ?? -6.2297465;
   const branchLon = branchSetting?.longitude ?? 106.8557342;
   const branchRadius = branchSetting?.geofenceRadius ?? 100;
+
+  // Geofence is derived from the latest GPS fix and the latest branch settings.
+  const geofenceResult = useMemo<GeofenceCheckResult | null>(() => {
+    if (!userCoords) return null;
+    if (branchSetting?.latitude && branchSetting?.longitude) {
+      return checkGeofence(
+        userCoords.lat,
+        userCoords.lon,
+        branchSetting.latitude,
+        branchSetting.longitude,
+        branchSetting.geofenceRadius || 100
+      );
+    }
+    return checkGeofence(userCoords.lat, userCoords.lon, branchLat, branchLon, branchRadius);
+  }, [userCoords, branchSetting, branchLat, branchLon, branchRadius]);
 
   // Request GPS
   const requestGpsPosition = useCallback(() => {
@@ -81,12 +95,7 @@ export function CashierKioskView() {
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const lat = pos.coords.latitude;
-        const lon = pos.coords.longitude;
-        setUserCoords({ lat, lon });
-
-        const result = checkGeofence(lat, lon, branchLat, branchLon, branchRadius);
-        setGeofenceResult(result);
+        setUserCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude });
         setIsLocating(false);
       },
       (err) => {
@@ -99,26 +108,13 @@ export function CashierKioskView() {
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-  }, [branchLat, branchLon, branchRadius]);
+  }, []);
 
-  // Request location on mount
+  // Request location on mount (external system sync)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- starts an external geolocation request; isLocating/gpsError mirror that request's status
     requestGpsPosition();
   }, [requestGpsPosition]);
-
-  // Re-calculate geofence when branch settings load
-  useEffect(() => {
-    if (userCoords && branchSetting?.latitude && branchSetting?.longitude) {
-      const res = checkGeofence(
-        userCoords.lat,
-        userCoords.lon,
-        branchSetting.latitude,
-        branchSetting.longitude,
-        branchSetting.geofenceRadius || 100
-      );
-      setGeofenceResult(res);
-    }
-  }, [userCoords, branchSetting]);
 
   // Map today's attendance for quick lookup
   const activeAttendanceMap = useMemo(() => {

@@ -9,9 +9,7 @@ import { useAuthStore } from '@/store/use-auth-store';
 import { useHandshakeStore } from '@/store/use-handshake-store';
 import { server } from '@/test/mocks/server';
 import { http, HttpResponse } from 'msw';
-import { ApiError } from '@/lib/api/api-error';
 import * as authApiModule from '@/lib/api/auth-api';
-import { right } from '@/lib/api/either';
 
 const API_BASE = 'http://localhost:5000/api/v1';
 
@@ -152,7 +150,7 @@ describe('Interceptor Middleware Pipeline', () => {
 
   describe('executePipeline end-to-end', () => {
     it('executes successful GET pipeline and returns Right(data)', async () => {
-      const result = await executePipeline<any>('/public/categories?limit=-1');
+      const result = await executePipeline<{ items: unknown[] }>('/public/categories?limit=-1');
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
         expect(result.value.items).toBeDefined();
@@ -196,7 +194,7 @@ describe('Interceptor Middleware Pipeline', () => {
         })
       );
 
-      const result = await executePipeline<any>('/admin/test-handshake-expired');
+      const result = await executePipeline<{ recovered: boolean }>('/admin/test-handshake-expired');
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
         expect(result.value.recovered).toBe(true);
@@ -229,7 +227,7 @@ describe('Interceptor Middleware Pipeline', () => {
         })
       );
 
-      const result = await executePipeline<any>('/admin/test-protected');
+      const result = await executePipeline<{ success: boolean }>('/admin/test-protected');
 
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
@@ -263,8 +261,8 @@ describe('Interceptor Middleware Pipeline', () => {
       );
 
       const [res1, res2] = await Promise.all([
-        executePipeline<any>('/admin/concurrent-1'),
-        executePipeline<any>('/admin/concurrent-2'),
+        executePipeline<unknown>('/admin/concurrent-1'),
+        executePipeline<unknown>('/admin/concurrent-2'),
       ]);
 
       expect(res1.isRight()).toBe(true);
@@ -309,7 +307,7 @@ describe('Interceptor Middleware Pipeline', () => {
         })
       );
 
-      const result = await executePipeline<any>('/admin/test-expired-all');
+      const result = await executePipeline<unknown>('/admin/test-expired-all');
 
       expect(result.isLeft()).toBe(true);
       expect(useAuthStore.getState().isReauthModalOpen).toBe(true);
@@ -327,7 +325,7 @@ describe('Interceptor Middleware Pipeline', () => {
         })
       );
 
-      const result = await executePipeline<any>('/admin/test-no-user');
+      const result = await executePipeline<unknown>('/admin/test-no-user');
 
       expect(result.isLeft()).toBe(true);
       expect(useAuthStore.getState().isAuthenticated).toBe(false);

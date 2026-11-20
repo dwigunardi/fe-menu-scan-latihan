@@ -1,27 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'motion/react';
 import { AlertTriangle, LayoutDashboard, BookOpen, ArrowLeft, Clock, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useIsClient } from '@/hooks/use-is-client';
 
 export default function DashboardNotFound() {
   const pathname = usePathname();
-  const [mountedTime, setMountedTime] = useState<string>('');
-
-  useEffect(() => {
-    setMountedTime(
-      new Date().toLocaleTimeString('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      })
-    );
-  }, []);
+  const isClient = useIsClient();
+  // Captured once per mount; only rendered on the client to avoid a server/client time mismatch.
+  const [incidentTime] = useState<string>(() =>
+    new Date().toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    })
+  );
+  const mountedTime = isClient ? incidentTime : '';
 
   return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center py-6 px-4">

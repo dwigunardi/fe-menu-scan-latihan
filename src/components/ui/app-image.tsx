@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Image, { ImageProps } from 'next/image';
-import { Utensils, Image as ImageIcon } from 'lucide-react';
+import { Image as ImageIcon } from 'lucide-react';
 import { formatImageUrl } from '@/lib/api/admin-menus-api';
 import { cn } from '@/lib/utils/cn';
 
@@ -29,11 +29,13 @@ export function AppImage({
 
   const formattedSrc = formatImageUrl(src);
 
-  // Reset error state when src changes
-  useEffect(() => {
+  // Reset error state when src changes (adjusting state during render instead of in an effect)
+  const [prevSrc, setPrevSrc] = useState(src);
+  if (src !== prevSrc) {
+    setPrevSrc(src);
     setHasError(false);
     setIsLoading(true);
-  }, [src]);
+  }
 
   // Check if src is empty or invalid
   if (!formattedSrc || hasError) {

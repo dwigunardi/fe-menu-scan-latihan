@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, TouchEvent } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Sparkles, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { BannerData } from '@/lib/validations/banner.schema';
 import { usePublicBannersQuery } from '@/hooks/queries/use-admin-banners';
 import { AppImage } from '@/components/ui/app-image';

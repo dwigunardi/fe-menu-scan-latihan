@@ -6,7 +6,6 @@ import {
   ArrowLeft,
   Edit,
   Trash2,
-  ImageOff,
   Star,
   Layers,
   Sliders,

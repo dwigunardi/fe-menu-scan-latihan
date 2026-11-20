@@ -118,12 +118,13 @@ describe('WebCrypto Zero-Trust ECDH & AES-GCM', () => {
     });
 
     it('uses Buffer fallback when atob and btoa are unavailable in environment', () => {
-      const originalAtob = (globalThis as any).atob;
-      const originalBtoa = (globalThis as any).btoa;
+      const g = globalThis as unknown as Record<string, unknown>;
+      const originalAtob = g.atob;
+      const originalBtoa = g.btoa;
 
       try {
-        (globalThis as any).atob = undefined;
-        (globalThis as any).btoa = undefined;
+        g.atob = undefined;
+        g.btoa = undefined;
 
         const u8 = new Uint8Array([65, 66, 67]); // "ABC"
         const b64 = bufToBase64(u8);
@@ -132,23 +133,24 @@ describe('WebCrypto Zero-Trust ECDH & AES-GCM', () => {
         const recovered = base64ToBuf(b64);
         expect(Array.from(recovered)).toEqual([65, 66, 67]);
       } finally {
-        (globalThis as any).atob = originalAtob;
-        (globalThis as any).btoa = originalBtoa;
+        g.atob = originalAtob;
+        g.btoa = originalBtoa;
       }
     });
 
     it('falls back to globalThis.crypto when window is unavailable', async () => {
-      const originalWindow = (globalThis as any).window;
+      const g = globalThis as unknown as Record<string, unknown>;
+      const originalWindow = g.window;
 
       try {
-        (globalThis as any).window = undefined;
+        g.window = undefined;
 
         const kp = await generateClientKeyPair();
         expect(kp.publicKey).toBeDefined();
         const hex = await exportPublicKeyHex(kp.publicKey);
         expect(hex.length).toBeGreaterThan(0);
       } finally {
-        (globalThis as any).window = originalWindow;
+        g.window = originalWindow;
       }
     });
   });

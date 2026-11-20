@@ -6,6 +6,7 @@ import {
   UpdateBranchSettingInput,
   DaySchedule,
   DAY_OF_WEEK,
+  type StoreMode,
 } from '@/lib/validations/branch-settings.schema';
 import {
   useUpdateBranchSettingMutation,
@@ -28,6 +29,7 @@ import {
   Sparkles,
   Save,
   Loader2,
+  type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { UnsavedChangesDialog } from '@/components/common';
@@ -36,7 +38,13 @@ interface StorePoliciesFormProps {
   initialData: BranchSetting;
 }
 
-const STORE_MODES = [
+const STORE_MODES: {
+  id: StoreMode;
+  name: string;
+  description: string;
+  icon: LucideIcon;
+  color: string;
+}[] = [
   {
     id: 'SHIFT_DRIVEN',
     name: 'Shift Driven (Rekomendasi POS)',
@@ -92,7 +100,7 @@ export function StorePoliciesForm({ initialData }: StorePoliciesFormProps) {
   const isPending = updateBranchMutation.isPending || updateStatusMutation.isPending;
 
   // 1. Store Mode
-  const [storeMode, setStoreMode] = useState<string>(initialData.storeMode || 'SHIFT_DRIVEN');
+  const [storeMode, setStoreMode] = useState<StoreMode>(initialData.storeMode || 'SHIFT_DRIVEN');
 
   // 2. Emergency Kill-Switch & Reason
   const [isStoreOpen, setIsStoreOpen] = useState<boolean>(initialData.isStoreOpen ?? true);
@@ -165,7 +173,7 @@ export function StorePoliciesForm({ initialData }: StorePoliciesFormProps) {
       geofenceRadius: initialData.geofenceRadius,
       openTime,
       closeTime,
-      storeMode: storeMode as any,
+      storeMode,
       lateGracePeriod: Number(lateGracePeriod) || 0,
       timezone: initialData.timezone || 'Asia/Jakarta',
       phone: initialData.phone,
@@ -178,7 +186,7 @@ export function StorePoliciesForm({ initialData }: StorePoliciesFormProps) {
     if (isStoreOpen !== initialData.isStoreOpen || storeMode === 'EMERGENCY_CLOSED') {
       await updateStatusMutation.mutateAsync({
         isStoreOpen,
-        storeMode: storeMode as any,
+        storeMode,
         emergencyReason: storeMode === 'EMERGENCY_CLOSED' || !isStoreOpen ? emergencyReason.trim() : null,
       });
     }

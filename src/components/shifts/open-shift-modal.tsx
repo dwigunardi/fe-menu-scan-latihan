@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Coins, Sparkles } from 'lucide-react';
+import { Coins } from 'lucide-react';
 import {
   Dialog,
   DialogContent,

@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode, useEffect } from 'react';
-import { usePwaStore } from '@/store/use-pwa-store';
+import { usePwaStore, type BeforeInstallPromptEvent } from '@/store/use-pwa-store';
 import { registerServiceWorker } from '@/lib/pwa/register-sw';
 
 export function PwaProvider({ children }: { children?: ReactNode }) {
@@ -18,7 +18,7 @@ export function PwaProvider({ children }: { children?: ReactNode }) {
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setInstallPrompt(e as any);
+      setInstallPrompt(e as BeforeInstallPromptEvent);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);

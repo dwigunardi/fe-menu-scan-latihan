@@ -6,6 +6,7 @@ import {
   deriveSessionKey,
   decryptPayload,
 } from '../../lib/crypto/ecdh';
+import type { BannerData } from '../../lib/validations/banner.schema';
 
 const API_BASE =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
@@ -156,15 +157,21 @@ async function getOrCreateServerKeyPair(): Promise<CryptoKeyPair> {
   return serverKeyPair;
 }
 
-async function extractRequestBody(request: Request): Promise<any> {
+type EncryptedEnvelope = { encrypted: true; iv: string; payload: string; tag: string };
+
+function isEncryptedEnvelope(value: unknown): value is EncryptedEnvelope {
+  return typeof value === 'object' && value !== null && Boolean((value as { encrypted?: unknown }).encrypted);
+}
+
+async function extractRequestBody<T = Record<string, unknown>>(request: Request): Promise<T> {
   try {
-    const raw = (await request.json()) as any;
-    if (raw && raw.encrypted && currentServerSessionKey) {
-      return await decryptPayload(raw, currentServerSessionKey);
+    const raw: unknown = await request.json();
+    if (isEncryptedEnvelope(raw) && currentServerSessionKey) {
+      return await decryptPayload<T>(raw, currentServerSessionKey);
     }
-    return raw;
+    return raw as T;
   } catch {
-    return {};
+    return {} as T;
   }
 }
 
@@ -190,7 +197,7 @@ export const handlers = [
     const serverPublicKeyHex = await exportPublicKeyHex(keyPair.publicKey);
 
     try {
-      const body = (await request.json()) as any;
+      const body = (await request.json()) as { clientPublicKey?: string; nonce?: string } | null;
       if (body?.clientPublicKey && body?.nonce) {
         const importedClientPub = await importServerPublicKey(body.clientPublicKey);
         currentServerSessionKey = await deriveSessionKey(
@@ -293,7 +300,7 @@ export const handlers = [
   }),
 
   http.post(`${API_BASE}/admin/categories`, async ({ request }) => {
-    const body = await extractRequestBody(request);
+    const body = await extractRequestBody<{ name?: string; sortOrder?: number }>(request);
     const newCat = {
       id: `cat-${Date.now()}`,
       name: body.name || 'Kategori Baru',
@@ -834,7 +841,7 @@ export const handlers = [
   }),
 
   http.post(`${API_BASE}/admin/banners`, async ({ request }) => {
-    const body = await extractRequestBody(request);
+    const body = await extractRequestBody<Partial<BannerData>>(request);
     const newBanner = {
       id: `ban-${Date.now()}`,
       title: body.title || 'Promo Baru',
@@ -861,7 +868,7 @@ export const handlers = [
 
   http.put(`${API_BASE}/admin/banners/:id`, async ({ params, request }) => {
     const { id } = params;
-    const body = await extractRequestBody(request);
+    const body = await extractRequestBody<Partial<BannerData>>(request);
     const index = mockBanners.findIndex((b) => b.id === id);
     if (index === -1) {
       return HttpResponse.json(
@@ -913,7 +920,7 @@ export const handlers = [
   }),
 ];
 
-export const mockBanners = [
+export const mockBanners: BannerData[] = [
   {
     id: 'ban-1',
     title: 'Diskon Kopi 50% Weekend',

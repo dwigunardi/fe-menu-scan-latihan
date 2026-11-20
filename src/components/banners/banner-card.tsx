@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Edit,
@@ -10,7 +9,6 @@ import {
   Eye,
   EyeOff,
   Layers,
-  Sparkles,
 } from 'lucide-react';
 import { BannerData } from '@/lib/validations/banner.schema';
 import { AppImage } from '@/components/ui/app-image';

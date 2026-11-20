@@ -4,10 +4,16 @@ import { TablesView } from '@/components/tables/tables-view';
 import { createQueryWrapper } from '@/test/test-utils';
 import { TableData, TableZoneData } from '@/lib/validations/table.schema';
 import * as tablesHooks from '@/hooks/queries/use-admin-tables';
+import type { ComponentProps } from 'react';
+import type { TableFormModal } from '@/components/tables/table-form-modal';
+import type { TableQrModal } from '@/components/tables/table-qr-modal';
+import type { TableResetModal } from '@/components/tables/table-reset-modal';
+import type { TableDeleteModal } from '@/components/tables/table-delete-modal';
+import type { ZoneManagerModal } from '@/components/tables/zone-manager-modal';
 
 // Mock child modals
 vi.mock('@/components/tables/table-form-modal', () => ({
-  TableFormModal: ({ isOpen, onClose, tableToEdit }: any) =>
+  TableFormModal: ({ isOpen, onClose, tableToEdit }: ComponentProps<typeof TableFormModal>) =>
     isOpen ? (
       <div data-testid="mock-form-modal">
         Form Modal {tableToEdit ? `Edit ${tableToEdit.tableNumber}` : 'Create'}
@@ -16,7 +22,7 @@ vi.mock('@/components/tables/table-form-modal', () => ({
     ) : null,
 }));
 vi.mock('@/components/tables/table-qr-modal', () => ({
-  TableQrModal: ({ isOpen, onClose, table }: any) =>
+  TableQrModal: ({ isOpen, onClose, table }: ComponentProps<typeof TableQrModal>) =>
     isOpen ? (
       <div data-testid="mock-qr-modal">
         QR Modal {table?.tableNumber}
@@ -25,27 +31,27 @@ vi.mock('@/components/tables/table-qr-modal', () => ({
     ) : null,
 }));
 vi.mock('@/components/tables/table-reset-modal', () => ({
-  TableResetModal: ({ isOpen, onClose, onConfirm, table }: any) =>
+  TableResetModal: ({ isOpen, onClose, onConfirm, table }: ComponentProps<typeof TableResetModal>) =>
     isOpen ? (
       <div data-testid="mock-reset-modal">
         Reset Modal {table?.tableNumber}
-        <button onClick={() => onConfirm(table)}>Confirm Reset</button>
+        <button onClick={() => onConfirm(table as TableData)}>Confirm Reset</button>
         <button onClick={onClose}>Close Reset</button>
       </div>
     ) : null,
 }));
 vi.mock('@/components/tables/table-delete-modal', () => ({
-  TableDeleteModal: ({ isOpen, onClose, onConfirm, table }: any) =>
+  TableDeleteModal: ({ isOpen, onClose, onConfirm, table }: ComponentProps<typeof TableDeleteModal>) =>
     isOpen ? (
       <div data-testid="mock-delete-modal">
         Delete Modal {table?.tableNumber}
-        <button onClick={() => onConfirm(table)}>Confirm Delete</button>
+        <button onClick={() => onConfirm(table as TableData)}>Confirm Delete</button>
         <button onClick={onClose}>Close Delete</button>
       </div>
     ) : null,
 }));
 vi.mock('@/components/tables/zone-manager-modal', () => ({
-  ZoneManagerModal: ({ isOpen, onClose }: any) =>
+  ZoneManagerModal: ({ isOpen, onClose }: ComponentProps<typeof ZoneManagerModal>) =>
     isOpen ? (
       <div data-testid="mock-zone-modal">
         Zone Modal
@@ -118,22 +124,22 @@ describe('TablesView Component', () => {
         occupiedCount: 1,
       },
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof tablesHooks.useAdminTablesPaginatedQuery>);
 
     vi.spyOn(tablesHooks, 'useAdminTableZonesQuery').mockReturnValue({
       data: mockZones,
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof tablesHooks.useAdminTableZonesQuery>);
 
     vi.spyOn(tablesHooks, 'useResetTableMutation').mockReturnValue({
       mutateAsync: mockResetMutate,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof tablesHooks.useResetTableMutation>);
 
     vi.spyOn(tablesHooks, 'useDeleteTableMutation').mockReturnValue({
       mutateAsync: mockDeleteMutate,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof tablesHooks.useDeleteTableMutation>);
   });
 
   it('renders floor plan header, stats, and table cards', () => {
@@ -236,7 +242,7 @@ describe('TablesView Component', () => {
         occupiedCount: 0,
       },
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof tablesHooks.useAdminTablesPaginatedQuery>);
 
     const wrapper = createQueryWrapper();
     render(<TablesView />, { wrapper });

@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Edit3, AlertTriangle, Loader2, AlertCircle } from 'lucide-react';
+import { Edit3, Loader2, AlertCircle } from 'lucide-react';
 import {
   AttendanceItem,
   AttendanceCorrectionInput,

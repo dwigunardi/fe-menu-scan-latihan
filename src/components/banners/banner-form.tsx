@@ -13,8 +13,6 @@ import {
   Layers,
   ExternalLink,
   Smartphone,
-  Eye,
-  CheckCircle2,
 } from 'lucide-react';
 import {
   BannerFormSchema,
@@ -33,7 +31,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils/cn';
-import { formatImageUrl } from '@/lib/api/admin-menus-api';
 
 interface BannerFormProps {
   mode: 'create' | 'edit';

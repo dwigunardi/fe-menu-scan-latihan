@@ -1,5 +1,5 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {
   OvertimeReviewModal,
@@ -8,12 +8,12 @@ import {
 } from '@/components/attendance';
 import { ShiftHandoverModal } from '@/components/shifts';
 import { ATTENDANCE_STATUS } from '@/lib/constants/attendance';
+import type { AttendanceItem } from '@/lib/validations/attendance.schema';
 import { ROLE } from '@/lib/constants/roles';
 import * as attendanceHooks from '@/hooks/queries/use-admin-attendance';
 import * as staffHooks from '@/hooks/queries/use-admin-staff';
 import { useAuthStore } from '@/store/use-auth-store';
 import { createQueryWrapper } from '@/test/test-utils';
-import { toast } from 'sonner';
 
 vi.mock('sonner', () => ({
   toast: {
@@ -23,7 +23,7 @@ vi.mock('sonner', () => ({
 }));
 
 describe('Overtime & Shift Handover Components', () => {
-  const mockAttendanceItem = {
+  const mockAttendanceItem: AttendanceItem = {
     id: 'att-overtime-1',
     branchId: 'branch-1',
     staffId: 'staff-1',
@@ -68,7 +68,7 @@ describe('Overtime & Shift Handover Components', () => {
     vi.spyOn(staffHooks, 'useAdminStaffPaginatedQuery').mockReturnValue({
       data: { items: mockStaffList, meta: { totalItems: 2, page: 1, limit: 10, totalPages: 1, hasNextPage: false, hasPrevPage: false } },
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof staffHooks.useAdminStaffPaginatedQuery>);
 
     useAuthStore.setState({
       user: {
@@ -76,7 +76,7 @@ describe('Overtime & Shift Handover Components', () => {
         name: 'Ahmad Barista',
         email: 'ahmad@kumpulcafe.com',
         role: ROLE.KITCHEN,
-      } as any,
+      },
     });
   });
 
@@ -86,13 +86,13 @@ describe('Overtime & Shift Handover Components', () => {
       vi.spyOn(attendanceHooks, 'useReviewOvertimeMutation').mockReturnValue({
         mutateAsync: mockMutate,
         isPending: false,
-      } as any);
+      } as unknown as ReturnType<typeof attendanceHooks.useReviewOvertimeMutation>);
 
       render(
         <OvertimeReviewModal
           isOpen={true}
           onClose={vi.fn()}
-          attendance={mockAttendanceItem as any}
+          attendance={mockAttendanceItem}
         />,
         { wrapper: createQueryWrapper() }
       );
@@ -111,13 +111,13 @@ describe('Overtime & Shift Handover Components', () => {
       vi.spyOn(attendanceHooks, 'useReviewOvertimeMutation').mockReturnValue({
         mutateAsync: mockMutate,
         isPending: false,
-      } as any);
+      } as unknown as ReturnType<typeof attendanceHooks.useReviewOvertimeMutation>);
 
       render(
         <OvertimeReviewModal
           isOpen={true}
           onClose={onClose}
-          attendance={mockAttendanceItem as any}
+          attendance={mockAttendanceItem}
         />,
         { wrapper: createQueryWrapper() }
       );
@@ -148,13 +148,13 @@ describe('Overtime & Shift Handover Components', () => {
       vi.spyOn(attendanceHooks, 'useCorrectAttendanceMutation').mockReturnValue({
         mutateAsync: mockMutate,
         isPending: false,
-      } as any);
+      } as unknown as ReturnType<typeof attendanceHooks.useCorrectAttendanceMutation>);
 
       render(
         <AttendanceCorrectionModal
           isOpen={true}
           onClose={onClose}
-          attendance={mockAttendanceItem as any}
+          attendance={mockAttendanceItem}
         />,
         { wrapper: createQueryWrapper() }
       );
@@ -222,7 +222,7 @@ describe('Overtime & Shift Handover Components', () => {
     it('renders Auto-Cutoff, Overtime, and Acting Role badges', () => {
       render(
         <AttendanceTable
-          items={[mockAttendanceItem as any]}
+          items={[mockAttendanceItem]}
           totalItems={1}
           currentPage={1}
           totalPages={1}

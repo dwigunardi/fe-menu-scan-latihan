@@ -89,12 +89,12 @@ describe('Order Components', () => {
       isLoading: false,
       isRefetching: false,
       refetch: mockRefetch,
-    } as any);
+    } as unknown as ReturnType<typeof orderHooks.useAdminOrdersPaginatedQuery>);
 
     vi.spyOn(orderHooks, 'useUpdateOrderStatusMutation').mockReturnValue({
       mutate: mockUpdateStatus,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof orderHooks.useUpdateOrderStatusMutation>);
   });
 
   describe('OrderCard', () => {

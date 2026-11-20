@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CheckCircle2, Sparkles, Clock, LogIn, LogOut, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Clock, LogIn, LogOut, ArrowRight } from 'lucide-react';
 import { StaffItem } from '@/lib/validations/staff.schema';
 import { ATTENDANCE_TYPE, AttendanceType } from '@/lib/constants/attendance';
 import { playSuccessChime } from '@/lib/utils/audio-feedback';
@@ -27,24 +27,33 @@ export function KioskSuccessOverlay({
   const [recordedTime, setRecordedTime] = useState<string>('');
   const [progressPercent, setProgressPercent] = useState<number>(100);
 
-  useEffect(() => {
+  // Stamp the time and refill the progress bar each time the overlay opens
+  // (adjusting state during render instead of in an effect).
+  const [wasOpen, setWasOpen] = useState<boolean>(false);
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen);
     if (isOpen) {
-      playSuccessChime();
-      const now = new Date();
       setRecordedTime(
-        now.toLocaleTimeString('id-ID', {
+        new Date().toLocaleTimeString('id-ID', {
           hour: '2-digit',
           minute: '2-digit',
           second: '2-digit',
         }) + ' WIB'
       );
       setProgressPercent(100);
+    }
+  }
 
-      // Countdown ticker for progress bar
+  useEffect(() => {
+    if (isOpen) {
+      playSuccessChime();
+
+      // Countdown ticker for progress bar, measured from when this countdown started
       const interval = 50;
-      const step = (interval / autoCloseDurationMs) * 100;
+      const startedAt = Date.now();
       const timer = setInterval(() => {
-        setProgressPercent((prev) => Math.max(0, prev - step));
+        const elapsed = Date.now() - startedAt;
+        setProgressPercent(Math.max(0, 100 - (elapsed / autoCloseDurationMs) * 100));
       }, interval);
 
       // Auto dismiss

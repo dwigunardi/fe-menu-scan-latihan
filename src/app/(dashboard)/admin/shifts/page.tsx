@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Clock, Plus, RefreshCw, Receipt } from 'lucide-react';
+import { Clock, Plus, RefreshCw } from 'lucide-react';
 import { RoleGuard } from '@/components/common/role-guard';
 import { ROLE_GROUPS } from '@/lib/constants/roles';
 import { Button } from '@/components/ui/button';

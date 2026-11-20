@@ -39,7 +39,7 @@ describe('AdminAttendancePage Component', () => {
         geofenceRadius: 100,
       },
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof settingsHooks.useAdminBranchSettingQuery>);
 
     vi.spyOn(staffHooks, 'useAdminStaffPaginatedQuery').mockReturnValue({
       data: {
@@ -50,7 +50,7 @@ describe('AdminAttendancePage Component', () => {
         total: 2,
       },
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof staffHooks.useAdminStaffPaginatedQuery>);
 
     vi.spyOn(attendanceHooks, 'useAdminAttendancePaginatedQuery').mockReturnValue({
       data: {
@@ -83,7 +83,7 @@ describe('AdminAttendancePage Component', () => {
         },
       },
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof attendanceHooks.useAdminAttendancePaginatedQuery>);
 
     vi.spyOn(attendanceHooks, 'useAdminAttendanceSummaryQuery').mockReturnValue({
       data: {
@@ -97,7 +97,7 @@ describe('AdminAttendancePage Component', () => {
         attendanceRatePercent: 80,
       },
       isLoading: false,
-    } as any);
+    } as unknown as ReturnType<typeof attendanceHooks.useAdminAttendanceSummaryQuery>);
   });
 
   it('renders attendance page header, KPI cards, filter bar, and log table', () => {

@@ -5,6 +5,12 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { BranchSetting, STORE_MODE, DAY_OF_WEEK } from '@/lib/validations/branch-settings.schema';
 import * as settingsHooks from '@/hooks/queries/use-admin-settings';
 
+// The form's unsaved-changes guard calls useRouter(), which needs a mounted app router
+vi.mock('next/navigation', () => {
+  const router = { push: vi.fn(), replace: vi.fn(), back: vi.fn() };
+  return { useRouter: () => router };
+});
+
 describe('StorePoliciesForm Component', () => {
   const mockInitialData: BranchSetting = {
     id: 'test-branch-id',
@@ -40,11 +46,11 @@ describe('StorePoliciesForm Component', () => {
     vi.spyOn(settingsHooks, 'useUpdateBranchSettingMutation').mockReturnValue({
       mutateAsync: mockUpdateBranch,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof settingsHooks.useUpdateBranchSettingMutation>);
     vi.spyOn(settingsHooks, 'useUpdateStoreStatusMutation').mockReturnValue({
       mutateAsync: mockUpdateStatus,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof settingsHooks.useUpdateStoreStatusMutation>);
   });
 
   it('renders all 4 sections with initial values', () => {

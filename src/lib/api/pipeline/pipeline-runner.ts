@@ -192,10 +192,14 @@ export async function executePipeline<T = unknown>(
     await runner();
 
     return right(context.responseData as T);
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (err instanceof ApiError) {
       return left(err);
     }
-    return left(ApiError.networkError(err?.message || 'Gagal terhubung ke server.'));
+    const message =
+      typeof err === 'object' && err !== null && 'message' in err && typeof err.message === 'string'
+        ? err.message
+        : undefined;
+    return left(ApiError.networkError(message || 'Gagal terhubung ke server.'));
   }
 }

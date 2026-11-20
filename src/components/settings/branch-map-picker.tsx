@@ -1,16 +1,8 @@
 ﻿'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import {
-  MapPin,
-  Navigation,
-  Link as LinkIcon,
-  Search,
-  CheckCircle2,
-  AlertCircle,
-  Loader2,
-  Sparkles,
-} from 'lucide-react';
+import { MapPin, Navigation, Search, Loader2, Sparkles } from 'lucide-react';
+import type { Map as LeafletMap, Marker, Circle, LeafletMouseEvent } from 'leaflet';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { parseGoogleMapsCoordinates } from '@/lib/utils/gmaps-parser';
@@ -34,9 +26,9 @@ export function BranchMapPicker({
   disabled = false,
 }: BranchMapPickerProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
-  const circleRef = useRef<any>(null);
+  const mapInstanceRef = useRef<LeafletMap | null>(null);
+  const markerRef = useRef<Marker | null>(null);
+  const circleRef = useRef<Circle | null>(null);
 
   const [searchInput, setSearchInput] = useState('');
   const [isLocating, setIsLocating] = useState(false);
@@ -72,7 +64,7 @@ export function BranchMapPicker({
       if (!isSubscribed || !mapContainerRef.current) return;
 
       // Fix default Leaflet marker icon paths for Next.js / Webpack
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      delete (L.Icon.Default.prototype as L.Icon.Default & { _getIconUrl?: unknown })._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
         iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
@@ -152,7 +144,7 @@ export function BranchMapPicker({
       }).addTo(map);
 
       // Click on map to move marker
-      map.on('click', (e: any) => {
+      map.on('click', (e: LeafletMouseEvent) => {
         if (disabled) return;
         const { lat: rawLat, lng: rawLng } = e.latlng;
         const lat = Math.round(rawLat * 10000000) / 10000000;

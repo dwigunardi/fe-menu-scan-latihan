@@ -2,11 +2,7 @@
 
 import { useState } from 'react';
 import {
-  Store,
   AlertTriangle,
-  Zap,
-  CheckCircle2,
-  Clock,
   Sparkles,
 } from 'lucide-react';
 import { useAdminBranchSettingQuery } from '@/hooks/queries/use-admin-settings';

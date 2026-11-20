@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRef } from 'react';
-import { Printer, X, Receipt, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Printer, X, Receipt } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { formatRupiah } from '@/lib/utils/format-currency';
-import { formatDateIndo, formatDateTimeIndo } from '@/lib/utils/date-helpers';
+import { formatDateTimeIndo } from '@/lib/utils/date-helpers';
 import { ShiftItem } from '@/lib/validations/shift.schema';
 
 export interface ZReportReceiptModalProps {

@@ -7,7 +7,7 @@ import {
   LeaveRequestModal,
   AttendanceView,
 } from '@/components/attendance';
-import { ATTENDANCE_STATUS, LEAVE_TYPE } from '@/lib/constants/attendance';
+import { ATTENDANCE_STATUS } from '@/lib/constants/attendance';
 import { ROLE } from '@/lib/constants/roles';
 import * as staffHooks from '@/hooks/queries/use-admin-staff';
 import * as attendanceHooks from '@/hooks/queries/use-admin-attendance';
@@ -253,12 +253,12 @@ describe('Attendance UI Components', () => {
       vi.spyOn(attendanceHooks, 'useCreateLeaveRequestMutation').mockReturnValue({
         mutateAsync: mockCreateLeave,
         isPending: false,
-      } as any);
+      } as unknown as ReturnType<typeof attendanceHooks.useCreateLeaveRequestMutation>);
 
       vi.spyOn(staffHooks, 'useAdminStaffPaginatedQuery').mockReturnValue({
         data: { items: [{ id: 's-1', name: 'Budi Barista', role: ROLE.KITCHEN, isActive: true }] },
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof staffHooks.useAdminStaffPaginatedQuery>);
 
       const onClose = vi.fn();
       render(<LeaveRequestModal isOpen={true} onClose={onClose} />, { wrapper: createQueryWrapper() });
@@ -291,17 +291,17 @@ describe('Attendance UI Components', () => {
       vi.spyOn(settingsHooks, 'useAdminBranchSettingQuery').mockReturnValue({
         data: { id: 'b-1', name: 'Kumpul Cafe', latitude: -6.22, longitude: 106.85, geofenceRadius: 100 },
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof settingsHooks.useAdminBranchSettingQuery>);
 
       vi.spyOn(settingsHooks, 'usePublicBranchLocationQuery').mockReturnValue({
         data: { id: 'b-1', name: 'Kumpul Cafe', latitude: -6.22, longitude: 106.85, geofenceRadius: 100 },
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof settingsHooks.usePublicBranchLocationQuery>);
 
       vi.spyOn(staffHooks, 'useAdminStaffPaginatedQuery').mockReturnValue({
         data: { items: [{ id: 's-1', name: 'Budi Barista', role: ROLE.KITCHEN, isActive: true }] },
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof staffHooks.useAdminStaffPaginatedQuery>);
 
       vi.spyOn(attendanceHooks, 'useAdminAttendancePaginatedQuery').mockReturnValue({
         data: {
@@ -309,7 +309,7 @@ describe('Attendance UI Components', () => {
           meta: { page: 1, limit: 10, totalItems: 2, totalPages: 1, hasNextPage: false, hasPrevPage: false },
         },
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof attendanceHooks.useAdminAttendancePaginatedQuery>);
 
       vi.spyOn(attendanceHooks, 'useAdminAttendanceSummaryQuery').mockReturnValue({
         data: {
@@ -323,7 +323,7 @@ describe('Attendance UI Components', () => {
           attendanceRatePercent: 80,
         },
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof attendanceHooks.useAdminAttendanceSummaryQuery>);
     });
 
     it('renders master view with header, cards, filters, and table', () => {
@@ -353,7 +353,7 @@ describe('Attendance UI Components', () => {
           meta: { page: 1, limit: 10, totalItems: 0, totalPages: 1, hasNextPage: false, hasPrevPage: false },
         },
         isLoading: false,
-      } as any);
+      } as unknown as ReturnType<typeof attendanceHooks.useAdminAttendancePaginatedQuery>);
 
       render(<AttendanceView />, { wrapper: createQueryWrapper() });
 

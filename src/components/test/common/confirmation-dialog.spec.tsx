@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ConfirmationDialog } from '@/components/common/confirmation-dialog';
-import { Trash2, AlertTriangle, Info, AlertCircle, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 describe('ConfirmationDialog Component', () => {
   it('does not render content when isOpen is false', () => {

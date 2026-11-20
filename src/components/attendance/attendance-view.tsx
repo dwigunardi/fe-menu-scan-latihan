@@ -6,7 +6,6 @@ import {
   ShieldCheck,
   Plus,
   CalendarOff,
-  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AttendanceSummaryCards } from './attendance-summary-cards';

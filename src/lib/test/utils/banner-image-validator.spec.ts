@@ -35,7 +35,7 @@ describe('Banner Image Validator Utility', () => {
           setTimeout(() => this.onload(), 0);
         }
       }
-      global.Image = MockImage as any;
+      global.Image = MockImage as unknown as typeof Image;
 
       const result = await validateBannerImageDimensions('https://example.com/banner.jpg');
       expect(result.isValid).toBe(true);
@@ -55,7 +55,7 @@ describe('Banner Image Validator Utility', () => {
           setTimeout(() => this.onload(), 0);
         }
       }
-      global.Image = MockSquareImage as any;
+      global.Image = MockSquareImage as unknown as typeof Image;
 
       const result = await validateBannerImageDimensions('https://example.com/square.jpg');
       expect(result.isValid).toBe(false);
@@ -75,7 +75,7 @@ describe('Banner Image Validator Utility', () => {
           setTimeout(() => this.onload(), 0);
         }
       }
-      global.Image = MockPortraitImage as any;
+      global.Image = MockPortraitImage as unknown as typeof Image;
 
       const result = await validateBannerImageDimensions('https://example.com/portrait.jpg');
       expect(result.isValid).toBe(false);
@@ -95,7 +95,7 @@ describe('Banner Image Validator Utility', () => {
           setTimeout(() => this.onload(), 0);
         }
       }
-      global.Image = MockSmallImage as any;
+      global.Image = MockSmallImage as unknown as typeof Image;
 
       const result = await validateBannerImageDimensions('https://example.com/small.jpg');
       expect(result.isValid).toBe(false);
@@ -113,7 +113,7 @@ describe('Banner Image Validator Utility', () => {
           setTimeout(() => this.onerror(), 0);
         }
       }
-      global.Image = MockBrokenImage as any;
+      global.Image = MockBrokenImage as unknown as typeof Image;
 
       const result = await validateBannerImageDimensions('https://example.com/broken.jpg');
       expect(result.isValid).toBe(false);

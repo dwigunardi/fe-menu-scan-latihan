@@ -7,9 +7,6 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
-  FileText,
-  User,
-  ShieldCheck,
   Calendar,
   Edit3,
 } from 'lucide-react';

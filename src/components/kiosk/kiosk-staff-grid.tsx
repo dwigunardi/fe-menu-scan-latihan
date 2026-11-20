@@ -3,11 +3,9 @@
 import { useState, useMemo } from 'react';
 import {
   Search,
-  UserCheck,
   LogOut as LogOutIcon,
   LogIn as LogInIcon,
   BadgeCheck,
-  Clock,
   Briefcase,
   IdCard,
 } from 'lucide-react';
@@ -16,7 +14,6 @@ import { AttendanceItem } from '@/lib/validations/attendance.schema';
 import { ATTENDANCE_TYPE, AttendanceType } from '@/lib/constants/attendance';
 import { ROLE } from '@/lib/constants/roles';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { getInitials } from '@/lib/utils/get-initials';
 import { cn } from '@/lib/utils/cn';
 

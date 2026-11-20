@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Clock, Eye, Receipt, SlidersHorizontal, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Eye, Receipt, CheckCircle2, AlertTriangle } from 'lucide-react';
 import {
   Table,
   TableBody,

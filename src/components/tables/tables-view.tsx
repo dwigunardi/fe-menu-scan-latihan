@@ -63,7 +63,7 @@ export function TablesView({
   allowManagement = true,
 }: TablesViewProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
-  const [selectedZoneFilter, setSelectedZoneFilter] = useState<string>('ALL');
+  const [selectedZoneFilter] = useState<string>('ALL');
   const [searchInput, setSearchInput] = useState<string>('');
   const [debouncedSearch, setDebouncedSearch] = useState<string>('');
 
@@ -101,7 +101,7 @@ export function TablesView({
   const resetMutation = useResetTableMutation();
   const deleteMutation = useDeleteTableMutation();
 
-  const tables = paginatedData?.items || [];
+  const tables = useMemo(() => paginatedData?.items || [], [paginatedData?.items]);
 
   // Summary Metrics
   const metrics = useMemo(() => {

@@ -31,8 +31,6 @@ import {
   Check,
   Loader2,
   AlertCircle,
-  ShieldCheck,
-  Sparkles,
 } from 'lucide-react';
 import { useAdminStaffPaginatedQuery } from '@/hooks/queries/use-admin-staff';
 import { useAuthStore } from '@/store/use-auth-store';
@@ -105,7 +103,7 @@ export function ShiftHandoverModal({
     }
   };
 
-  const onSubmit = async (data: ShiftHandoverInput) => {
+  const onSubmit = async () => {
     if (!incomingStaff) {
       toast.error('Data staf pengganti tidak ditemukan');
       return;

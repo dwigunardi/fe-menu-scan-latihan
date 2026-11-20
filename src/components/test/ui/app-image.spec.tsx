@@ -43,7 +43,7 @@ describe('AppImage Component (Next.js Image Wrapper)', () => {
   });
 
   it('renders with fill layout without dimension errors', () => {
-    const { container } = render(
+    render(
       <div style={{ position: 'relative', width: 200, height: 200 }}>
         <AppImage src="/banners/banner-qris.jpg" alt="QRIS Banner" fill />
       </div>

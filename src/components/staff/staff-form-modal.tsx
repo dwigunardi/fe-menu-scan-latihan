@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   StaffItem,
@@ -28,7 +28,6 @@ import {
   Mail,
   Phone,
   Lock,
-  KeyRound,
   Clock,
   ShieldCheck,
   Coffee,
@@ -91,7 +90,10 @@ export function StaffFormModal({
     watch,
     formState: { errors },
   } = useForm<CreateStaffInput>({
-    resolver: zodResolver(isEditMode ? UpdateStaffInputSchema : CreateStaffInputSchema) as any,
+    // Edit mode validates with the looser update schema; both produce CreateStaffInput-compatible values
+    resolver: zodResolver(
+      isEditMode ? UpdateStaffInputSchema : CreateStaffInputSchema
+    ) as unknown as Resolver<CreateStaffInput>,
     defaultValues: {
       employeeId: '',
       name: '',
@@ -105,7 +107,6 @@ export function StaffFormModal({
   });
 
   const selectedRole = watch('role');
-  const currentPassword = watch('password');
 
   const handleRegeneratePassword = () => {
     const newPass = generateSecureTemporaryPassword();

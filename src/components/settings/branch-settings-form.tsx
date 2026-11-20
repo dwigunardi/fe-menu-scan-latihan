@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   MapPin,
@@ -47,7 +47,7 @@ export function BranchSettingsForm({ initialData }: BranchSettingsFormProps) {
     reset,
     formState: { errors, isDirty },
   } = useForm<UpdateBranchSettingInput>({
-    resolver: zodResolver(UpdateBranchSettingInputSchema) as any,
+    resolver: zodResolver(UpdateBranchSettingInputSchema) as Resolver<UpdateBranchSettingInput>,
     defaultValues: {
       name: initialData.name,
       address: initialData.address,

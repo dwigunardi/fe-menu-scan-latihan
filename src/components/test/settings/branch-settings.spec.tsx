@@ -4,10 +4,23 @@ import { BranchSettingsForm } from '@/components/settings/branch-settings-form';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { BranchSetting, STORE_MODE, DAY_OF_WEEK } from '@/lib/validations/branch-settings.schema';
 import * as settingsHooks from '@/hooks/queries/use-admin-settings';
+import type { ComponentProps } from 'react';
+import type { BranchMapPicker } from '@/components/settings/branch-map-picker';
+
+// The form's unsaved-changes guard calls useRouter(), which needs a mounted app router
+vi.mock('next/navigation', () => {
+  const router = { push: vi.fn(), replace: vi.fn(), back: vi.fn() };
+  return { useRouter: () => router };
+});
 
 // Mock Leaflet dynamic component
 vi.mock('@/components/settings/branch-map-picker', () => ({
-  BranchMapPicker: ({ latitude, longitude, radiusMeters, onChangeCoordinates }: any) => (
+  BranchMapPicker: ({
+    latitude,
+    longitude,
+    radiusMeters,
+    onChangeCoordinates,
+  }: ComponentProps<typeof BranchMapPicker>) => (
     <div data-testid="mock-map-picker">
       <span>Lat: {latitude}</span>
       <span>Lon: {longitude}</span>
@@ -61,7 +74,7 @@ describe('BranchSettingsForm Component', () => {
     vi.spyOn(settingsHooks, 'useUpdateBranchSettingMutation').mockReturnValue({
       mutateAsync: mockMutateAsync,
       isPending: false,
-    } as any);
+    } as unknown as ReturnType<typeof settingsHooks.useUpdateBranchSettingMutation>);
   });
 
   it('renders initial form values properly', () => {

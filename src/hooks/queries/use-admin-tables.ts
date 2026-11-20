@@ -12,7 +12,7 @@ import {
   deleteAdminTableZone,
   QueryTableParams,
 } from '@/lib/api/admin-tables-api';
-import { TableFormInput, TableStatus, TableData, TableZoneFormInput } from '@/lib/validations/table.schema';
+import { TableFormInput, TableStatus, TableZoneFormInput } from '@/lib/validations/table.schema';
 import { adminQueryKeys } from '@/lib/query-keys';
 import { notifyApiError } from '@/lib/api/notify-error';
 import { toast } from 'sonner';
@@ -95,7 +95,7 @@ export function useResetTableMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, tableNumber }: { id: string; tableNumber?: string }) => {
+    mutationFn: async ({ id }: { id: string; tableNumber?: string }) => {
       const result = await resetAdminTable(id);
       if (result.isLeft()) {
         notifyApiError(result.value);
@@ -114,7 +114,7 @@ export function useDeleteTableMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, tableNumber }: { id: string; tableNumber?: string }) => {
+    mutationFn: async ({ id }: { id: string; tableNumber?: string }) => {
       const result = await deleteAdminTable(id);
       if (result.isLeft()) {
         notifyApiError(result.value);
@@ -189,7 +189,7 @@ export function useDeleteTableZoneMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, name }: { id: string; name?: string }) => {
+    mutationFn: async ({ id }: { id: string; name?: string }) => {
       const result = await deleteAdminTableZone(id);
       if (result.isLeft()) {
         notifyApiError(result.value);

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Delete, RotateCcw, X, Loader2, Lock, ShieldAlert } from 'lucide-react';
+import { Delete, RotateCcw, X, Loader2, ShieldAlert } from 'lucide-react';
 import { StaffItem } from '@/lib/validations/staff.schema';
 import { ATTENDANCE_TYPE, AttendanceType } from '@/lib/constants/attendance';
 import { getInitials } from '@/lib/utils/get-initials';
@@ -38,18 +38,29 @@ export function KioskPinModal({
   const [pinCode, setPinCode] = useState<string>('');
   const [isShaking, setIsShaking] = useState<boolean>(false);
 
-  // Reset PIN whenever modal opens or staff changes
-  useEffect(() => {
+  // Reset PIN whenever modal opens or staff changes (adjusting state during render instead of in an effect)
+  const resetKey = isOpen ? `open:${staff?.id ?? ''}` : 'closed';
+  const [prevResetKey, setPrevResetKey] = useState<string>(resetKey);
+  if (resetKey !== prevResetKey) {
+    setPrevResetKey(resetKey);
     if (isOpen) {
       setPinCode('');
       setIsShaking(false);
     }
-  }, [isOpen, staff?.id]);
+  }
 
-  // Trigger shake animation when errorMessage changes and is present
-  useEffect(() => {
+  // Start the shake animation as soon as a new error message arrives
+  const [prevErrorMessage, setPrevErrorMessage] = useState<string | null>(null);
+  if (errorMessage !== prevErrorMessage) {
+    setPrevErrorMessage(errorMessage);
     if (errorMessage) {
       setIsShaking(true);
+    }
+  }
+
+  // Error feedback side effects: beep, then stop shaking and clear the PIN
+  useEffect(() => {
+    if (errorMessage) {
       playErrorBeep();
       const timer = setTimeout(() => {
         setIsShaking(false);
