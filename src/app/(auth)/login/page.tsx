@@ -18,7 +18,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { loginStaff } from '@/lib/api/auth-api';
-import { useAuthStore, UserRole, ROLE } from '@/store/use-auth-store';
+import { useAuthStore } from '@/store/use-auth-store';
+import { getRoleHomePath } from '@/lib/constants/roles';
 import { notifyApiError } from '@/lib/api/notify-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,31 +55,9 @@ export default function StaffLoginPage() {
   // Auto redirect if already authenticated
   useEffect(() => {
     if (_hasHydrated && isAuthenticated && user) {
-      handleRoleRedirect(user.role);
+      router.replace(getRoleHomePath(user.role));
     }
-  }, [_hasHydrated, isAuthenticated, user]);
-
-  // Smart Role-Based Redirect
-  const handleRoleRedirect = (role: UserRole) => {
-    switch (role) {
-      case ROLE.KITCHEN:
-      case ROLE.DAPUR:
-        router.replace('/kitchen/orders');
-        break;
-      case ROLE.CASHIER:
-      case ROLE.KASIR:
-        router.replace('/cashier/tables');
-        break;
-      case ROLE.WAITER:
-      case ROLE.PELAYAN:
-        router.replace('/waiter/tables');
-        break;
-      case ROLE.ADMIN:
-      default:
-        router.replace('/admin/dashboard');
-        break;
-    }
-  };
+  }, [_hasHydrated, isAuthenticated, user, router]);
 
   const executeLogin = async (u: string, p: string, presetType: LoginPresetType) => {
     setLoadingPreset(presetType);
@@ -94,7 +73,7 @@ export default function StaffLoginPage() {
     setAuth(loggedInUser, accessToken, refreshToken);
     toast.success(`Selamat datang kembali, ${loggedInUser.name}!`);
 
-    handleRoleRedirect(loggedInUser.role);
+    router.replace(getRoleHomePath(loggedInUser.role));
   };
 
   const onFormSubmit = async (data: LoginInput) => {

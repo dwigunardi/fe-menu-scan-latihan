@@ -11,7 +11,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
-import { useAuthStore, ROLE, UserRole } from '@/store/use-auth-store';
+import { useAuthStore } from '@/store/use-auth-store';
+import { getRoleHomePath } from '@/lib/constants/roles';
 
 /**
  * Route namespace prefixes that serve as access containers rather than standalone pages.
@@ -39,27 +40,6 @@ const ROUTE_LABELS: Record<string, string> = {
   detail: 'Detail',
 };
 
-/**
- * Resolves the authorized root landing page per staff role.
- */
-function getRootHrefForRole(role?: UserRole | null): string {
-  switch (role) {
-    case ROLE.ADMIN:
-      return '/admin/dashboard';
-    case ROLE.CASHIER:
-    case ROLE.KASIR:
-      return '/cashier/tables';
-    case ROLE.KITCHEN:
-    case ROLE.DAPUR:
-      return '/kitchen/orders';
-    case ROLE.WAITER:
-    case ROLE.PELAYAN:
-      return '/waiter/tables';
-    default:
-      return '/login';
-  }
-}
-
 interface DynamicBreadcrumbProps {
   className?: string;
   rootLabel?: string;
@@ -82,7 +62,7 @@ export function DynamicBreadcrumb({
   }
 
   // Determine role-safe root href
-  const safeRootHref = getRootHrefForRole(user?.role);
+  const safeRootHref = getRoleHomePath(user?.role);
 
   // Extract namespace prefix (e.g. 'admin') and sub-segments
   const hasNamespace = NAMESPACE_PREFIXES.has(rawSegments[0]?.toLowerCase());

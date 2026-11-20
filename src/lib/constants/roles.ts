@@ -28,3 +28,28 @@ export const ROLE_GROUPS = {
   WAITER_OR_ADMIN: [ROLE.ADMIN, ROLE.WAITER, ROLE.PELAYAN] as const,
   ALL_STAFF: ALL_ROLES,
 } as const;
+
+/**
+ * Resolves the landing page (workstation) for a staff role.
+ * Single source of truth for login, onboarding, AuthGuard, RoleGuard and breadcrumbs.
+ * Returns '/login' when there is no role (signed out).
+ */
+export function getRoleHomePath(role?: UserRole | null): string {
+  switch (role) {
+    case undefined:
+    case null:
+      return '/login';
+    case ROLE.CASHIER:
+    case ROLE.KASIR:
+      return '/cashier/tables';
+    case ROLE.KITCHEN:
+    case ROLE.DAPUR:
+      return '/kitchen/orders';
+    case ROLE.WAITER:
+    case ROLE.PELAYAN:
+      return '/waiter/tables';
+    case ROLE.ADMIN:
+    default:
+      return '/admin/dashboard';
+  }
+}

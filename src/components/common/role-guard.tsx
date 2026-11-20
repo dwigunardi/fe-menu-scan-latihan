@@ -3,7 +3,8 @@
 import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert, ArrowLeft } from 'lucide-react';
-import { useAuthStore, UserRole, ROLE } from '@/store/use-auth-store';
+import { useAuthStore, UserRole } from '@/store/use-auth-store';
+import { getRoleHomePath } from '@/lib/constants/roles';
 import { Button } from '@/components/ui/button';
 
 interface RoleGuardProps {
@@ -19,23 +20,6 @@ export function RoleGuard({ allowedRoles, fallbackUrl, children }: RoleGuardProp
   const userRole = user?.role;
   const isAuthorized = userRole ? (allowedRoles as readonly UserRole[]).includes(userRole) : false;
 
-  const defaultFallback = () => {
-    switch (userRole) {
-      case ROLE.KITCHEN:
-      case ROLE.DAPUR:
-        return '/kitchen/orders';
-      case ROLE.CASHIER:
-      case ROLE.KASIR:
-        return '/cashier/tables';
-      case ROLE.WAITER:
-      case ROLE.PELAYAN:
-        return '/waiter/tables';
-      case ROLE.ADMIN:
-      default:
-        return '/admin/dashboard';
-    }
-  };
-
   useEffect(() => {
     if (_hasHydrated && isAuthenticated && !isAuthorized && fallbackUrl) {
       router.replace(fallbackUrl);
@@ -47,7 +31,7 @@ export function RoleGuard({ allowedRoles, fallbackUrl, children }: RoleGuardProp
   }
 
   if (!isAuthorized) {
-    const targetRedirect = fallbackUrl || defaultFallback();
+    const targetRedirect = fallbackUrl || getRoleHomePath(userRole);
 
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center p-4">
