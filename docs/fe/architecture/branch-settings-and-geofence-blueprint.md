@@ -3,7 +3,7 @@
 > **Project**: Kumpul Cafe – Digital QR Code Menu System & Multi-Branch FnB SaaS  
 > **Scope**: Tahap 2 – Pengaturan Lokasi Cabang, Radius Geofence, Jam Operasional, Delegasi Shift Sementara, & Alert Ketidakhadiran Staf  
 > **Document Location**: `docs/fe/architecture/branch-settings-and-geofence-blueprint.md`  
-> **Status**: APPROVED ARCHITECTURAL SPECIFICATION  
+> **Status**: APPROVED ARCHITECTURAL SPECIFICATION — ✅ **DIIMPLEMENTASIKAN** (roadmap 4C.7) di `/admin/settings/branch`, `/admin/settings/policies`, dan `/admin/settings/shifts`.  
 
 ---
 

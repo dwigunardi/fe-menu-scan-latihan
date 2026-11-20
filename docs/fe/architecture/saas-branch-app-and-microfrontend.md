@@ -3,7 +3,7 @@
 > **Document**: `docs/fe/architecture/saas-branch-app-and-microfrontend.md`  
 > **Repository Context**: Branch Outlet Client Engine (`fe-menu-scan-latihan`)  
 > **Parent Ecosystem**: Master HQ SaaS SuperApp Platform (`hq.fnbapp.com`)  
-> **Status**: MASTER ARCHITECTURE BLUEPRINT  
+> **Status**: MASTER ARCHITECTURE BLUEPRINT — ⬜ **KONSEP, BELUM DIIMPLEMENTASIKAN**. Belum ada integrasi HQ SuperApp maupun microfrontend di repo ini.  
 > **Stack**: Next.js 16 (App Router), TypeScript, Tailwind CSS v4, Motion v12, Zustand, React Query  
 
 ---

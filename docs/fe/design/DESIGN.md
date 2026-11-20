@@ -6,6 +6,7 @@
 > **Styling Engine**: Tailwind CSS v4  
 > **Design Skills Referenced**: `taste-design`, `design-systems`, `shadcn-ui`, `design-md`  
 > **Document Location**: `docs/fe/design/DESIGN.md`  
+> **Cakupan**: design system untuk **aplikasi pelanggan (QR menu publik)** yang belum dibangun. Untuk portal staf/admin, lihat [`ADMIN_DESIGN.md`](./ADMIN_DESIGN.md). (`DESIGN.md` di root repo adalah salinan `ADMIN_DESIGN.md`, bukan file ini.)  
 
 ---
 

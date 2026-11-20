@@ -1,7 +1,7 @@
 # FnB Multi-Tenant SaaS Architecture: Centralized Auth & Tenant-Aware Routing
 
 > **Document**: `docs/fe/architecture/multi-tenant-auth-and-routing.md`  
-> **Status**: APPROVED ARCHITECTURE BLUEPRINT  
+> **Status**: APPROVED ARCHITECTURE BLUEPRINT — ⬜ **BELUM DIIMPLEMENTASIKAN** (roadmap Phase 5). Saat ini aplikasi single-branch: belum ada SSO, `/select-branch`, `branch-switcher`, maupun header `X-Branch-ID`.  
 > **Target System**: Multi-Branch FnB SaaS & Digital QR Ordering Platform  
 > **Frontend Stack**: Next.js 16 (App Router, TypeScript, Tailwind CSS v4, Zustand, TanStack Query)  
 > **Security & Tokens**: Centralized Identity Provider (IdP/SSO) + Tenant-Bound JWT + WebCrypto Zero-Trust  

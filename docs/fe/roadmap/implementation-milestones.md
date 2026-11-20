@@ -4,11 +4,11 @@
 > **Brand Name**: Kumpul Cafe  
 > **Backend Integration**: NestJS 11 (`http://localhost:5000/api/v1`) + WebSocket (`http://localhost:5000/events`)  
 > **Framework**: Next.js 16 (App Router, TypeScript)  
-> **Styling & Motion**: Tailwind CSS v4 + Framer Motion (`motion` v12)  
-> **Data Fetching**: `@tanstack/react-query` (v5) + Native `customFetch` + Pipeline Interceptors  
-> **Security Standard**: WebCrypto API (P-256 ECDH + AES-256-GCM Zero-Trust)  
+> **Styling & Motion**: Tailwind CSS v4 + `motion`  
+> **Data Fetching**: `@tanstack/react-query` (v5) + `apiTransport` → `executePipeline` (middleware pipeline)  
+> **Security Standard**: WebCrypto API (P-256 ECDH + AES-256-GCM payload encryption, di atas TLS)  
 > **Document Location**: `docs/fe/roadmap/implementation-milestones.md`  
-> **Status**: Active Frontend Roadmap Tracking Document  
+> **Status**: Active Frontend Roadmap Tracking Document — terakhir disinkronkan dengan kode: 2026-11-20  
 
 ---
 
@@ -20,8 +20,8 @@
 | **Phase 1** | Client Infrastructure, WebCrypto ECDH & Pipeline | ✅ **DONE** | 100% |
 | **Phase 4A**| Admin CMS, KDS Kanban, Table Zones, Menu CRUD & 404 Templates | ✅ **DONE** | 100% |
 | **Phase 4B**| Route Grouping, Reusable Shell, ROLE Enum & Domain-First Restructure | ✅ **DONE** | 100% |
-| **Phase 4C**| **Admin Reports Hub & Cafe Operational Blueprint (POV Cabang)** | ⏳ **IN PROGRESS** | 50% |
-| **Phase 2** | Public QR Menu View, Modifiers Modal, Banners & Table Session | ⬜ **PENDING** | 0% |
+| **Phase 4C**| **Admin Reports Hub & Cafe Operational Blueprint (POV Cabang)** | ⏳ **IN PROGRESS** | ~75% |
+| **Phase 2** | Public QR Menu View, Modifiers Modal, Banners & Table Session | ⬜ **PENDING** | ~10% (carousel saja) |
 | **Phase 3** | Pre-Paid Checkout, Dynamic QRIS & Live Order Tracker (WebSocket) | ⬜ **PENDING** | 0% |
 | **Phase 5** | Multi-Branch SSO Integration, E2E Testing & PWA Polish | ⬜ **PENDING** | 0% |
 
@@ -66,26 +66,43 @@
   - Saklar 1-tap ketersediaan menu langsung pada tabel `MenuTable` dan `MenuCardsMobile` dengan feedback optimistik.
 - [x] **4C.5. Manajemen Shift Kasir & Z-Report (`/admin/shifts`)**
   - Modal input kas modal awal, monitoring arus kas berjalan, rekonsiliasi kas fisik & selisih (*variance*), serta struk thermal Z-Report siap cetak.
+  - ⚠️ **UI selesai, backend belum**: endpoint `/admin/shifts/*` belum ada di backend (dicek 2026-11-20). Sebelumnya tertutup data mock; sekarang halaman ini menampilkan error sampai backend siap. Lihat `docs/fe/integration/api-endpoints.md`.
 - [ ] **4C.3. Payment Method Breakdown (Rekonsiliasi QRIS vs Tunai)**
   - Pemisahan omset uang digital (QRIS) dan kas fisik (Cash) pada Laporan dan Dashboard.
 - [x] **4C.6. Manajemen Akun Staf Cabang (`/admin/staff`)**
   - CRUD staf kasir, chef dapur, pelayan, dan manager dengan role badge, PIN 4-digit untuk clock-in, kontak WhatsApp, dan reset password mandiri.
-- [x] **4C.7. Pengaturan Lokasi Cabang, Geofence 100m, Jam Operasional & Mesin Kontingensi (`/admin/settings`)**
-  - 3-Way Hybrid Geolocation (1-Tap GPS, Google Maps Link Extractor, Leaflet Interactive Map Picker), Slider Radius Geofence 50m - 500m, Jadwal Operasional Mingguan, Delegasi Shift Sementara, dan Alert Ketidakhadiran Kasir 3-Opsi.
-- [ ] **4C.8. Smart Absensi Geofencing + PIN 4-Digit (`/admin/attendance` & Workstation Clock-In)** (NEXT)
-  - Validasi jarak fisik $\le 100$m via rumus Haversine, input PIN Clock-In/Out, pengajuan Ijin/Sakit/Cuti, dan rekapitulasi kehadiran staf.
+- [x] **4C.7. Pengaturan Lokasi Cabang, Geofence, Jam Operasional & Mesin Kontingensi (`/admin/settings`)**
+  - 3-Way Hybrid Geolocation (1-Tap GPS, Google Maps Link Extractor, Leaflet Interactive Map Picker), Slider Radius Geofence 50m - 500m (field `geofenceRadius`, bukan 100m tetap), Jadwal Operasional Mingguan, Delegasi Shift Sementara, dan Alert Ketidakhadiran Kasir 3-Opsi.
+  - Dipecah menjadi sub-halaman: `/admin/settings/branch`, `/admin/settings/policies`, `/admin/settings/shifts`.
+- [x] **4C.8. Smart Absensi Geofencing + PIN 4-Digit (`/admin/attendance` & Workstation Clock-In)**
+  - Validasi jarak via Haversine terhadap `geofenceRadius` cabang, input PIN Clock-In/Out, pengajuan Ijin/Sakit/Cuti, review lembur, koreksi presensi, dan rekap kehadiran (`src/components/attendance/`, `admin-attendance-api.ts`).
+  - Personal auto-lock: staf non-admin hanya bisa absen untuk dirinya sendiri; admin punya mode supervisor.
+  - Belum: penolakan GPS dengan akurasi > 50m (disebut di blueprint, belum diimplementasikan).
 - [ ] **4C.9. Verifikasi Kontak (Email Link & WhatsApp OTP) & Emergency Broadcast Engine**
   - Verifikasi identitas kontak ganda dan broadcast pengumuman darurat multi-channel.
 - [ ] **4C.10. Pengaturan Pajak PB1 & Profil Struk (`/admin/settings`)**
   - Konfigurasi tarif PB1, service charge, WiFi kafe, dan footer catatan struk.
+- [x] **4C.11. Registrasi Staf via NIK, Distribusi Kredensial & Onboarding Login Pertama (`/onboarding`)**
+  - Admin membuat akun + kredensial sementara (`StaffCredentialModal`); staf wajib ganti password & membuat PIN 4-digit di login pertama (`POST /auth/onboard`), lalu diarahkan ke workstation sesuai role.
+- [x] **4C.12. Mode Kiosk Presensi di Meja Kasir (`/cashier/kiosk`)**
+  - Grid staf, numpad PIN, overlay sukses, dan exit guard. Lihat `docs/fe/architecture/attendance-kiosk-enhancement.md`.
+  - ⚠️ **Butuh backend**: exit guard memverifikasi PIN kasir lewat `POST /auth/verify-pin` (lihat `docs/fe/integration/api-endpoints.md`). Selama endpoint belum ada, keluar dari mode kiosk akan selalu ditolak.
+- [x] **4C.13. Template Shift (`/admin/settings/shifts`)**
+  - CRUD template shift + seed default (`admin-shift-templates-api.ts`).
+- [x] **4C.14. Hardening hasil audit (2026-11-20)**
+  - Fallback mock localStorage pada API staf & shift kini mati secara default (aktif hanya dengan `NEXT_PUBLIC_ENABLE_MOCK_FALLBACK=true`, dan hanya untuk error jaringan/404/501).
+  - Exit guard kiosk diverifikasi server-side; redirect onboarding per role; redirect refresh-token gagal ke `/login`; tombol demo login disembunyikan di production; cache React Query dibersihkan saat logout/ganti user; service worker diperbaiki (tidak lagi meng-cache API/cross-origin).
+- [ ] **4C.15. Tindak lanjut audit**
+  - Proteksi rute di sisi server (`proxy.ts`), token tidak lagi di `localStorage` (HttpOnly cookie), single-flight handshake, fallback GPS kiosk tidak boleh memakai koordinat cabang, tanggal "hari ini" kiosk memakai zona waktu cabang (WIB), dan review cakupan role (`KITCHEN_OR_ADMIN` mencakup kasir; kasir bisa CRUD meja).
 
 
 ---
 
 ## 📱 Phase 2: Public Customer QR Experience (NEXT)
 - [ ] **2.1. Table Binding & Session Initializer** (`components/public/table-session-modal.tsx`)
-- [ ] **2.2. Public Menu & Promo Carousel Components** (`src/components/banners/promo-carousel.tsx`)
+- [ ] **2.2. Public Menu & Promo Carousel Components** — *sebagian*: `src/components/banners/promo-carousel.tsx` sudah ada, komponen menu publik belum.
 - [ ] **2.3. Public Menu Catalog Page** (`app/(public)/scan/[tableNumber]/page.tsx`)
+  - Catatan: route QR publik masih didefinisikan berbeda-beda di docs (`/scan/[tableNumber]`, `/menu?table=`, `/?table=`). Tetapkan satu sebelum implementasi, lalu kembalikan link "Buka Menu" di `src/app/page.tsx`, `src/app/not-found.tsx`, dan `start_url` di `public/manifest.json`.
 
 ---
 
@@ -93,6 +110,7 @@
 - [ ] **3.1. Checkout Page** (`app/(public)/order/checkout/page.tsx`)
 - [ ] **3.2. Dynamic QRIS Payment Modal & Timer** (`components/public/qris-modal.tsx`)
 - [ ] **3.3. Real-Time Order Tracking via WebSocket** (`app/(public)/order/status/[orderNumber]/page.tsx`)
+  - Catatan: `socket.io-client` sudah terpasang tapi belum dipakai; KDS saat ini polling setiap 10 detik (`use-admin-orders.ts`).
 
 ---
 

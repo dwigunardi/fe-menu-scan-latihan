@@ -1,7 +1,7 @@
 ﻿# Design System & UI/UX Specification: Kumpul Cafe Admin Portal
 
 > **Module**: Staff & Admin CMS Portal (Multi-Role RBAC)  
-> **Route Group**: `src/app/(admin)/admin/*`  
+> **Route Group**: `src/app/(dashboard)/*` — `admin/*`, `cashier/*`, `kitchen/*`, `waiter/*` (login di `/login`, KDS di `/kitchen/orders`)  
 > **Component Architecture**: shadcn/ui + Radix UI Primitives + Tailwind CSS v4  
 > **Design Skills Referenced**: `taste-design`, `design-md`, `shadcn-ui`, `frontend-design`  
 > **Document Location**: `docs/fe/design/ADMIN_DESIGN.md`  
@@ -43,7 +43,7 @@ Portal Admin & Staf **Kumpul Cafe** dirancang dengan estetika **Artisanal Coffee
 
 ## 3. UI/UX Blueprint & Flow Breakdown
 
-### A. Screen 1: Staff Quick-Login Portal (`/admin/login`)
+### A. Screen 1: Staff Quick-Login Portal (`/login`)
 - **Layout**: Centered luxury card (`max-w-md`) dengan latar belakang oat canvas hangat.
 - **Branding Header**: Logo cangkir Kumpul Cafe dengan badge `Staff & Management Portal`.
 - **Form Fields**: Input Username & Password dengan floating clean label dan error Zod inline.
@@ -133,7 +133,7 @@ A centered multi-tab modal dialog (max-w-2xl, rounded-3xl, pure white surface) f
 
 ## 5. Verification & Acceptance Criteria
 
-1. **RBAC Guard**: Pengguna yang belum login ditolak saat mengakses `/admin/*` dan diarahkan ke `/admin/login`.
+1. **RBAC Guard**: Pengguna yang belum login ditolak saat mengakses halaman dashboard dan diarahkan ke `/login`.
 2. **Instant Availability Toggle**: Mengubah switch ketersediaan stok langsung mengupdate data di database Backend dan menampilkan toast konfirmasi Sonner.
 3. **Variant Group Constraints**: Form validasi Zod menjamin `maxSelect` tidak boleh lebih kecil dari `minSelect`, dan harga ekstra tidak boleh negatif.
 4. **Zero Type Errors**: Lulus uji `npm test` dan `npm run build` tanpa warning.

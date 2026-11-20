@@ -2,7 +2,7 @@
 
 > **Project**: Kumpul Cafe – Digital QR Code Menu System & Multi-Branch FnB SaaS  
 > **Document Location**: `docs/fe/architecture/staff-identity-and-notification-blueprint.md`  
-> **Status**: APPROVED ARCHITECTURE BLUEPRINT  
+> **Status**: APPROVED ARCHITECTURE BLUEPRINT — 🟡 **SEBAGIAN**. Registrasi staf (NIK) & onboarding login pertama sudah ada; verifikasi email/WhatsApp OTP dan broadcast darurat **belum** (roadmap 4C.9).  
 
 ---
 

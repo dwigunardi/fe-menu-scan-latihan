@@ -3,7 +3,7 @@
 > **Project**: Kumpul Cafe – Digital QR Code Menu System & Multi-Branch FnB SaaS  
 > **Target Audience**: Frontend Engineers, Branch Managers, & Staff Workstations  
 > **Document Location**: `docs/fe/architecture/staff-and-attendance-blueprint.md`  
-> **Status**: APPROVED TECHNICAL BLUEPRINT  
+> **Status**: APPROVED TECHNICAL BLUEPRINT — ✅ **DIIMPLEMENTASIKAN** (roadmap 4C.6 & 4C.8), dengan perbedaan: nama komponen sebenarnya `clock-in-modal.tsx`, `attendance-summary-cards.tsx`, `attendance-table.tsx`; endpoint frontend `/admin/attendance/*` (lihat `docs/fe/integration/api-endpoints.md`); radius geofence dapat diatur (`geofenceRadius`), bukan 100 m tetap; penolakan GPS akurasi > 50 m belum diimplementasikan.  
 
 ---
 

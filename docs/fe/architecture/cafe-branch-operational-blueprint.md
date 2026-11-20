@@ -47,10 +47,10 @@ mindmap
 | **Kitchen Display (KDS)** | 🟢 **100% Ready** | `src/components/orders/` | `OrdersView`, `OrderCard`, `OrderReceiptModal`, Web Audio Chimes |
 | **Laporan & Analitik** | 🟢 **100% Ready** | `src/components/reports/` | `ReportDateFilter`, `RevenueSummaryCards`, `TopSellingTable`, `OrdersStatusBreakdown`, `ExportReportButton` |
 | **Rekonsiliasi Pembayaran** | 🟡 **Planned (P1)** | `src/components/reports/` & `orders/` | Breakdown `QRIS` vs `CASH` vs `DEBIT`, settlement matcher, kartu rekap kasir |
-| **Quick Sold-Out Switch** | 🟡 **Planned (P1)** | `src/components/menus/` | 1-Tap Toggle ketersediaan langsung pada tabel tanpa buka form edit |
-| **Shift Kasir & Z-Report** | 🟡 **Planned (P2)** | `src/components/shifts/` | Modal buka kasir (kas modal awal), rekap transaksi shift, input kas fisik, selisih kas, cetak Z-Report |
+| **Quick Sold-Out Switch** | ✅ **Done** | `src/components/menus/` | 1-Tap Toggle ketersediaan langsung pada tabel tanpa buka form edit |
+| **Shift Kasir & Z-Report** | ✅ **Done** | `src/components/shifts/` | Modal buka kasir (kas modal awal), rekap transaksi shift, input kas fisik, selisih kas, cetak Z-Report |
 | **Pajak PB1 & Service Fee** | 🟡 **Planned (P2)** | `src/components/settings/` | Toggle tarif PB1 (10%), Service Charge (5%), status inclusive/exclusive tax |
-| **Manajemen Staf Cabang** | 🟡 **Planned (P2)** | `src/components/staff/` | Tabel staf, form tambah kasir/barista, reset password/PIN, aktivasi akun |
+| **Manajemen Staf Cabang** | ✅ **Done** | `src/components/staff/` | Tabel staf, form tambah kasir/barista, reset password/PIN, aktivasi akun |
 | **Profil Kafe & Thermal Print** | 🟡 **Planned (P3)** | `src/components/settings/` | Header/Footer struk, WiFi info, template ESC/POS 58mm & 80mm |
 
 ---
@@ -94,7 +94,7 @@ mindmap
 Semua modul baru wajib mengikuti standar arsitektur keamanan:
 1. Terbungkus `<RoleGuard allowedRoles={[ROLE.ADMIN]}>` untuk pengaturan krusial (Laporan, Pajak, Staf).
 2. Modul Shift Kasir dapat diakses oleh `ROLE_GROUPS.CASHIER_OR_ADMIN`.
-3. Seluruh request API melalui `hardenedFetch` dengan validasi runtime Zod Schema.
+3. Seluruh request API melalui `apiTransport` dengan validasi runtime Zod Schema.
 
 ---
 

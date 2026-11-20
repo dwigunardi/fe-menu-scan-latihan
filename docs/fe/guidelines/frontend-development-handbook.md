@@ -23,7 +23,7 @@ mindmap
       Zod Runtime Contract Validation
       No any Types Allowed
     3. Zero-Trust API Pipeline
-      Wajib hardenedFetch & customFetch
+      Wajib apiTransport
       Onion Middleware Interceptor
       Functional Either Result Pattern
     4. React Query Standard
@@ -65,7 +65,7 @@ src/components/
 
 ### 📖 Resep 1: Cara Menambahkan Endpoint API & Validasi Zod Baru
 
-Jangan pernah memanggil `fetch()` atau `axios` secara mentah (*raw*). Selalu gunakan `hardenedFetch` dengan validasi runtime Zod.
+Jangan pernah memanggil `fetch()` atau `axios` secara mentah (*raw*). Selalu gunakan `apiTransport` dengan validasi runtime Zod. Setelah menambah endpoint, tambahkan juga barisnya di [api-endpoints.md](../integration/api-endpoints.md).
 
 #### Langkah 1: Definisikan Schema Zod di `src/lib/validations/<domain>.schema.ts`
 ```typescript
@@ -84,11 +84,14 @@ export type StaffProfile = z.infer<typeof StaffProfileSchema>;
 
 #### Langkah 2: Buat Fetcher di `src/lib/api/<domain>-api.ts`
 ```typescript
-import { hardenedFetch, Either, ApiError } from '@/lib/api';
+import { z } from 'zod';
+import { apiTransport } from './api-transport';
+import { Either } from './either';
+import { ApiError } from './api-error';
 import { StaffProfile, StaffProfileSchema } from '@/lib/validations/staff.schema';
 
 export async function getStaffProfiles(): Promise<Either<ApiError, StaffProfile[]>> {
-  return hardenedFetch('/admin/staff', z.array(StaffProfileSchema));
+  return apiTransport('/admin/staff', z.array(StaffProfileSchema));
 }
 ```
 
@@ -285,43 +288,37 @@ export function TableFormModal({ isOpen, onClose, onSubmit, initialData }) {
 
 ## 🌐 4. Arsitektur Transport API: Layering, Pipeline & Panduan Debugging
 
-Arsitektur komunikasi data Frontend Kumpul Cafe menggunakan **4-Layered Zero-Trust Transport Engine**. Seluruh komunikasi API **WAJIB** mematuhi hierarki ini agar tidak terjadi inkonsistensi penulisan dan kebocoran kontrak data.
+Seluruh komunikasi ke backend lewat **2 lapis transport** di atas `fetch` bawaan browser. Detail lengkap (opsi, middleware, retry, fallback mock) ada di [interceptor-pipeline-architecture.md](../architecture/interceptor-pipeline-architecture.md); daftar endpoint di [api-endpoints.md](../integration/api-endpoints.md).
 
-### 📐 1. Diagram 4-Layer Transport Hierarchy
+### 📐 1. Hierarki Transport
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Layer 1: API Client Domain (e.g. admin-attendance-api.ts)   │
+│ Fungsi domain API (mis. admin-attendance-api.ts)            │
 └──────────────────────────────┬──────────────────────────────┘
                                │ memanggil
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Layer 2: hardenedFetch(endpoint, schema, options)           │ 👈 STANDAR TUNGGAL (Golden Template)
-│    - Menjalankan fetch aman via customFetch                 │
+│ Lapis 1: apiTransport(endpoint, schema, options)            │ 👈 STANDAR TUNGGAL
+│    - Memanggil executePipeline                              │
 │    - Validasi runtime Zod (`schema.safeParse`)              │
 │    - Mengembalikan type-safe `Either<ApiError, Data>`       │
+│    (`hardenedFetch` = alias lama, jangan dipakai di kode baru) │
 └──────────────────────────────┬──────────────────────────────┘
                                │ memanggil
                                ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Layer 3: customFetch(endpoint, options)                     │ 👈 Mid-Level Universal Fetcher
-│    - Entry point universal untuk transport                  │
-│    - Mendelegasikan ke pipeline runner                      │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ mendelegasikan ke
-                               ▼
-┌─────────────────────────────────────────────────────────────┐
-│ Layer 4: executePipeline(endpoint, options)                 │ 👈 Low-Level Pipeline Engine (Core)
-│    - loggerMiddleware (step-tracing audit log)              │
-│    - authMiddleware (injeksi JWT Bearer)                    │
-│    - handshakeMiddleware (injeksi x-handshake-token)        │
+│ Lapis 2: executePipeline(endpoint, options)                 │
+│    - loggerMiddleware (log request/response, dev saja)      │
+│    - authMiddleware (header Authorization: Bearer)          │
+│    - handshakeMiddleware (header x-handshake-token)         │
 │    - encryptionMiddleware (enkripsi/dekripsi AES-256-GCM)   │
-│    - terminalFetch (eksekusi window.fetch asli)             │
+│    - terminalFetch (fetch + retry handshake/refresh token)  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 > [!IMPORTANT]
-> **Aturan Wajib**: File domain API di `src/lib/api/*` **HANYA BOLEH memanggil `hardenedFetch` (Layer 2)**. Jangan memanggil `executePipeline` (Layer 4) atau `fetch()` langsung secara manual!
+> **Aturan Wajib**: File domain API di `src/lib/api/*` **HANYA BOLEH memanggil `apiTransport`**. Jangan memanggil `executePipeline` atau `fetch()` langsung. Pengecualian yang disengaja: handshake ECDH (`handshake-session.ts`) dan layanan pihak ketiga seperti Nominatim (`src/lib/utils/geocoding.ts`).
 
 ---
 
@@ -336,10 +333,10 @@ Berikut adalah perjalanan sebuah request dari klik UI hingga data diterima:
 [2. React Query Mutation/Query]
        │  (Memanggil fetcher domain: recordClockIn(payload))
        ▼
-[3. hardenedFetch(endpoint, schema, options)]
-       │  (Meneruskan endpoint, schema Zod, dan options ke customFetch)
+[3. apiTransport(endpoint, schema, options)]
+       │  (Meneruskan endpoint dan options ke executePipeline)
        ▼
-[4. customFetch -> executePipeline]
+[4. executePipeline]
        │
        ├─► [a. loggerMiddleware]: Mencatat info step request ke console/Pino logger
        │
@@ -347,7 +344,7 @@ Berikut adalah perjalanan sebuah request dari klik UI hingga data diterima:
        │
        ├─► [c. handshakeMiddleware]: Memeriksa sessionKey di RAM. Jika belum ada, otomatis melakukan handshake ECDH P-256 dan menyisipkan header `x-handshake-token`
        │
-       ├─► [d. encryptionMiddleware (Outgoing)]: Jika body ada dan skipEncryption false, mengenkripsi objek payload dengan AES-256-GCM menjadi `{ iv, payload, tag }`
+       ├─► [d. encryptionMiddleware (Outgoing)]: Jika body ada dan skipEncryption false, mengenkripsi objek payload dengan AES-256-GCM menjadi `{ encrypted: true, iv, tag, payload }`
        │
        ├─► [e. terminalFetch]: Mengirim HTTP request terenkripsi ke backend NestJS via `fetch()`
        │
@@ -358,7 +355,7 @@ Berikut adalah perjalanan sebuah request dari klik UI hingga data diterima:
 [6. encryptionMiddleware (Incoming Decryption)]
        │  (Mendeteksi payload `{ encrypted: true, iv, payload, tag }`, lalu mendekripsi dengan sessionKey di RAM kembali menjadi plain JavaScript object)
        ▼
-[7. hardenedFetch (Runtime Contract Validation)]
+[7. apiTransport (Runtime Contract Validation)]
        │  (Mengeksekusi `schema.safeParse(decryptedData)`):
        ├─► Jika VALID: Mengembalikan `Right(data)` (100% type-safe)
        └─► Jika INVALID: Log error `🚨 [Contract Violation Error]` dan mengembalikan `Left(ApiError.contractViolation)`
@@ -397,7 +394,7 @@ Karena sistem menggunakan Zero-Trust ECDH + AES-256-GCM, data yang lewat di jari
 
 1. **Melalui Browser DevTools (Network Tab)**:
    - Buka `F12` $\rightarrow$ Tab **Network** $\rightarrow$ Pilih request terkait (misal: `/api/v1/admin/shifts/open`).
-   - Tab **Payload**: Menampilkan ciphertext request `{ iv: "...", payload: "...", tag: "..." }`.
+   - Tab **Payload**: Menampilkan ciphertext request `{ encrypted: true, iv: "...", tag: "...", payload: "..." }`.
    - Tab **Response / Preview**: Menampilkan ciphertext respons dari backend `{ encrypted: true, iv: "...", payload: "...", tag: "..." }`.
    - Tab **Headers**: Memverifikasi header `x-handshake-token: ...` dan `authorization: Bearer ...`.
 
@@ -420,7 +417,7 @@ Karena sistem menggunakan Zero-Trust ECDH + AES-256-GCM, data yang lewat di jari
 ---
 
 #### C. Mengetahui Kegagalan Validasi Kontrak (*Contract Violation*)
-Jika backend mengembalikan field yang tidak sesuai dengan Zod Schema (misal: tipe data berubah atau field wajib hilang), `hardenedFetch` akan otomatis mencatatnya ke console:
+Jika backend mengembalikan field yang tidak sesuai dengan Zod Schema (misal: tipe data berubah atau field wajib hilang), `apiTransport` akan otomatis mencatatnya ke console:
 ```text
 🚨 [Contract Violation Error] on /admin/settings/shift-templates
 {
@@ -442,7 +439,9 @@ Jika backend mengembalikan field yang tidak sesuai dengan Zod Schema (misal: tip
 | **Nested Loops (`for` di dalam `for`) ($O(N^2)$)**: <br>Looping bertingkat yang memperlambat performa dan sulit ditelusuri. | **Gunakan Lookup `Map`/`Set` atau Deklaratif Methods**: <br>Gunakan `map`, `filter`, `find`, `reduce`, atau indexed lookup $O(1)$. |
 | **Super Function / God Function**: <br>Fungsi raksasa (>50 baris) yang mengerjakan banyak hal sekaligus dan susah di-debug. | **Pecah ke Sub-Functions Kecil (*Single Responsibility*)**: <br>Setiap fungsi hanya melakukan 1 tugas spesifik dengan penamaan jelas. |
 | **Hardcoding role string manual**:  <br>`allowedRoles={['ADMIN', 'CASHIER']}` | **Gunakan Enum / Konstanta Terpusat**: <br>`allowedRoles={[ROLE.ADMIN, ROLE.CASHIER]}` atau `ROLE_GROUPS.CASHIER_OR_ADMIN` |
-| **Memanggil `fetch()` atau `axios` langsung**: <br>`const res = await fetch('/api/menus')` | **Gunakan `hardenedFetch()`**: <br>`hardenedFetch('/admin/menus', MenuSchema)` |
+| **Memanggil `fetch()` atau `axios` langsung**: <br>`const res = await fetch('/api/menus')` | **Gunakan `apiTransport()`**: <br>`apiTransport('/admin/menus', MenuSchema)` |
+| **Memanggil fungsi API mutasi langsung dari komponen**: <br>`await createAdminMenu(data)` | **Gunakan mutation hook**: <br>`useCreateMenuMutation().mutateAsync(data)` — hook menginvalidasi cache React Query sehingga list ikut ter-update. |
+| **Menulis ulang switch role → halaman**: <br>`switch (role) { case ROLE.KASIR: … }` | **Gunakan `getRoleHomePath(role)`** dari `src/lib/constants/roles.ts`. |
 | **Menelan Error tanpa notifikasi**: <br>`catch (err) { console.log(err) }` | **Gunakan `notifyApiError()`**: <br>`if (res.isLeft()) notifyApiError(res.value)` |
 | **Tag HTML `<img>` mentah**: <br>`<img src={url} />` | **Gunakan `<AppImage />`**: <br>`<AppImage src={url} alt={name} fill />` |
 | **Membuat komponen flat di luar domain**: <br>`src/components/admin/my-table.tsx` | **Kelompokkan ke Domain**: <br>`src/components/tables/my-table.tsx` + `index.ts` |
@@ -535,23 +534,29 @@ async function handleCheckout(cart: Cart) {
 
 ---
 
-## 🧪 5. Quality Gate Checklist (Sebelum Commit / Pull Request)
+## 🧪 6. Quality Gate Checklist (Sebelum Commit / Pull Request)
 
-Sebelum membuat commit atau mengajukan PR, setiap engineer wajib menjalankan 2 perintah berikut di terminal:
+Sebelum membuat commit atau mengajukan PR, setiap engineer wajib menjalankan 3 perintah berikut di terminal:
 
 ```bash
 # 1. Pastikan 0 Type Error pada TypeScript Compiler
 npx tsc --noEmit
 
-# 2. Pastikan seluruh Unit Test Suite (Vitest) 100% Passed Green
-npm test -- --run
+# 2. Pastikan 0 error ESLint
+npm run lint
+
+# 3. Pastikan seluruh Unit Test Suite (Vitest) lulus
+npm test
 ```
+
+> **Windows + Git Bash**: jalankan Vitest dari PowerShell atau CMD. Di Git Bash, drive terbaca huruf kecil (`d:/`) dan semua suite gagal dengan pesan *"Vitest failed to find the runner"*. Itu masalah shell, bukan kode.
 
 ---
 
-## 🔗 6. Dokumen Terkait & Referensi Arsitektur
+## 🔗 7. Dokumen Terkait & Referensi Arsitektur
 
-- 📄 Spesifikasi Arsitektur Frontend: [architecture-design.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/architecture/architecture-design.md)
-- 📄 Spesifikasi Interceptor Pipeline: [interceptor-pipeline-architecture.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/architecture/interceptor-pipeline-architecture.md)
-- 📄 Blueprint Operasional Cabang Kafe: [cafe-branch-operational-blueprint.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/architecture/cafe-branch-operational-blueprint.md)
-- 📄 Milestones & Roadmap Frontend: [implementation-milestones.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/roadmap/implementation-milestones.md)
+- 📄 Spesifikasi Arsitektur Frontend: [architecture-design.md](../architecture/architecture-design.md)
+- 📄 Spesifikasi Interceptor Pipeline: [interceptor-pipeline-architecture.md](../architecture/interceptor-pipeline-architecture.md)
+- 📄 Daftar Endpoint API: [api-endpoints.md](../integration/api-endpoints.md)
+- 📄 Blueprint Operasional Cabang Kafe: [cafe-branch-operational-blueprint.md](../architecture/cafe-branch-operational-blueprint.md)
+- 📄 Milestones & Roadmap Frontend: [implementation-milestones.md](../roadmap/implementation-milestones.md)
