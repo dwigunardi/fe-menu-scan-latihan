@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { UtensilsCrossed, Home, ArrowLeft } from 'lucide-react';
+import { Home, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AnimatedCoffeeCup } from '@/components/illustrations/animated-coffee-cup';
@@ -64,14 +64,9 @@ export default function RootNotFound() {
 
         {/* Action Buttons */}
         <motion.div variants={itemVariants} className="w-full pt-6 flex flex-col sm:flex-row gap-3">
-          <Link href="/menu?table=01" className="w-full">
-            <Button size="lg" className="w-full font-semibold shadow-md shadow-amber-600/20 flex items-center justify-center gap-2">
-              <UtensilsCrossed className="h-4 w-4" />
-              <span>Buka Menu Kafe</span>
-            </Button>
-          </Link>
+          {/* TODO: add a "Buka Menu Kafe" link once the public QR menu route exists (roadmap Phase 2). */}
           <Link href="/" className="w-full">
-            <Button variant="outline" size="lg" className="w-full font-semibold flex items-center justify-center gap-2">
+            <Button size="lg" className="w-full font-semibold shadow-md shadow-amber-600/20 flex items-center justify-center gap-2">
               <Home className="h-4 w-4" />
               <span>Halaman Depan</span>
             </Button>

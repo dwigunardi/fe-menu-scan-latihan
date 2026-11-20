@@ -20,13 +20,9 @@ export default function HomePage() {
         </div>
 
         <div className="w-full pt-2 flex flex-col gap-3">
-          <Link href="/menu?table=01" className="w-full">
-            <Button size="lg" className="w-full">
-              Buka Menu Publik (Meja 01)
-            </Button>
-          </Link>
+          {/* The public QR menu (route group "(public)") is not built yet — see the roadmap, Phase 2. */}
           <Link href="/login" className="w-full">
-            <Button variant="outline" size="default" className="w-full">
+            <Button size="lg" className="w-full">
               Portal Staf & Kasir
             </Button>
           </Link>

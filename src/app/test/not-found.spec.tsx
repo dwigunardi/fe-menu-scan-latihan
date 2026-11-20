@@ -11,8 +11,8 @@ describe('RootNotFound (Public 404)', () => {
     expect(screen.getByText(/Ups! Racikan Halaman Tidak Ditemukan/i)).toBeInTheDocument();
     expect(screen.getByText('404')).toBeInTheDocument();
 
-    const menuButton = screen.getByRole('button', { name: /Buka Menu Kafe/i });
-    expect(menuButton.closest('a')).toHaveAttribute('href', '/menu?table=01');
+    // The public menu route does not exist yet, so the 404 page must not link to it.
+    expect(screen.queryByRole('button', { name: /Buka Menu Kafe/i })).not.toBeInTheDocument();
 
     const homeButton = screen.getByRole('button', { name: /Halaman Depan/i });
     expect(homeButton.closest('a')).toHaveAttribute('href', '/');

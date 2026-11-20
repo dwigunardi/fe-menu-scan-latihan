@@ -57,12 +57,9 @@ import {
   MenuFormInput,
   CategoryData,
 } from '@/lib/validations/admin-menu.schema';
-import {
-  createAdminMenu,
-  updateAdminMenu,
-  AdminMenuItem,
-  uploadAdminMenuImage,
-} from '@/lib/api/admin-menus-api';
+import { AdminMenuItem, uploadAdminMenuImage } from '@/lib/api/admin-menus-api';
+import { ApiError } from '@/lib/api/api-error';
+import { useCreateMenuMutation, useUpdateMenuMutation } from '@/hooks/queries/use-admin-menus';
 import { AppImage } from '@/components/ui/app-image';
 
 interface MenuFormProps {
@@ -73,7 +70,9 @@ interface MenuFormProps {
 
 export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const createMenuMutation = useCreateMenuMutation();
+  const updateMenuMutation = useUpdateMenuMutation();
+  const isSubmitting = createMenuMutation.isPending || updateMenuMutation.isPending;
   const [activeTab, setActiveTab] = useState<'info' | 'variants'>('info');
   const [uploadMode, setUploadMode] = useState<'upload' | 'url'>('upload');
   const [isUploading, setIsUploading] = useState(false);
@@ -201,29 +200,22 @@ export function MenuForm({ initialData, categories, mode }: MenuFormProps) {
     });
   };
 
+  // Mutations go through the React Query hooks so the menu list/detail caches are
+  // invalidated after saving (calling the API directly left /admin/menus stale).
+  // The hooks already show the success toast and notify API errors.
   const onSubmit = async (data: MenuFormInput) => {
-    setIsSubmitting(true);
     try {
       if (mode === 'edit' && initialData) {
-        const res = await updateAdminMenu(initialData.id, data);
-        if (res.isLeft()) {
-          notifyApiError(res.value);
-          return;
-        }
-        toast.success(`Menu "${data.name}" berhasil diperbarui!`);
+        await updateMenuMutation.mutateAsync({ id: initialData.id, payload: data });
       } else {
-        const res = await createAdminMenu(data);
-        if (res.isLeft()) {
-          notifyApiError(res.value);
-          return;
-        }
-        toast.success(`Menu "${data.name}" berhasil ditambahkan ke katalog!`);
+        await createMenuMutation.mutateAsync(data);
       }
       router.push('/admin/menus');
-    } catch (err: any) {
-      notifyApiError(err);
-    } finally {
-      setIsSubmitting(false);
+    } catch (err: unknown) {
+      // ApiErrors were already notified by the mutation hook.
+      if (!(err instanceof ApiError)) {
+        notifyApiError(err);
+      }
     }
   };
 
