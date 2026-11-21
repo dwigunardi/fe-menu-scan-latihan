@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef, DragEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   useAdminOrdersPaginatedQuery,
   useUpdateOrderStatusMutation,
 } from '@/hooks/queries/use-admin-orders';
+import { useAuthStore, UserRole } from '@/store/use-auth-store';
+import { ROLE_GROUPS } from '@/lib/constants/roles';
 import { OrderData, OrderStatus } from '@/lib/validations/order.schema';
 import { formatCurrency } from '@/lib/utils/format-currency';
 import { playOrderChime } from '@/lib/utils/audio-chime';
@@ -128,7 +131,15 @@ export function OrdersView({
     sortOrder: 'desc',
   });
 
-  const updateStatusMutation = useUpdateOrderStatusMutation();
+  const router = useRouter();
+  const userRole = useAuthStore((state) => state.user?.role);
+  // Only roles that can open a shift get the "Buka Shift" shortcut; kitchen staff see a plain error
+  const canOpenShift =
+    !!userRole && (ROLE_GROUPS.CASHIER_OR_ADMIN as readonly UserRole[]).includes(userRole);
+
+  const updateStatusMutation = useUpdateOrderStatusMutation({
+    onNoOpenShift: canOpenShift ? () => router.push('/admin/shifts') : undefined,
+  });
 
   const orders = useMemo(() => paginatedData?.items || [], [paginatedData?.items]);
 

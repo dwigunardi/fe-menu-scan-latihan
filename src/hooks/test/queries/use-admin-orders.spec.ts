@@ -98,5 +98,61 @@ describe('use-admin-orders hooks', () => {
 
       await waitFor(() => expect(result.current.isError).toBe(true));
     });
+
+    describe('when no cashier shift is open (409)', () => {
+      const NO_SHIFT_MESSAGE =
+        'Belum ada shift kasir yang dibuka. Buka shift terlebih dahulu sebelum menerima pembayaran tunai.';
+
+      beforeEach(() => {
+        server.use(
+          http.put(`${API_BASE}/admin/orders/:id/status`, () =>
+            HttpResponse.json(
+              { statusCode: 409, error: 'Conflict', message: NO_SHIFT_MESSAGE },
+              { status: 409 }
+            )
+          )
+        );
+      });
+
+      it('offers a "Buka Shift" action that calls onNoOpenShift', async () => {
+        const onNoOpenShift = vi.fn();
+        const wrapper = createQueryWrapper();
+        const { result } = renderHook(
+          () => useUpdateOrderStatusMutation({ onNoOpenShift }),
+          { wrapper }
+        );
+
+        result.current.mutate({ id: 'ord-1', status: 'PAID' });
+        await waitFor(() => expect(result.current.isError).toBe(true));
+
+        expect(toast.error).toHaveBeenCalledTimes(1);
+        const [title, opts] = vi.mocked(toast.error).mock.calls[0] as [
+          string,
+          { description: string; action: { label: string; onClick: () => void } },
+        ];
+        expect(title).toBe('Shift kasir belum dibuka');
+        expect(opts.description).toBe(NO_SHIFT_MESSAGE);
+        expect(opts.action.label).toBe('Buka Shift');
+
+        opts.action.onClick();
+        expect(onNoOpenShift).toHaveBeenCalledTimes(1);
+      });
+
+      it('falls back to the generic error toast without onNoOpenShift', async () => {
+        const wrapper = createQueryWrapper();
+        const { result } = renderHook(() => useUpdateOrderStatusMutation(), {
+          wrapper,
+        });
+
+        result.current.mutate({ id: 'ord-1', status: 'PAID' });
+        await waitFor(() => expect(result.current.isError).toBe(true));
+
+        expect(toast.error).toHaveBeenCalledTimes(1);
+        expect(toast.error).not.toHaveBeenCalledWith(
+          'Shift kasir belum dibuka',
+          expect.anything()
+        );
+      });
+    });
   });
 });

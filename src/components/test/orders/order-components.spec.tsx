@@ -5,6 +5,10 @@ import { OrderData } from '@/lib/validations/order.schema';
 import * as orderHooks from '@/hooks/queries/use-admin-orders';
 import { createQueryWrapper } from '@/test/test-utils';
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+}));
+
 const mockOrder: OrderData = {
   id: 'ord-1',
   orderNumber: 'ORD-20260820-001',
