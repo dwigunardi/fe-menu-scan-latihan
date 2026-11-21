@@ -19,11 +19,19 @@ import { AttendanceItem } from '@/lib/validations/attendance.schema';
 import { ATTENDANCE_TYPE, AttendanceType } from '@/lib/constants/attendance';
 import { checkGeofence, GeofenceCheckResult } from '@/lib/utils/haversine';
 import { useAuthStore, ROLE } from '@/store/use-auth-store';
+import { useKioskLockStore } from '@/store/use-kiosk-lock-store';
 import { toast } from 'sonner';
 
 export function CashierKioskView() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
+  const lockKiosk = useKioskLockStore((state) => state.lock);
+  const unlockKiosk = useKioskLockStore((state) => state.unlock);
+
+  // Entering the kiosk locks this device to it until a verified exit PIN or a logout
+  useEffect(() => {
+    lockKiosk();
+  }, [lockKiosk]);
 
   // Queries
   const { data: branchSetting } = usePublicBranchLocationQuery();
@@ -189,6 +197,8 @@ export function CashierKioskView() {
   // Exit Kiosk Handler (Protected by Exit PIN Dialog)
   const handleConfirmExit = () => {
     setIsExitDialogOpen(false);
+    // Release the lock before navigating, otherwise KioskLockGuard sends us straight back
+    unlockKiosk();
     toast.success('Keluar dari mode kios. Kembali ke workstation kasir.');
     // Return to cashier tables or admin dashboard
     if (user?.role === ROLE.ADMIN) {
@@ -196,6 +206,15 @@ export function CashierKioskView() {
     } else {
       router.push('/cashier/tables');
     }
+  };
+
+  // Escape hatch when the PIN cannot be verified (forgotten PIN, server unavailable). Logging out
+  // releases the lock; getting back into the POS still requires signing in with a password.
+  const handleLogoutFromKiosk = () => {
+    setIsExitDialogOpen(false);
+    logout();
+    toast.success('Berhasil keluar dari sesi akun');
+    router.replace('/login');
   };
 
   return (
@@ -240,6 +259,7 @@ export function CashierKioskView() {
         isOpen={isExitDialogOpen}
         onClose={() => setIsExitDialogOpen(false)}
         onConfirmExit={handleConfirmExit}
+        onLogout={handleLogoutFromKiosk}
       />
 
       {/* Celebration Success Overlay */}

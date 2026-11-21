@@ -31,7 +31,8 @@ Frontend **Kumpul Cafe** memakai **Domain-First Modular Component Architecture**
 4. **Type-Safe Role-Based Access Control (RBAC)**:
    - Konstanta `ROLE`, `ROLE_GROUPS`, dan helper `getRoleHomePath()` di `src/lib/constants/roles.ts`.
    - `<AuthGuard>` (login + karantina onboarding) dan `<RoleGuard>` (izin per halaman).
-   - ⚠️ Proteksi rute saat ini **hanya di sisi client**; belum ada `proxy.ts`. Backend tetap wajib memvalidasi role pada setiap endpoint.
+   - ⚠️ Proteksi rute saat ini **hanya di sisi client**; belum ada `proxy.ts`. Proxy baru berguna setelah sesi tersimpan di cookie HttpOnly (roadmap 4C.15), karena token di `localStorage` tidak terbaca di server. Backend tetap wajib memvalidasi role pada setiap endpoint.
+   - Mode kiosk mengunci perangkat: `KioskLockGuard` (`src/components/kiosk/kiosk-lock-guard.tsx`) mengembalikan rute dashboard lain ke `/cashier/kiosk` selama `useKioskLockStore.isLocked` aktif. Kunci dilepas oleh PIN keluar yang terverifikasi atau logout.
 5. **Data Real-Time**:
    - KDS memakai polling React Query (`use-admin-orders.ts`, interval 10 detik). WebSocket direncanakan untuk fase order tracking pelanggan (roadmap Phase 3).
 

@@ -39,12 +39,15 @@ interface KioskExitDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirmExit: () => void;
+  /** Escape hatch for a forgotten PIN: ends the session instead of returning to the POS. */
+  onLogout?: () => void;
 }
 
 export function KioskExitDialog({
   isOpen,
   onClose,
   onConfirmExit,
+  onLogout,
 }: Readonly<KioskExitDialogProps>) {
   const { user } = useAuthStore();
   const [pinCode, setPinCode] = useState<string>('');
@@ -240,6 +243,18 @@ export function KioskExitDialog({
               <Delete className="h-4 w-4" />
             </button>
           </div>
+
+          {onLogout && (
+            <button
+              type="button"
+              onClick={onLogout}
+              disabled={isVerifying}
+              className="mt-5 text-[11px] font-semibold text-stone-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:underline underline-offset-2 cursor-pointer disabled:opacity-50"
+              id="kiosk-exit-btn-logout"
+            >
+              Lupa PIN? Keluar akun &amp; login ulang
+            </button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
