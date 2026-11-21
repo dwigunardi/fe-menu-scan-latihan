@@ -78,6 +78,7 @@
   - Validasi jarak via Haversine terhadap `geofenceRadius` cabang, input PIN Clock-In/Out, pengajuan Ijin/Sakit/Cuti, review lembur, koreksi presensi, dan rekap kehadiran (`src/components/attendance/`, `admin-attendance-api.ts`).
   - Personal auto-lock: staf non-admin hanya bisa absen untuk dirinya sendiri; admin punya mode supervisor.
   - Belum: penolakan GPS dengan akurasi > 50m (disebut di blueprint, belum diimplementasikan).
+  - 🟡 Review lembur & koreksi presensi, serta respons presensi yang sesuai `AttendanceItemSchema`, sudah ada di branch lokal BE `feat/cashier-shift-payment` (`bd31ec6`, 2026-11-21, belum di-merge). Jam presensi ditampilkan dalam WIB lewat `formatTimeWib()`.
 - [ ] **4C.9. Verifikasi Kontak (Email Link & WhatsApp OTP) & Emergency Broadcast Engine**
   - Verifikasi identitas kontak ganda dan broadcast pengumuman darurat multi-channel.
 - [ ] **4C.10. Pengaturan Pajak PB1 & Profil Struk (`/admin/settings`)**

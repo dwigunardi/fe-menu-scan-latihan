@@ -138,6 +138,30 @@ describe('use-admin-orders hooks', () => {
         expect(onNoOpenShift).toHaveBeenCalledTimes(1);
       });
 
+      it('recognizes the SHIFT_NOT_OPEN code from the response body', async () => {
+        server.use(
+          http.put(`${API_BASE}/admin/orders/:id/status`, () =>
+            HttpResponse.json(
+              { statusCode: 409, error: 'Conflict', code: 'SHIFT_NOT_OPEN', message: 'Laci kas masih tertutup.' },
+              { status: 409 }
+            )
+          )
+        );
+        const wrapper = createQueryWrapper();
+        const { result } = renderHook(
+          () => useUpdateOrderStatusMutation({ onNoOpenShift: vi.fn() }),
+          { wrapper }
+        );
+
+        result.current.mutate({ id: 'ord-1', status: 'PAID' });
+        await waitFor(() => expect(result.current.isError).toBe(true));
+
+        expect(toast.error).toHaveBeenCalledWith(
+          'Shift kasir belum dibuka',
+          expect.objectContaining({ description: 'Laci kas masih tertutup.' })
+        );
+      });
+
       it('falls back to the generic error toast without onNoOpenShift', async () => {
         const wrapper = createQueryWrapper();
         const { result } = renderHook(() => useUpdateOrderStatusMutation(), {

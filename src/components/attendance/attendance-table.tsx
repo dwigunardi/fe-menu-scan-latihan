@@ -15,6 +15,7 @@ import { ATTENDANCE_STATUS_LABELS, AttendanceStatus } from '@/lib/constants/atte
 import { Pagination } from '@/components/common/pagination';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils/cn';
+import { formatTimeWib } from '@/lib/utils/date-helpers';
 import { OvertimeReviewModal } from './overtime-review-modal';
 import { AttendanceCorrectionModal } from './attendance-correction-modal';
 
@@ -48,15 +49,8 @@ export function AttendanceTable({
   const [selectedCorrectionAttendance, setSelectedCorrectionAttendance] =
     useState<AttendanceItem | null>(null);
 
-  const formatTime = (timeStr?: string | null) => {
-    if (!timeStr) return '--:--';
-    try {
-      const d = new Date(timeStr);
-      return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    } catch {
-      return timeStr;
-    }
-  };
+  // Attendance times are shown in WIB (branch time), not the device time zone
+  const formatTime = (timeStr?: string | null) => formatTimeWib(timeStr) ?? '--:--';
 
   const formatDuration = (minutes?: number | null) => {
     if (!minutes || minutes <= 0) return '-';

@@ -103,15 +103,21 @@ Role: `ADMIN` dan `CASHIER`. Respons cocok dengan `ShiftItemSchema` (`src/lib/va
 
 ## Presensi
 
-| Method | Endpoint | Fungsi | Transport |
-| :--- | :--- | :--- | :--- |
-| GET | `/admin/attendance?…` | `getAdminAttendancePaginated` | E2E |
-| GET | `/admin/attendance/summary?…` | `getAdminAttendanceSummary` | E2E |
-| POST | `/admin/attendance/clock-in` | `recordClockIn` | E2E |
-| POST | `/admin/attendance/clock-out` | `recordClockOut` | E2E |
-| POST | `/admin/attendance/leave` | `createLeaveRequest` | E2E |
-| PATCH | `/admin/attendance/:id/overtime` | `reviewOvertime` | E2E |
-| PATCH | `/admin/attendance/:id/correction` | `correctAttendanceTime` | E2E |
+| Method | Endpoint | Fungsi | Transport | Respons |
+| :--- | :--- | :--- | :--- | :--- |
+| GET | `/admin/attendance?…` | `getAdminAttendancePaginated` | E2E | `{ items: AttendanceItem[], meta }` |
+| GET | `/admin/attendance/summary?…` | `getAdminAttendanceSummary` | E2E | `AttendanceSummarySchema` (+ `date`, dibuang Zod). `attendanceRatePercent` = hadir ÷ staf aktif × 100. |
+| POST | `/admin/attendance/clock-in` | `recordClockIn` | E2E | `AttendanceItem` |
+| POST | `/admin/attendance/clock-out` | `recordClockOut` | E2E | `AttendanceItem` |
+| POST | `/admin/attendance/leave` | `createLeaveRequest` | E2E | `{ success: true, message }` |
+| PATCH | `/admin/attendance/:id/overtime` | `reviewOvertime` | E2E | `AttendanceItem`. Hanya ADMIN. Lihat [kontrak](#kontrak-review-lembur--koreksi-presensi). |
+| PATCH | `/admin/attendance/:id/correction` | `correctAttendanceTime` | E2E | `AttendanceItem`. Hanya ADMIN. Lihat [kontrak](#kontrak-review-lembur--koreksi-presensi). |
+
+Respons dicocokkan dengan `AttendanceItemSchema` (`src/lib/validations/attendance.schema.ts`) pada 2026-11-21: enum status, role, dan field nullable cocok. Format waktu:
+
+- `clockInTime` / `clockOutTime`: **ISO datetime UTC**. Tampilkan dengan `formatTimeWib()` (`src/lib/utils/date-helpers.ts`), jangan dirender mentah.
+- `date`: tanggal **WIB** `YYYY-MM-DD`.
+- `isAutoClosed` selalu `false` dan `actingRole` selalu `null` (belum ada di backend).
 
 ## Pengaturan Cabang & Template Shift
 
@@ -162,6 +168,38 @@ Dipakai oleh exit guard mode kiosk (`src/components/kiosk/kiosk-exit-dialog.tsx`
 
 ---
 
+## Kontrak: review lembur & koreksi presensi
+
+Backend: commit `bd31ec6` di branch lokal BE `feat/cashier-shift-payment` (2026-11-21), divalidasi BE ke server sungguhan memakai salinan schema Zod FE. Keduanya **hanya ADMIN** (`403` untuk role lain) dan `404` jika presensi tidak ditemukan. Review maupun koreksi boleh diulang.
+
+### `PATCH /admin/attendance/:id/overtime`
+
+Body `{ status: 'APPROVED' | 'REJECTED' | 'OVERRIDDEN', approvedMinutes?, notes? }` (`OvertimeReviewSchema`).
+
+- `overtimeMinutes` dihitung saat clock-out: durasi kerja − `dailyShiftHours` × 60, minimal 0. Statusnya pending (`isOvertimeApproved: null`) sampai ditinjau.
+- `APPROVED` → `isOvertimeApproved: true`.
+- `REJECTED` → `false`; `overtimeMinutes` tetap menampilkan menit hasil hitung.
+- `OVERRIDDEN` → wajib `approvedMinutes` 0–1440; `overtimeMinutes` di respons = `approvedMinutes`.
+
+| Kondisi | Respons |
+| :--- | :--- |
+| `APPROVED`/`REJECTED` padahal tidak ada lembur hasil hitung (pakai `OVERRIDDEN`), atau `approvedMinutes` tidak valid | `400` |
+| Staf belum presensi pulang | `409` |
+
+### `PATCH /admin/attendance/:id/correction`
+
+Body `{ clockOutTime, notes }` (`AttendanceCorrectionSchema`), `notes` 3–500 karakter.
+
+- `clockOutTime` `"HH:mm"` = jam **WIB** pada tanggal presensi. Jika tidak setelah jam masuk, dianggap hari berikutnya. ISO datetime juga diterima. Bisa dipakai untuk staf yang lupa clock-out.
+- Durasi dan lembur dihitung ulang; review lembur di-reset jika menit lemburnya berubah.
+- FE mengisi nilai awal input dari `clockOutTime` respons lewat `formatTimeWib()` (sebelumnya ISO dipakai langsung sehingga input `type="time"` kosong).
+
+| Kondisi | Respons |
+| :--- | :--- |
+| Jam pulang tidak setelah jam masuk, di masa depan, durasi > 24 jam, atau tidak ada jam masuk | `400` |
+
+---
+
 ## Status di kode backend (dicek 2026-11-21)
 
 Dicocokkan langsung dengan controller di repo `be-menu-scan-latihan` (`src/modules/**/*.controller.ts`). Semua endpoint di dokumen ini sudah ada di backend, **kecuali**:
@@ -170,8 +208,9 @@ Dicocokkan langsung dengan controller di repo `be-menu-scan-latihan` (`src/modul
 | :--- | :--- | :--- |
 | `/admin/shifts/*` (current, open, `:id/close`, riwayat) | 🟡 Sudah ada di branch lokal BE `feat/cashier-shift-payment`, belum di-push/merge | Jalankan backend dari branch itu untuk integrasi. Kontrak sudah dicocokkan dengan FE (lihat [Shift Kasir](#shift-kasir)). |
 | `POST /auth/verify-pin` | 🟡 Sudah ada di branch lokal BE `feat/cashier-shift-payment` (commit `c2b72cc`), belum di-push/merge | Dengan backend dari branch lain, kasir tidak bisa keluar dari mode kiosk. Kontrak sudah dicocokkan dengan FE (lihat [kontrak](#kontrak-post-authverify-pin)). |
-| `PATCH /admin/attendance/:id/overtime` | ❌ Belum ada | Review lembur gagal |
-| `PATCH /admin/attendance/:id/correction` | ❌ Belum ada | Koreksi presensi gagal |
+| `PATCH /admin/attendance/:id/overtime` | 🟡 Sudah ada di branch lokal BE `feat/cashier-shift-payment` (`bd31ec6`), belum di-push/merge | Dengan backend dari branch lain, review lembur gagal. |
+| `PATCH /admin/attendance/:id/correction` | 🟡 Sudah ada di branch lokal BE `feat/cashier-shift-payment` (`bd31ec6`), belum di-push/merge | Dengan backend dari branch lain, koreksi presensi gagal. |
+| Respons presensi lain (clock-in/out, daftar, ringkasan, izin) | 🟡 Disesuaikan ke schema FE di `bd31ec6` | Sebelumnya backend mengirim baris Prisma mentah tanpa `staffName`/`staffRole`, sehingga ditolak sebagai `CONTRACT_VIOLATION`. |
 
 Daftar tugas untuk backend ditulis di repo backend: `be-menu-scan-latihan/docs/handoff/2026-11-20-fe-audit-handoff.md`.
 
@@ -183,7 +222,7 @@ Berlaku di branch BE `feat/cashier-shift-payment`. Bentuk respons endpoint order
 
 | # | Perubahan backend | Kondisi FE saat ini | Tindak lanjut FE |
 | :---: | :--- | :--- | :--- |
-| 1 | `PUT /admin/orders/:id/status` → `PAID` (tunai) dibalas `409` "Belum ada shift kasir yang dibuka..." jika laci belum dibuka. | ✅ Optimistic update di-rollback. Untuk kasir/admin, toast "Shift kasir belum dibuka" punya tombol **Buka Shift** ke `/admin/shifts` (`isNoOpenShiftError` di `src/lib/api/shift-errors.ts`, opsi `onNoOpenShift` di `useUpdateOrderStatusMutation`). Staf dapur melihat toast biasa. | Deteksi memakai teks pesan karena backend tidak mengirim kode error; minta backend menambah kode mesin (mis. `SHIFT_NOT_OPEN`) agar tidak bergantung pada teks. |
+| 1 | `PUT /admin/orders/:id/status` → `PAID` (tunai) dibalas `409` dengan `code: "SHIFT_NOT_OPEN"` (sejak `03e80c6`) jika laci belum dibuka. | ✅ Optimistic update di-rollback. Untuk kasir/admin, toast "Shift kasir belum dibuka" punya tombol **Buka Shift** ke `/admin/shifts` (`isNoOpenShiftError` di `src/lib/api/shift-errors.ts`, opsi `onNoOpenShift` di `useUpdateOrderStatusMutation`). Staf dapur melihat toast biasa. | — Pipeline meneruskan `code` dari body error ke `ApiError.code` jika nilainya dikenal `ErrorCode`. `isNoOpenShiftError` memeriksa `code` lebih dulu, dan memakai teks pesan hanya sebagai fallback untuk backend lama. |
 | 2 | Field opsional `paymentMethod: 'CASH' \| 'QRIS'` (default `CASH`). `PAID` ulang dengan metode sama → `200` tanpa perubahan; metode berbeda → `409`. | FE tidak mengirim `paymentMethod`, sehingga selalu `CASH`. Belum ada alur QRIS di FE. | Saat alur QRIS (Fase 3) dibuat: kirim `paymentMethod`, dan sembunyikan tombol "Tandai Lunas" untuk order yang `paidAt`-nya sudah terisi. |
 | 3 | "Sudah dibayar" = `paidAt` terisi dan status bukan `CANCELLED`. Order PREPARING/SERVED yang sudah dibayar ikut dihitung di dashboard, laporan, dan menu terlaris. Omzet per `paidAt`, batas hari WIB. | Angka dari endpoint laporan otomatis mengikuti. Hitungan lokal di `orders-view.tsx` masih memakai `status === 'PAID'`. | Samakan hitungan lokal dengan definisi `paidAt` jika angka di layar kasir harus sama dengan laporan. |
 | 4 | `startDate`/`endDate` laporan wajib `YYYY-MM-DD` atau ISO datetime; selain itu `400`. | `date-helpers.ts` mengirim ISO datetime. Aman. | — |

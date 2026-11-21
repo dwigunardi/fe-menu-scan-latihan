@@ -29,6 +29,7 @@ import {
   OvertimeReviewSchema,
 } from '@/lib/validations/attendance.schema';
 import { useReviewOvertimeMutation } from '@/hooks/queries/use-admin-attendance';
+import { formatTimeWib } from '@/lib/utils/date-helpers';
 
 export interface OvertimeReviewModalProps {
   isOpen: boolean;
@@ -140,10 +141,10 @@ export function OvertimeReviewModal({
 
             <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-stone-200/60 dark:border-zinc-700/60 text-stone-600 dark:text-zinc-300">
               <div>
-                <span className="text-stone-400">Jam Masuk:</span> {attendance.clockInTime || '-'}
+                <span className="text-stone-400">Jam Masuk:</span> {formatTimeWib(attendance.clockInTime) ?? '-'}
               </div>
               <div>
-                <span className="text-stone-400">Jam Pulang:</span> {attendance.clockOutTime || 'Masih Bekerja'}
+                <span className="text-stone-400">Jam Pulang:</span> {formatTimeWib(attendance.clockOutTime) ?? 'Masih Bekerja'}
               </div>
             </div>
           </div>

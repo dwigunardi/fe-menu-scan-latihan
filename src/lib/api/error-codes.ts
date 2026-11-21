@@ -39,9 +39,19 @@ export enum ErrorCode {
   MAX_EXTRA_EXCEEDED = 'MAX_EXTRA_EXCEEDED',
   ORDER_ALREADY_PAID = 'ORDER_ALREADY_PAID',
   QRIS_EXPIRED = 'QRIS_EXPIRED',
+  SHIFT_NOT_OPEN = 'SHIFT_NOT_OPEN',
 
   // File & Media Errors
   FILE_TOO_LARGE = 'FILE_TOO_LARGE',
+}
+
+const ERROR_CODE_VALUES = new Set<string>(Object.values(ErrorCode));
+
+/**
+ * True when a value from an error response body (e.g. `{ code: 'SHIFT_NOT_OPEN' }`) is a known ErrorCode.
+ */
+export function isErrorCode(value: unknown): value is ErrorCode {
+  return typeof value === 'string' && ERROR_CODE_VALUES.has(value);
 }
 
 /**

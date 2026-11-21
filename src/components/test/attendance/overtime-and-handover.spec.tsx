@@ -30,8 +30,8 @@ describe('Overtime & Shift Handover Components', () => {
     staffName: 'Ahmad Barista',
     staffRole: ROLE.KITCHEN,
     date: '2026-08-30',
-    clockInTime: '08:00',
-    clockOutTime: '18:00',
+    clockInTime: '2026-08-30T01:00:00.000Z', // 08:00 WIB
+    clockOutTime: '2026-08-30T11:00:00.000Z', // 18:00 WIB
     status: ATTENDANCE_STATUS.ON_TIME,
     clockInLat: -6.2297,
     clockInLon: 106.8557,
@@ -161,6 +161,8 @@ describe('Overtime & Shift Handover Components', () => {
 
       expect(screen.getByText('Koreksi Jam Pulang Staf')).toBeInTheDocument();
       expect(screen.getByText(/Auto-Cutoff Sistem/i)).toBeInTheDocument();
+      // The ISO clock-out from the API is pre-filled as "HH:mm" in WIB
+      expect(screen.getByLabelText(/Jam Pulang Sebenarnya/i)).toHaveValue('18:00');
 
       const notesInput = screen.getByPlaceholderText(/Staf lupa clock-out/i);
       await user.type(notesInput, 'Staf lembur closing hingga 23:00');

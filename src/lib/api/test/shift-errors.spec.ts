@@ -1,9 +1,17 @@
 import { describe, it, expect } from 'vitest';
 import { isNoOpenShiftError } from '@/lib/api/shift-errors';
 import { ApiError } from '@/lib/api/api-error';
+import { ErrorCode } from '@/lib/api/error-codes';
 
 describe('isNoOpenShiftError', () => {
-  it('matches the backend 409 for a cash payment without an open shift', () => {
+  it('matches the SHIFT_NOT_OPEN code regardless of the message text', () => {
+    const error = new ApiError(409, 'Conflict', 'Pesan apa pun', {
+      code: ErrorCode.SHIFT_NOT_OPEN,
+    });
+    expect(isNoOpenShiftError(error)).toBe(true);
+  });
+
+  it('falls back to the message for a 409 without a code (older backend)', () => {
     const error = new ApiError(
       409,
       'Conflict',

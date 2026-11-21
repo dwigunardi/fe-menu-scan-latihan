@@ -22,6 +22,9 @@ import {
   AttendanceCorrectionSchema,
 } from '@/lib/validations/attendance.schema';
 import { useCorrectAttendanceMutation } from '@/hooks/queries/use-admin-attendance';
+import { formatTimeWib } from '@/lib/utils/date-helpers';
+
+const DEFAULT_CLOCK_OUT = '22:00';
 
 export interface AttendanceCorrectionModalProps {
   isOpen: boolean;
@@ -44,7 +47,8 @@ export function AttendanceCorrectionModal({
   } = useForm<AttendanceCorrectionInput>({
     resolver: zodResolver(AttendanceCorrectionSchema),
     defaultValues: {
-      clockOutTime: attendance?.clockOutTime || '22:00',
+      // The API returns ISO datetimes; <input type="time"> and the correction endpoint use "HH:mm" (WIB)
+      clockOutTime: formatTimeWib(attendance?.clockOutTime) ?? DEFAULT_CLOCK_OUT,
       notes: '',
     },
   });
@@ -52,7 +56,7 @@ export function AttendanceCorrectionModal({
   useEffect(() => {
     if (attendance) {
       reset({
-        clockOutTime: attendance.clockOutTime || '22:00',
+        clockOutTime: formatTimeWib(attendance.clockOutTime) ?? DEFAULT_CLOCK_OUT,
         notes: '',
       });
     }
@@ -111,10 +115,10 @@ export function AttendanceCorrectionModal({
 
             <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-stone-200/60 dark:border-zinc-700/60 text-stone-600 dark:text-zinc-300">
               <div>
-                <span className="text-stone-400">Jam Masuk:</span> {attendance.clockInTime || '-'}
+                <span className="text-stone-400">Jam Masuk:</span> {formatTimeWib(attendance.clockInTime) ?? '-'}
               </div>
               <div>
-                <span className="text-stone-400">Jam Pulang Tercatat:</span> {attendance.clockOutTime || '-'}
+                <span className="text-stone-400">Jam Pulang Tercatat:</span> {formatTimeWib(attendance.clockOutTime) ?? '-'}
               </div>
             </div>
           </div>
