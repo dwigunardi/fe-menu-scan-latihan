@@ -66,7 +66,7 @@
   - Saklar 1-tap ketersediaan menu langsung pada tabel `MenuTable` dan `MenuCardsMobile` dengan feedback optimistik.
 - [x] **4C.5. Manajemen Shift Kasir & Z-Report (`/admin/shifts`)**
   - Modal input kas modal awal, monitoring arus kas berjalan, rekonsiliasi kas fisik & selisih (*variance*), serta struk thermal Z-Report siap cetak.
-  - ⚠️ **UI selesai, backend belum**: endpoint `/admin/shifts/*` belum ada di backend (dicek 2026-11-20). Sebelumnya tertutup data mock; sekarang halaman ini menampilkan error sampai backend siap. Lihat `docs/fe/integration/api-endpoints.md`.
+  - 🟡 **Backend siap di branch lokal** `feat/cashier-shift-payment` (2026-11-21, belum di-merge). Kontrak sudah dicocokkan dengan `ShiftItemSchema`. Pelunasan tunai kini wajib ada shift terbuka (`409` jika tidak). Lihat `docs/fe/integration/api-endpoints.md`.
 - [ ] **4C.3. Payment Method Breakdown (Rekonsiliasi QRIS vs Tunai)**
   - Pemisahan omset uang digital (QRIS) dan kas fisik (Cash) pada Laporan dan Dashboard.
 - [x] **4C.6. Manajemen Akun Staf Cabang (`/admin/staff`)**
@@ -86,7 +86,7 @@
   - Admin membuat akun + kredensial sementara (`StaffCredentialModal`); staf wajib ganti password & membuat PIN 4-digit di login pertama (`POST /auth/onboard`), lalu diarahkan ke workstation sesuai role.
 - [x] **4C.12. Mode Kiosk Presensi di Meja Kasir (`/cashier/kiosk`)**
   - Grid staf, numpad PIN, overlay sukses, dan exit guard. Lihat `docs/fe/architecture/attendance-kiosk-enhancement.md`.
-  - ⚠️ **Butuh backend**: exit guard memverifikasi PIN kasir lewat `POST /auth/verify-pin` (lihat `docs/fe/integration/api-endpoints.md`). Selama endpoint belum ada, keluar dari mode kiosk akan selalu ditolak.
+  - 🟡 Exit guard memverifikasi PIN kasir lewat `POST /auth/verify-pin`. Endpoint sudah ada di branch lokal BE `feat/cashier-shift-payment` (belum di-push); dengan backend dari branch lain, keluar dari mode kiosk akan selalu ditolak. Lihat `docs/fe/integration/api-endpoints.md`.
 - [x] **4C.13. Template Shift (`/admin/settings/shifts`)**
   - CRUD template shift + seed default (`admin-shift-templates-api.ts`).
 - [x] **4C.14. Hardening hasil audit (2026-11-20)**
