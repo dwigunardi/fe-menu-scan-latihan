@@ -35,10 +35,19 @@ async function attemptSilentTokenRefresh(): Promise<boolean> {
   refreshPromise = (async () => {
     try {
       const { refreshToken, user } = useAuthStore.getState();
+      const sessionUserId = user?.id;
 
       // 1. If refreshToken exists, attempt silent background rotation
       if (refreshToken) {
         const res = await refreshTokenApi(refreshToken);
+
+        // The session changed while refreshing (shift handover, logout, another login). The result
+        // belongs to the previous user: never store it under the new profile. Let the caller retry
+        // with whatever session is current now.
+        if (useAuthStore.getState().user?.id !== sessionUserId) {
+          return Boolean(useAuthStore.getState().accessToken);
+        }
+
         if (res.isRight()) {
           const { accessToken, refreshToken: newRefreshToken } = res.value;
           useAuthStore.getState().updateTokens(accessToken, newRefreshToken);

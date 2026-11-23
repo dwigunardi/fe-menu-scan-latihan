@@ -140,6 +140,28 @@ Respons dicocokkan dengan `AttendanceItemSchema` (`src/lib/validations/attendanc
 
 ---
 
+## Kontrak: serah terima shift (`/auth/handover`)
+
+Dipakai oleh `ShiftHandoverModal` (tombol "Ganti Shift" untuk semua role kecuali ADMIN). Backend: commit `e048b97` di branch BE `feat/shift-handover-pin` (**belum di `main` backend**). Tanpa backend ini, modal serah terima gagal memuat daftar staf.
+
+| Method | Endpoint | Fungsi | Transport | Catatan |
+| :--- | :--- | :--- | :--- | :--- |
+| GET | `/auth/handover/candidates` | `getHandoverCandidates` (`useHandoverCandidatesQuery`) | E2E | Semua role yang sudah onboarding. `[{ id, employeeId, name, role: CASHIER\|KITCHEN\|WAITER, avatarUrl }]`: staf aktif, sudah onboarding, punya PIN, bukan ADMIN, bukan user saat ini. |
+| POST | `/auth/handover` | `handoverShift` | E2E | Body `{ incomingStaffId, pinCode, notes? (≤500) }`. Respons sama dengan login (`LoginResponseSchema`). FE mengganti profil **dan** token di store, lalu mengarahkan ke halaman role staf pengganti. |
+
+Backend mencabut refresh token staf yang keluar; access token lamanya masih berlaku hingga kedaluwarsa (maks 15 menit) tapi tidak dipakai lagi oleh FE.
+
+| Respons | Tampilan di FE |
+| :--- | :--- |
+| `400` PIN salah ("PIN staf pengganti salah."), penerima = diri sendiri, penerima belum onboarding / tanpa PIN, body tidak valid. **Tidak pernah `401`.** | Pesan backend di bawah input PIN; sesi tetap milik staf lama. |
+| `404` penerima tidak ada / nonaktif / ADMIN | Toast error + daftar kandidat dimuat ulang. |
+| `409` `code: SHIFT_STILL_OPEN` (staf yang keluar masih memegang shift laci `OPEN`) | Langkah "Tutup shift kas Anda terlebih dahulu" + tombol ke `/admin/shifts`. FE juga mengecek ini lebih dulu untuk kasir (`GET /admin/shifts/current`); backend menjaganya untuk semua role. |
+| `429` PIN penerima terkunci (lockout 5x/5 menit, dibagi dengan verify-pin & clock-in/out) atau throttle IP 10/menit | Pesan backend (sisa menit/detik) di bawah input PIN (`getRateLimitMessage`). |
+
+> Daftar staf sebelumnya diambil dari `GET /admin/staff`, yang khusus ADMIN, sehingga selalu `403` untuk kasir/dapur/pelayan yang memakai modal ini.
+
+---
+
 ## Kontrak: `POST /auth/verify-pin`
 
 Dipakai oleh exit guard mode kiosk (`src/components/kiosk/kiosk-exit-dialog.tsx`) untuk memastikan hanya kasir yang sedang login yang bisa keluar dari mode kiosk.

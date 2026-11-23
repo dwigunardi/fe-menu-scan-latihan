@@ -4,8 +4,13 @@ import {
   loginStaff,
   refreshTokenApi,
   reloginStaff,
+  getHandoverCandidates,
+  handoverShift,
 } from '@/lib/api/auth-api';
 import { useAuthStore } from '@/store/use-auth-store';
+import { ErrorCode } from '@/lib/api/error-codes';
+import { server } from '@/test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
 describe('auth-api', () => {
   beforeEach(() => {
@@ -108,6 +113,73 @@ describe('auth-api', () => {
 
       const result = await reloginStaff('wrongpass');
       expect(result.isLeft()).toBe(true);
+    });
+  });
+
+  describe('shift handover', () => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
+
+    beforeEach(() => {
+      useAuthStore.getState().setAuth(
+        { id: 'cashier-1', name: 'Kasir Pagi', role: 'CASHIER' },
+        'access-token'
+      );
+    });
+
+    it('lists handover candidates from GET /auth/handover/candidates', async () => {
+      server.use(
+        http.get(`${API_BASE}/auth/handover/candidates`, () =>
+          HttpResponse.json({
+            data: [{ id: 'staff-2', employeeId: 'KC-002', name: 'Siti', role: 'KITCHEN', avatarUrl: null }],
+          })
+        )
+      );
+
+      const result = await getHandoverCandidates();
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) expect(result.value[0].name).toBe('Siti');
+    });
+
+    it('returns the incoming staff session from POST /auth/handover', async () => {
+      let method = '';
+      server.use(
+        http.post(`${API_BASE}/auth/handover`, ({ request }) => {
+          method = request.method;
+          return HttpResponse.json({
+            data: {
+              accessToken: 'incoming-access',
+              refreshToken: 'incoming-refresh',
+              user: { id: 'staff-2', name: 'Siti', role: 'KITCHEN', needsOnboarding: false },
+            },
+          });
+        })
+      );
+
+      const result = await handoverShift({ incomingStaffId: 'staff-2', pinCode: '1234' });
+
+      expect(method).toBe('POST');
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.accessToken).toBe('incoming-access');
+        expect(result.value.user.id).toBe('staff-2');
+      }
+    });
+
+    it('surfaces the SHIFT_STILL_OPEN code on 409', async () => {
+      server.use(
+        http.post(`${API_BASE}/auth/handover`, () =>
+          HttpResponse.json(
+            { statusCode: 409, error: 'Conflict', code: 'SHIFT_STILL_OPEN', message: 'Tutup shift dulu.' },
+            { status: 409 }
+          )
+        )
+      );
+
+      const result = await handoverShift({ incomingStaffId: 'staff-2', pinCode: '1234' });
+
+      expect(result.isLeft()).toBe(true);
+      if (result.isLeft()) expect(result.value.code).toBe(ErrorCode.SHIFT_STILL_OPEN);
     });
   });
 });
