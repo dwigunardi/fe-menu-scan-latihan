@@ -1,7 +1,7 @@
 # RFC: Rekayasa Arsitektur Presensi Staf — Dari Shared Dropdown Menuju Hybrid Personal Auto-Lock & Authenticated POS Kiosk
 
 > **Status**: ✅ **DIIMPLEMENTASIKAN** — Personal auto-lock di `ClockInModal` (commit 3c29f3f) dan mode kiosk di `/cashier/kiosk` (commit 7f9c631). Dokumen ini disimpan sebagai catatan keputusan desain.  
-> **Perbedaan dari rencana**: rute kiosk menjadi `/cashier/kiosk` (bukan `/admin/kiosk`); exit guard memverifikasi PIN kasir lewat `POST /auth/verify-pin` yang **masih perlu dibuat di backend** (lihat `docs/fe/integration/api-endpoints.md`).  
+> **Perbedaan dari rencana**: rute kiosk menjadi `/cashier/kiosk` (bukan `/admin/kiosk`); exit guard memverifikasi PIN kasir lewat `POST /auth/verify-pin` yang sudah dibuat di branch BE `feat/cashier-shift-payment`, belum di-merge (lihat `docs/fe/integration/api-endpoints.md`).  
 > **Tanggal**: September 2026  
 > **Penulis**: Engineering & UX Team (Pair Programming with User)  
 > **Topik**: Penguatan Integritas Absensi, Pencegahan Titip Absen (*Anti-Buddy Punching*), dan Desain Kios Presensi Kasir

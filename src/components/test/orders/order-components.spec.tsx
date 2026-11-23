@@ -5,6 +5,10 @@ import { OrderData } from '@/lib/validations/order.schema';
 import * as orderHooks from '@/hooks/queries/use-admin-orders';
 import { createQueryWrapper } from '@/test/test-utils';
 
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+}));
+
 const mockOrder: OrderData = {
   id: 'ord-1',
   orderNumber: 'ORD-20260820-001',
@@ -192,6 +196,30 @@ describe('Order Components', () => {
       const payBtn = screen.getByRole('button', { name: /Bayar & Selesai/i });
       fireEvent.click(payBtn);
       expect(onUpdateStatus).toHaveBeenCalledWith('ord-1', 'PAID');
+    });
+
+    it('hides pay and reject buttons when the user cannot settle orders (kitchen/waiter)', () => {
+      const { rerender } = render(
+        <OrderCard
+          order={{ ...mockOrder, status: 'SERVED' }}
+          onUpdateStatus={vi.fn()}
+          onOpenReceipt={vi.fn()}
+          canSettle={false}
+        />
+      );
+      expect(screen.queryByRole('button', { name: /Bayar & Selesai/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Struk/i })).toBeInTheDocument();
+
+      rerender(
+        <OrderCard
+          order={{ ...mockOrder, status: 'PENDING' }}
+          onUpdateStatus={vi.fn()}
+          onOpenReceipt={vi.fn()}
+          canSettle={false}
+        />
+      );
+      expect(screen.queryByRole('button', { name: /Tolak/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Mulai Masak/i })).toBeInTheDocument();
     });
 
     it('renders Lihat Struk button on PAID order and elapsed time with timer color branches', () => {

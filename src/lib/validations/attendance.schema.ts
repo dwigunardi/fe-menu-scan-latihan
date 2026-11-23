@@ -57,17 +57,32 @@ export const AttendanceItemSchema = z.object({
 
 export type AttendanceItem = z.infer<typeof AttendanceItemSchema>;
 
+// Limits mirror the backend DTOs (be: src/modules/attendance/dto/*.dto.ts)
+const MAX_OVERTIME_MINUTES = 24 * 60;
+const MAX_NOTES_LENGTH = 500;
+
 export const OvertimeReviewSchema = z.object({
   status: z.enum(['APPROVED', 'REJECTED', 'OVERRIDDEN']),
-  approvedMinutes: z.number().min(0, 'Menit lembur tidak boleh negatif').optional(),
-  notes: z.string().optional(),
+  approvedMinutes: z
+    .number()
+    .int('Menit lembur harus bilangan bulat')
+    .min(0, 'Menit lembur tidak boleh negatif')
+    .max(MAX_OVERTIME_MINUTES, 'Menit lembur maksimal 24 jam')
+    .optional(),
+  notes: z.string().max(MAX_NOTES_LENGTH, 'Catatan maksimal 500 karakter').optional(),
 });
 
 export type OvertimeReviewInput = z.infer<typeof OvertimeReviewSchema>;
 
 export const AttendanceCorrectionSchema = z.object({
-  clockOutTime: z.string().min(1, 'Jam pulang koreksi wajib diisi'),
-  notes: z.string().min(3, 'Alasan koreksi minimal 3 karakter'),
+  clockOutTime: z
+    .string()
+    .min(1, 'Jam pulang koreksi wajib diisi')
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Jam pulang harus berformat HH:mm'),
+  notes: z
+    .string()
+    .min(3, 'Alasan koreksi minimal 3 karakter')
+    .max(MAX_NOTES_LENGTH, 'Alasan koreksi maksimal 500 karakter'),
 });
 
 export type AttendanceCorrectionInput = z.infer<typeof AttendanceCorrectionSchema>;

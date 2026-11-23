@@ -14,6 +14,7 @@ import { useAuthStore } from '@/store/use-auth-store';
 import { playErrorBeep } from '@/lib/utils/audio-feedback';
 import { verifyStaffPin } from '@/lib/api/auth-api';
 import { ApiError } from '@/lib/api/api-error';
+import { getRateLimitMessage } from '@/lib/api/error-translator';
 import { cn } from '@/lib/utils/cn';
 
 const WRONG_PIN_MESSAGE = 'PIN kasir salah. Akses keluar ditolak.';
@@ -27,7 +28,8 @@ function describeVerifyError(error: ApiError): string {
     return 'Verifikasi PIN belum tersedia di server.';
   }
   if (error.statusCode === 429) {
-    return 'Terlalu banyak percobaan. Tunggu sebentar.';
+    // PIN lockout is shared with clock-in/out; the backend message says how many minutes are left
+    return getRateLimitMessage(error) ?? 'Terlalu banyak percobaan. Tunggu sebentar.';
   }
   if (error.statusCode >= 400 && error.statusCode < 500) {
     return WRONG_PIN_MESSAGE;
@@ -39,12 +41,15 @@ interface KioskExitDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirmExit: () => void;
+  /** Escape hatch for a forgotten PIN: ends the session instead of returning to the POS. */
+  onLogout?: () => void;
 }
 
 export function KioskExitDialog({
   isOpen,
   onClose,
   onConfirmExit,
+  onLogout,
 }: Readonly<KioskExitDialogProps>) {
   const { user } = useAuthStore();
   const [pinCode, setPinCode] = useState<string>('');
@@ -240,6 +245,18 @@ export function KioskExitDialog({
               <Delete className="h-4 w-4" />
             </button>
           </div>
+
+          {onLogout && (
+            <button
+              type="button"
+              onClick={onLogout}
+              disabled={isVerifying}
+              className="mt-5 text-[11px] font-semibold text-stone-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:underline underline-offset-2 cursor-pointer disabled:opacity-50"
+              id="kiosk-exit-btn-logout"
+            >
+              Lupa PIN? Keluar akun &amp; login ulang
+            </button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

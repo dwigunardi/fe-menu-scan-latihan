@@ -98,6 +98,7 @@ vi.mock('@/hooks/queries/use-admin-attendance', () => ({
 }));
 
 import { useAuthStore } from '@/store/use-auth-store';
+import { useKioskLockStore } from '@/store/use-kiosk-lock-store';
 
 describe('CashierKioskView Component', () => {
   beforeEach(() => {
@@ -173,5 +174,24 @@ describe('CashierKioskView Component', () => {
 
     expect(screen.getByText('Proteksi Keluar Kios')).toBeInTheDocument();
     expect(screen.getByText('Dendi Kasir')).toBeInTheDocument();
+  });
+
+  it('locks the device to the kiosk on mount', () => {
+    useKioskLockStore.setState({ isLocked: false });
+
+    render(<CashierKioskView />);
+
+    expect(useKioskLockStore.getState().isLocked).toBe(true);
+  });
+
+  it('logging out from the exit dialog releases the lock', () => {
+    render(<CashierKioskView />);
+    expect(useKioskLockStore.getState().isLocked).toBe(true);
+
+    fireEvent.click(screen.getByRole('button', { name: /Keluar Kios/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lupa PIN\? Keluar akun/i }));
+
+    expect(useKioskLockStore.getState().isLocked).toBe(false);
+    expect(useAuthStore.getState().user).toBeNull();
   });
 });

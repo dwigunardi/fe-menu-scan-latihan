@@ -94,4 +94,42 @@ describe('KioskExitDialog Component', () => {
     });
     expect(onConfirmExit).not.toHaveBeenCalled();
   });
+
+  it('shows the backend lockout message with the remaining minutes on 429', async () => {
+    vi.spyOn(authApi, 'verifyStaffPin').mockResolvedValue(
+      left(new ApiError(429, 'Too Many Requests', 'Terlalu banyak percobaan PIN. Coba lagi dalam 4 menit.'))
+    );
+    const onConfirmExit = renderDialog();
+
+    enterPin('1111');
+
+    await waitFor(() => {
+      expect(screen.getByText(/Coba lagi dalam 4 menit/i)).toBeInTheDocument();
+    });
+    expect(onConfirmExit).not.toHaveBeenCalled();
+  });
+
+  it('offers a logout escape hatch for a forgotten PIN when onLogout is given', () => {
+    const onLogout = vi.fn();
+    const onConfirmExit = vi.fn();
+    render(
+      <KioskExitDialog
+        isOpen={true}
+        onClose={vi.fn()}
+        onConfirmExit={onConfirmExit}
+        onLogout={onLogout}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Lupa PIN\? Keluar akun/i }));
+
+    expect(onLogout).toHaveBeenCalledTimes(1);
+    expect(onConfirmExit).not.toHaveBeenCalled();
+  });
+
+  it('hides the logout escape hatch without onLogout', () => {
+    renderDialog();
+
+    expect(screen.queryByRole('button', { name: /Lupa PIN/i })).not.toBeInTheDocument();
+  });
 });

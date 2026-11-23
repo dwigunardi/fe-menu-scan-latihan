@@ -7,6 +7,19 @@ export interface FriendlyErrorMessage {
   actionLabel?: string;
 }
 
+// NestJS throttler's default 429 text ("ThrottlerException: Too Many Requests") is not for end users
+const GENERIC_THROTTLE_MESSAGE = /throttler|too many requests/i;
+
+/**
+ * Returns the backend's own 429 message when it is meant for users, e.g. the PIN lockout
+ * "Terlalu banyak percobaan PIN. Coba lagi dalam 4 menit." Returns null for other errors and
+ * for the generic throttler text, so callers can fall back to their own wording.
+ */
+export function getRateLimitMessage(error: ApiError): string | null {
+  if (error.statusCode !== 429 || !error.message) return null;
+  return GENERIC_THROTTLE_MESSAGE.test(error.message) ? null : error.message;
+}
+
 /**
  * Translates technical error codes and API exceptions into human-friendly,
  * polite, and informative Indonesian UI messages for Kumpul Cafe customers and staff.
@@ -109,7 +122,9 @@ export function translateErrorToFriendlyMessage(
     case ErrorCode.RATE_LIMITED:
       return {
         title: 'Terlalu Banyak Permintaan',
-        description: 'Mohon tunggu beberapa detik sebelum mencoba kembali.',
+        // Keep the backend's wait time (PIN lockout lasts minutes, not seconds)
+        description:
+          getRateLimitMessage(error) ?? 'Mohon tunggu beberapa detik sebelum mencoba kembali.',
       };
 
     case ErrorCode.CONTRACT_VIOLATION:

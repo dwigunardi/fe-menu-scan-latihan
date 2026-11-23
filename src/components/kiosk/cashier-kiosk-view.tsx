@@ -19,11 +19,33 @@ import { AttendanceItem } from '@/lib/validations/attendance.schema';
 import { ATTENDANCE_TYPE, AttendanceType } from '@/lib/constants/attendance';
 import { checkGeofence, GeofenceCheckResult } from '@/lib/utils/haversine';
 import { useAuthStore, ROLE } from '@/store/use-auth-store';
+import { useKioskLockStore } from '@/store/use-kiosk-lock-store';
 import { toast } from 'sonner';
+import { ApiError } from '@/lib/api/api-error';
+import { getRateLimitMessage } from '@/lib/api/error-translator';
+
+/** Message for a failed kiosk clock-in/out, shown under the PIN pad. */
+function describeClockError(err: unknown): string {
+  // 429 = the staff PIN is locked (shared with verify-pin) or the request was throttled
+  if (err instanceof ApiError && err.statusCode === 429) {
+    return getRateLimitMessage(err) ?? 'Terlalu banyak percobaan. Tunggu sebentar.';
+  }
+  if (err && typeof err === 'object' && 'message' in err) {
+    return String(err.message);
+  }
+  return 'PIN salah atau gagal melakukan presensi';
+}
 
 export function CashierKioskView() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
+  const lockKiosk = useKioskLockStore((state) => state.lock);
+  const unlockKiosk = useKioskLockStore((state) => state.unlock);
+
+  // Entering the kiosk locks this device to it until a verified exit PIN or a logout
+  useEffect(() => {
+    lockKiosk();
+  }, [lockKiosk]);
 
   // Queries
   const { data: branchSetting } = usePublicBranchLocationQuery();
@@ -178,17 +200,15 @@ export function CashierKioskView() {
       setIsSuccessOverlayOpen(true);
     } catch (err: unknown) {
       setIsSubmitting(false);
-      const apiErrMessage =
-        err && typeof err === 'object' && 'message' in err
-          ? String(err.message)
-          : 'PIN salah atau gagal melakukan presensi';
-      setPinErrorMessage(apiErrMessage);
+      setPinErrorMessage(describeClockError(err));
     }
   };
 
   // Exit Kiosk Handler (Protected by Exit PIN Dialog)
   const handleConfirmExit = () => {
     setIsExitDialogOpen(false);
+    // Release the lock before navigating, otherwise KioskLockGuard sends us straight back
+    unlockKiosk();
     toast.success('Keluar dari mode kios. Kembali ke workstation kasir.');
     // Return to cashier tables or admin dashboard
     if (user?.role === ROLE.ADMIN) {
@@ -196,6 +216,15 @@ export function CashierKioskView() {
     } else {
       router.push('/cashier/tables');
     }
+  };
+
+  // Escape hatch when the PIN cannot be verified (forgotten PIN, server unavailable). Logging out
+  // releases the lock; getting back into the POS still requires signing in with a password.
+  const handleLogoutFromKiosk = () => {
+    setIsExitDialogOpen(false);
+    logout();
+    toast.success('Berhasil keluar dari sesi akun');
+    router.replace('/login');
   };
 
   return (
@@ -240,6 +269,7 @@ export function CashierKioskView() {
         isOpen={isExitDialogOpen}
         onClose={() => setIsExitDialogOpen(false)}
         onConfirmExit={handleConfirmExit}
+        onLogout={handleLogoutFromKiosk}
       />
 
       {/* Celebration Success Overlay */}

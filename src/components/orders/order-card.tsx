@@ -26,6 +26,11 @@ interface OrderCardProps {
   onDragEnd?: (e: DragEvent<HTMLDivElement>) => void;
   isDragging?: boolean;
   isMobile?: boolean;
+  /**
+   * Whether this user may mark orders PAID or CANCELLED. The backend allows only ADMIN and
+   * CASHIER (403 for KITCHEN/WAITER), so the pay and reject buttons are hidden otherwise.
+   */
+  canSettle?: boolean;
 }
 
 /**
@@ -62,6 +67,7 @@ export function OrderCard({
   onDragEnd,
   isDragging,
   isMobile = false,
+  canSettle = true,
 }: Readonly<OrderCardProps>) {
   const { label: timeLabel, elapsedMinutes } = useMemo(
     () => formatOrderTime(order.createdAt),
@@ -223,16 +229,18 @@ export function OrderCard({
         <div className="flex items-center gap-1.5 pt-0.5">
           {order.status === 'PENDING' && (
             <>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={isPending}
-                onClick={() => onUpdateStatus(order.id, 'CANCELLED')}
-                className="flex-1 text-[11px] h-8.5 rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 border-red-200 dark:border-red-900/60 cursor-pointer"
-              >
-                <XCircle className="h-3.5 w-3.5 mr-1" />
-                Tolak
-              </Button>
+              {canSettle && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={isPending}
+                  onClick={() => onUpdateStatus(order.id, 'CANCELLED')}
+                  className="flex-1 text-[11px] h-8.5 rounded-xl text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 border-red-200 dark:border-red-900/60 cursor-pointer"
+                >
+                  <XCircle className="h-3.5 w-3.5 mr-1" />
+                  Tolak
+                </Button>
+              )}
               <Button
                 size="sm"
                 disabled={isPending}
@@ -268,15 +276,17 @@ export function OrderCard({
                 <Receipt className="h-3.5 w-3.5 mr-1" />
                 Struk
               </Button>
-              <Button
-                size="sm"
-                disabled={isPending}
-                onClick={() => onUpdateStatus(order.id, 'PAID')}
-                className="flex-2 text-[11px] h-8.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer shadow-xs"
-              >
-                <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                Bayar & Selesai
-              </Button>
+              {canSettle && (
+                <Button
+                  size="sm"
+                  disabled={isPending}
+                  onClick={() => onUpdateStatus(order.id, 'PAID')}
+                  className="flex-2 text-[11px] h-8.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer shadow-xs"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                  Bayar & Selesai
+                </Button>
+              )}
             </div>
           )}
 

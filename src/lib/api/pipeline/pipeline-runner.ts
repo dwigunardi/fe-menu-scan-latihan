@@ -1,5 +1,6 @@
 import { Either, left, right } from '../either';
 import { ApiError } from '../api-error';
+import { isErrorCode } from '../error-codes';
 import { ApiTransportOptions } from '../types';
 import { performHandshake } from '../handshake-session';
 import { PipelineContext, Middleware } from './types';
@@ -171,6 +172,9 @@ export async function executePipeline<T = unknown>(
 
       throw new ApiError(statusCode, errorTitle, message, {
         details: json?.details,
+        // Machine-readable code from the backend when it sends one (e.g. SHIFT_NOT_OPEN);
+        // otherwise ApiError derives the code from the HTTP status
+        code: isErrorCode(json?.code) ? json.code : undefined,
       });
     }
 

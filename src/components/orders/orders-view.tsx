@@ -1,10 +1,17 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef, DragEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   useAdminOrdersPaginatedQuery,
   useUpdateOrderStatusMutation,
 } from '@/hooks/queries/use-admin-orders';
+import { useAuthStore, UserRole } from '@/store/use-auth-store';
+import { ROLE_GROUPS } from '@/lib/constants/roles';
+import { toast } from 'sonner';
+
+/** Order statuses only ADMIN and CASHIER may set (backend: 403 for KITCHEN/WAITER). */
+const SETTLEMENT_STATUSES: ReadonlySet<OrderStatus> = new Set<OrderStatus>(['PAID', 'CANCELLED']);
 import { OrderData, OrderStatus } from '@/lib/validations/order.schema';
 import { formatCurrency } from '@/lib/utils/format-currency';
 import { playOrderChime } from '@/lib/utils/audio-chime';
@@ -128,7 +135,16 @@ export function OrdersView({
     sortOrder: 'desc',
   });
 
-  const updateStatusMutation = useUpdateOrderStatusMutation();
+  const router = useRouter();
+  const userRole = useAuthStore((state) => state.user?.role);
+  // Only ADMIN and CASHIER may mark orders PAID/CANCELLED (backend answers 403 otherwise) and open
+  // a shift, so only they get the pay/reject buttons and the "Buka Shift" shortcut.
+  const canSettleOrders =
+    !!userRole && (ROLE_GROUPS.CASHIER_OR_ADMIN as readonly UserRole[]).includes(userRole);
+
+  const updateStatusMutation = useUpdateOrderStatusMutation({
+    onNoOpenShift: canSettleOrders ? () => router.push('/admin/shifts') : undefined,
+  });
 
   const orders = useMemo(() => paginatedData?.items || [], [paginatedData?.items]);
 
@@ -187,6 +203,11 @@ export function OrdersView({
   }, [orders, pendingOrders.length, preparingOrders.length, servedOrders.length, paidOrders.length]);
 
   const handleUpdateStatus = (id: string, newStatus: OrderStatus) => {
+    // Also covers dragging a card onto the "Lunas" column
+    if (!canSettleOrders && SETTLEMENT_STATUSES.has(newStatus)) {
+      toast.error('Hanya kasir atau admin yang dapat menyelesaikan pembayaran atau membatalkan pesanan.');
+      return;
+    }
     updateStatusMutation.mutate({ id, status: newStatus });
   };
 
@@ -547,6 +568,7 @@ export function OrdersView({
                           onUpdateStatus={handleUpdateStatus}
                           onOpenReceipt={handleOpenReceipt}
                           isPending={updateStatusMutation.isPending}
+                          canSettle={canSettleOrders}
                           isMobile={true}
                         />
                       ))
@@ -610,6 +632,7 @@ export function OrdersView({
                           onUpdateStatus={handleUpdateStatus}
                           onOpenReceipt={handleOpenReceipt}
                           isPending={updateStatusMutation.isPending}
+                          canSettle={canSettleOrders}
                           onDragStart={handleDragStart}
                           onDragEnd={handleDragEnd}
                           isDragging={draggedOrder?.id === order.id}

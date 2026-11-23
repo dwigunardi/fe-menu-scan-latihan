@@ -77,3 +77,22 @@ export function formatDateTimeIndo(dateStr: string | Date): string {
     return '-';
   }
 }
+
+const WIB_TIME_FORMAT = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Jakarta',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+/**
+ * Formats an ISO datetime as "HH:mm" in WIB (Asia/Jakarta), regardless of the device time zone.
+ * The output fits `<input type="time">` and the backend's "HH:mm" (WIB) attendance correction input.
+ * Returns null for empty or unparseable values.
+ */
+export function formatTimeWib(value?: string | null): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return null;
+  return WIB_TIME_FORMAT.format(d);
+}

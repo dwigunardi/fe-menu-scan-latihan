@@ -5,7 +5,26 @@ import {
   getCurrentMonthRange,
   formatDateIndo,
   formatDateTimeIndo,
+  formatTimeWib,
 } from '@/lib/utils/date-helpers';
+
+describe('formatTimeWib', () => {
+  it('formats a UTC ISO datetime as HH:mm in WIB (UTC+7)', () => {
+    expect(formatTimeWib('2026-11-21T15:05:00.000Z')).toBe('22:05');
+    expect(formatTimeWib('2026-11-21T01:00:00.000Z')).toBe('08:00');
+  });
+
+  it('uses 00 for midnight instead of 24', () => {
+    expect(formatTimeWib('2026-11-21T17:00:00.000Z')).toBe('00:00');
+  });
+
+  it('returns null for empty or invalid values', () => {
+    expect(formatTimeWib(null)).toBeNull();
+    expect(formatTimeWib(undefined)).toBeNull();
+    expect(formatTimeWib('')).toBeNull();
+    expect(formatTimeWib('bukan-tanggal')).toBeNull();
+  });
+});
 
 describe('Date Helpers Utility', () => {
   it('returns valid ISO strings for getTodayRange', () => {

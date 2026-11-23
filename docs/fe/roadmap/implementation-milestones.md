@@ -66,7 +66,7 @@
   - Saklar 1-tap ketersediaan menu langsung pada tabel `MenuTable` dan `MenuCardsMobile` dengan feedback optimistik.
 - [x] **4C.5. Manajemen Shift Kasir & Z-Report (`/admin/shifts`)**
   - Modal input kas modal awal, monitoring arus kas berjalan, rekonsiliasi kas fisik & selisih (*variance*), serta struk thermal Z-Report siap cetak.
-  - ⚠️ **UI selesai, backend belum**: endpoint `/admin/shifts/*` belum ada di backend (dicek 2026-11-20). Sebelumnya tertutup data mock; sekarang halaman ini menampilkan error sampai backend siap. Lihat `docs/fe/integration/api-endpoints.md`.
+  - 🟡 **Backend siap di branch lokal** `feat/cashier-shift-payment` (2026-11-21, belum di-merge). Kontrak sudah dicocokkan dengan `ShiftItemSchema`. Pelunasan tunai kini wajib ada shift terbuka (`409` jika tidak). Lihat `docs/fe/integration/api-endpoints.md`.
 - [ ] **4C.3. Payment Method Breakdown (Rekonsiliasi QRIS vs Tunai)**
   - Pemisahan omset uang digital (QRIS) dan kas fisik (Cash) pada Laporan dan Dashboard.
 - [x] **4C.6. Manajemen Akun Staf Cabang (`/admin/staff`)**
@@ -78,6 +78,7 @@
   - Validasi jarak via Haversine terhadap `geofenceRadius` cabang, input PIN Clock-In/Out, pengajuan Ijin/Sakit/Cuti, review lembur, koreksi presensi, dan rekap kehadiran (`src/components/attendance/`, `admin-attendance-api.ts`).
   - Personal auto-lock: staf non-admin hanya bisa absen untuk dirinya sendiri; admin punya mode supervisor.
   - Belum: penolakan GPS dengan akurasi > 50m (disebut di blueprint, belum diimplementasikan).
+  - 🟡 Review lembur & koreksi presensi, serta respons presensi yang sesuai `AttendanceItemSchema`, sudah ada di branch lokal BE `feat/cashier-shift-payment` (`bd31ec6`, 2026-11-21, belum di-merge). Jam presensi ditampilkan dalam WIB lewat `formatTimeWib()`.
 - [ ] **4C.9. Verifikasi Kontak (Email Link & WhatsApp OTP) & Emergency Broadcast Engine**
   - Verifikasi identitas kontak ganda dan broadcast pengumuman darurat multi-channel.
 - [ ] **4C.10. Pengaturan Pajak PB1 & Profil Struk (`/admin/settings`)**
@@ -86,14 +87,17 @@
   - Admin membuat akun + kredensial sementara (`StaffCredentialModal`); staf wajib ganti password & membuat PIN 4-digit di login pertama (`POST /auth/onboard`), lalu diarahkan ke workstation sesuai role.
 - [x] **4C.12. Mode Kiosk Presensi di Meja Kasir (`/cashier/kiosk`)**
   - Grid staf, numpad PIN, overlay sukses, dan exit guard. Lihat `docs/fe/architecture/attendance-kiosk-enhancement.md`.
-  - ⚠️ **Butuh backend**: exit guard memverifikasi PIN kasir lewat `POST /auth/verify-pin` (lihat `docs/fe/integration/api-endpoints.md`). Selama endpoint belum ada, keluar dari mode kiosk akan selalu ditolak.
+  - 🟡 Exit guard memverifikasi PIN kasir lewat `POST /auth/verify-pin`. Endpoint sudah ada di branch lokal BE `feat/cashier-shift-payment` (belum di-push); dengan backend dari branch lain, keluar dari mode kiosk akan selalu ditolak. Lihat `docs/fe/integration/api-endpoints.md`.
 - [x] **4C.13. Template Shift (`/admin/settings/shifts`)**
   - CRUD template shift + seed default (`admin-shift-templates-api.ts`).
 - [x] **4C.14. Hardening hasil audit (2026-11-20)**
   - Fallback mock localStorage pada API staf & shift kini mati secara default (aktif hanya dengan `NEXT_PUBLIC_ENABLE_MOCK_FALLBACK=true`, dan hanya untuk error jaringan/404/501).
   - Exit guard kiosk diverifikasi server-side; redirect onboarding per role; redirect refresh-token gagal ke `/login`; tombol demo login disembunyikan di production; cache React Query dibersihkan saat logout/ganti user; service worker diperbaiki (tidak lagi meng-cache API/cross-origin).
 - [ ] **4C.15. Tindak lanjut audit**
-  - Proteksi rute di sisi server (`proxy.ts`), token tidak lagi di `localStorage` (HttpOnly cookie), single-flight handshake, fallback GPS kiosk tidak boleh memakai koordinat cabang, tanggal "hari ini" kiosk memakai zona waktu cabang (WIB), dan review cakupan role (`KITCHEN_OR_ADMIN` mencakup kasir; kasir bisa CRUD meja).
+  - [x] Kunci navigasi mode kiosk (2026-11-21): `useKioskLockStore` (persist `localStorage`) + `KioskLockGuard` di layout dashboard. Selama terkunci, tombol back, URL yang diketik, dan reload selalu kembali ke `/cashier/kiosk`. Kunci dibuka hanya oleh PIN yang terverifikasi atau logout (tombol "Lupa PIN? Keluar akun & login ulang" di dialog keluar).
+  - [ ] Proteksi rute di sisi server (`proxy.ts`) **ditunda** dan dikerjakan bersama pemindahan token ke cookie HttpOnly. Selama token masih di `localStorage`, proxy tidak bisa membaca sesi; cookie penanda yang bisa dipalsukan sengaja tidak dipakai.
+  - Sisanya: token tidak lagi di `localStorage` (HttpOnly cookie, butuh BE), single-flight handshake, fallback GPS kiosk tidak boleh memakai koordinat cabang, dan tanggal "hari ini" kiosk memakai zona waktu cabang (WIB).
+  - [x] Review cakupan role (2026-11-23, mengikuti audit backend): kasir memang boleh membuka KDS; bayar/batal pesanan hanya `ADMIN`/`CASHIER`; CRUD meja & zona hanya `ADMIN`. UI menyembunyikan aksi yang akan ditolak `403`.
 
 
 ---

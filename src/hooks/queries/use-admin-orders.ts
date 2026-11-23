@@ -13,6 +13,7 @@ import { adminQueryKeys } from '@/lib/query-keys';
 import { OrderData, OrderStatus } from '@/lib/validations/order.schema';
 import { PaginatedResult } from '@/types/pagination';
 import { notifyApiError } from '@/lib/api/notify-error';
+import { isNoOpenShiftError } from '@/lib/api/shift-errors';
 import { toast } from 'sonner';
 
 /**
@@ -36,10 +37,19 @@ export function useAdminOrdersPaginatedQuery(
   });
 }
 
+interface UpdateOrderStatusOptions {
+  /**
+   * Called from the error toast's "Buka Shift" action when a cash payment is rejected
+   * because no cashier shift is open. Without it, the error shows as a plain toast.
+   */
+  onNoOpenShift?: () => void;
+}
+
 /**
  * Hook to update order status with Optimistic UI updates.
  */
-export function useUpdateOrderStatusMutation() {
+export function useUpdateOrderStatusMutation(options: UpdateOrderStatusOptions = {}) {
+  const { onNoOpenShift } = options;
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -91,6 +101,17 @@ export function useUpdateOrderStatusMutation() {
           queryClient.setQueryData(key, data);
         }
       }
+
+      if (onNoOpenShift && isNoOpenShiftError(err)) {
+        toast.error('Shift kasir belum dibuka', {
+          id: 'no-open-shift',
+          description: err.message,
+          duration: 8000,
+          action: { label: 'Buka Shift', onClick: onNoOpenShift },
+        });
+        return;
+      }
+
       notifyApiError(err);
     },
 
