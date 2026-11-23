@@ -32,6 +32,38 @@ describe('Handshake Session & Pipeline Runner Architecture', () => {
       expect(store.sessionKey).toBeDefined();
     });
 
+    it('shares one handshake between concurrent callers (single-flight)', async () => {
+      let handshakeRequests = 0;
+      server.events.on('request:start', ({ request }) => {
+        if (request.url.endsWith('/auth/handshake')) handshakeRequests += 1;
+      });
+
+      const results = await Promise.all([
+        ensureHandshakeSession(),
+        ensureHandshakeSession(),
+        ensureHandshakeSession(),
+      ]);
+      server.events.removeAllListeners('request:start');
+
+      expect(handshakeRequests).toBe(1);
+      expect(results.every((r) => r.isRight())).toBe(true);
+      const tokens = results.map((r) => (r.isRight() ? r.value.handshakeToken : null));
+      expect(new Set(tokens).size).toBe(1);
+    });
+
+    it('starts a new handshake after the previous one has finished', async () => {
+      let handshakeRequests = 0;
+      server.events.on('request:start', ({ request }) => {
+        if (request.url.endsWith('/auth/handshake')) handshakeRequests += 1;
+      });
+
+      await performHandshake();
+      await performHandshake();
+      server.events.removeAllListeners('request:start');
+
+      expect(handshakeRequests).toBe(2);
+    });
+
     it('returns cached handshake session from ensureHandshakeSession without re-fetching', async () => {
       // First handshake
       await performHandshake();

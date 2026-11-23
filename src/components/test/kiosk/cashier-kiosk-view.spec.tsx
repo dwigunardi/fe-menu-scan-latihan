@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { CashierKioskView } from '@/components/kiosk/cashier-kiosk-view';
 import { ROLE } from '@/lib/constants/roles';
 
@@ -174,6 +174,50 @@ describe('CashierKioskView Component', () => {
 
     expect(screen.getByText('Proteksi Keluar Kios')).toBeInTheDocument();
     expect(screen.getByText('Dendi Kasir')).toBeInTheDocument();
+  });
+
+  describe('clock-in location', () => {
+    function mockGeolocation(coords: { latitude: number; longitude: number } | null) {
+      Object.defineProperty(navigator, 'geolocation', {
+        configurable: true,
+        value: coords
+          ? { getCurrentPosition: (onSuccess: PositionCallback) => onSuccess({ coords } as GeolocationPosition) }
+          : undefined,
+      });
+    }
+
+    async function enterPinFor(staffName: string, pin: string) {
+      fireEvent.click(screen.getByText(staffName));
+      for (const digit of pin) {
+        await act(async () => {
+          fireEvent.click(document.getElementById(`kiosk-pin-btn-${digit}`) as HTMLElement);
+        });
+      }
+    }
+
+    it('refuses to clock in without a GPS fix instead of using the branch coordinates', async () => {
+      mockGeolocation(null);
+      render(<CashierKioskView />);
+
+      await enterPinFor('Siti Rahma', '1234');
+
+      expect(await screen.findByText(/Lokasi GPS belum terdeteksi/i)).toBeInTheDocument();
+      expect(mockMutateClockIn).not.toHaveBeenCalled();
+    });
+
+    it('sends the device GPS coordinates when a fix is available', async () => {
+      // Same spot as the mocked branch, so the geofence check passes
+      mockGeolocation({ latitude: -6.2297465, longitude: 106.8557342 });
+      render(<CashierKioskView />);
+
+      await enterPinFor('Siti Rahma', '1234');
+
+      await waitFor(() => {
+        expect(mockMutateClockIn).toHaveBeenCalledWith(
+          expect.objectContaining({ staffId: 'staff-2', pinCode: '1234', latitude: -6.2297465, longitude: 106.8557342 })
+        );
+      });
+    });
   });
 
   it('locks the device to the kiosk on mount', () => {

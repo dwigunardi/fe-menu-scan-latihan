@@ -24,7 +24,7 @@ Semua request lewat `apiTransport` → `executePipeline` (lihat [interceptor-pip
 | POST | `/auth/login` | `loginStaff` | Plain | Body `{ email, password }`. |
 | POST | `/auth/refresh` | `refreshTokenApi` | Plain | Header `Authorization: Bearer <refreshToken>` + body `{ refreshToken }`. |
 | POST | `/auth/onboard` | `onboardStaff` | Plain | Body `{ currentPassword, newPassword, pinCode }`. Response sama dengan login. |
-| POST | `/auth/verify-pin` | `verifyStaffPin` | E2E | 🟡 Ada di branch lokal BE `feat/cashier-shift-payment` (commit `c2b72cc`), belum di-push. Body `{ pinCode }` → `200 { valid }`. Lihat [kontrak](#kontrak-post-authverify-pin). |
+| POST | `/auth/verify-pin` | `verifyStaffPin` | E2E | ✅ Ada di `main` backend (commit `c2b72cc`). Body `{ pinCode }` → `200 { valid }`. Lihat [kontrak](#kontrak-post-authverify-pin). |
 
 ## Menu & Kategori
 
@@ -144,7 +144,7 @@ Respons dicocokkan dengan `AttendanceItemSchema` (`src/lib/validations/attendanc
 
 Dipakai oleh exit guard mode kiosk (`src/components/kiosk/kiosk-exit-dialog.tsx`) untuk memastikan hanya kasir yang sedang login yang bisa keluar dari mode kiosk.
 
-**Status backend**: sudah dibuat di branch lokal BE `feat/cashier-shift-payment` (commit `c2b72cc`), belum di-push. Sudah dites BE ke server sungguhan (14/14 skenario lolos). Jalankan backend dari branch itu untuk integrasi.
+**Status backend**: sudah di `main` backend (commit `c2b72cc`, di-merge 2026-11-23). Sudah dites BE ke server sungguhan (14/14 skenario lolos).
 
 - **Auth**: Bearer token (JWT), semua role. PIN yang diverifikasi adalah PIN milik user dari JWT.
 - **Transport**: E2E (handshake + body terenkripsi), karena PIN adalah kredensial.
@@ -170,7 +170,7 @@ Dipakai oleh exit guard mode kiosk (`src/components/kiosk/kiosk-exit-dialog.tsx`
 
 ## Kontrak: review lembur & koreksi presensi
 
-Backend: commit `bd31ec6` di branch lokal BE `feat/cashier-shift-payment` (2026-11-21), divalidasi BE ke server sungguhan memakai salinan schema Zod FE. Keduanya **hanya ADMIN** (`403` untuk role lain) dan `404` jika presensi tidak ditemukan. Review maupun koreksi boleh diulang.
+Backend: commit `bd31ec6` (2026-11-21, kini di `main` backend), divalidasi BE ke server sungguhan memakai salinan schema Zod FE. Keduanya **hanya ADMIN** (`403` untuk role lain) dan `404` jika presensi tidak ditemukan. Review maupun koreksi boleh diulang.
 
 ### `PATCH /admin/attendance/:id/overtime`
 
@@ -200,17 +200,20 @@ Body `{ clockOutTime, notes }` (`AttendanceCorrectionSchema`), `notes` 3–500 k
 
 ---
 
-## Status di kode backend (dicek 2026-11-21)
+## Status di kode backend (dicek 2026-11-23)
 
-Dicocokkan langsung dengan controller di repo `be-menu-scan-latihan` (`src/modules/**/*.controller.ts`). Semua endpoint di dokumen ini sudah ada di backend, **kecuali**:
+Dicocokkan langsung dengan controller di repo `be-menu-scan-latihan` (`src/modules/**/*.controller.ts`). **Semua endpoint di dokumen ini sudah ada di `main` backend** (merge PR backend #1–#4, terakhir `2d85565`, 2026-11-23), termasuk yang sebelumnya belum ada:
 
-| Endpoint yang dipanggil FE | Status backend | Dampak |
+| Endpoint yang dipanggil FE | Ditambahkan di backend | Catatan |
 | :--- | :--- | :--- |
-| `/admin/shifts/*` (current, open, `:id/close`, riwayat) | 🟡 Sudah ada di branch lokal BE `feat/cashier-shift-payment`, belum di-push/merge | Jalankan backend dari branch itu untuk integrasi. Kontrak sudah dicocokkan dengan FE (lihat [Shift Kasir](#shift-kasir)). |
-| `POST /auth/verify-pin` | 🟡 Sudah ada di branch lokal BE `feat/cashier-shift-payment` (commit `c2b72cc`), belum di-push/merge | Dengan backend dari branch lain, kasir tidak bisa keluar dari mode kiosk. Kontrak sudah dicocokkan dengan FE (lihat [kontrak](#kontrak-post-authverify-pin)). |
-| `PATCH /admin/attendance/:id/overtime` | 🟡 Sudah ada di branch lokal BE `feat/cashier-shift-payment` (`bd31ec6`), belum di-push/merge | Dengan backend dari branch lain, review lembur gagal. |
-| `PATCH /admin/attendance/:id/correction` | 🟡 Sudah ada di branch lokal BE `feat/cashier-shift-payment` (`bd31ec6`), belum di-push/merge | Dengan backend dari branch lain, koreksi presensi gagal. |
-| Respons presensi lain (clock-in/out, daftar, ringkasan, izin) | 🟡 Disesuaikan ke schema FE di `bd31ec6` | Sebelumnya backend mengirim baris Prisma mentah tanpa `staffName`/`staffRole`, sehingga ditolak sebagai `CONTRACT_VIOLATION`. |
+| `/admin/shifts/*` (current, open, `:id/close`, riwayat) | `6a13442`, `b84dc4f` | Kontrak dicocokkan dengan FE (lihat [Shift Kasir](#shift-kasir)). |
+| `POST /auth/verify-pin` | `c2b72cc` | Lihat [kontrak](#kontrak-post-authverify-pin). |
+| `PATCH /admin/attendance/:id/overtime`, `/correction` | `bd31ec6` | Lihat [kontrak](#kontrak-review-lembur--koreksi-presensi). |
+| Respons presensi lain (clock-in/out, daftar, ringkasan, izin) | `bd31ec6` | Sebelumnya backend mengirim baris Prisma mentah tanpa `staffName`/`staffRole`, sehingga ditolak sebagai `CONTRACT_VIOLATION`. |
+
+Backend lama (sebelum `3395e5b`) tidak punya endpoint di atas: halaman shift error, kasir hanya bisa keluar kiosk lewat logout, dan review lembur/koreksi gagal.
+
+Pesan `429` throttler backend berbahasa Indonesia ("Terlalu banyak permintaan. Coba lagi dalam X detik.") sejak commit `cf57542` (di `main` backend lewat merge `2d85565`). `getRateLimitMessage()` menampilkannya apa adanya; teks bawaan lama "ThrottlerException: Too Many Requests" tetap diganti kalimat generik untuk backend lama.
 
 Daftar tugas untuk backend ditulis di repo backend: `be-menu-scan-latihan/docs/handoff/2026-11-20-fe-audit-handoff.md`.
 

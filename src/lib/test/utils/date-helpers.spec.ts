@@ -6,6 +6,7 @@ import {
   formatDateIndo,
   formatDateTimeIndo,
   formatTimeWib,
+  getTodayWib,
 } from '@/lib/utils/date-helpers';
 
 describe('formatTimeWib', () => {
@@ -80,5 +81,16 @@ describe('Date Helpers Utility', () => {
       expect(formatDateTimeIndo('invalid-date-string')).toBe('-');
       expect(formatDateTimeIndo(new Date('invalid'))).toBe('-');
     });
+  });
+});
+
+describe('getTodayWib', () => {
+  it('returns the WIB calendar date, not the UTC one', () => {
+    // 2026-11-21 20:30 UTC = 2026-11-22 03:30 WIB; toISOString() would give the 21st
+    expect(getTodayWib(new Date('2026-11-21T20:30:00.000Z'))).toBe('2026-11-22');
+  });
+
+  it('formats as YYYY-MM-DD', () => {
+    expect(getTodayWib(new Date('2026-01-05T05:00:00.000Z'))).toBe('2026-01-05');
   });
 });
