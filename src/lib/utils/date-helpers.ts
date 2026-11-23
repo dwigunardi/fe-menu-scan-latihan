@@ -96,3 +96,19 @@ export function formatTimeWib(value?: string | null): string | null {
   if (isNaN(d.getTime())) return null;
   return WIB_TIME_FORMAT.format(d);
 }
+
+const WIB_DATE_FORMAT = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Jakarta',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+/**
+ * Returns the calendar date in WIB (Asia/Jakarta) as "YYYY-MM-DD", matching the backend's
+ * attendance `date`. Unlike `toISOString().split('T')[0]`, it does not return yesterday's
+ * date between 00:00 and 07:00 WIB.
+ */
+export function getTodayWib(now: Date = new Date()): string {
+  return WIB_DATE_FORMAT.format(now);
+}

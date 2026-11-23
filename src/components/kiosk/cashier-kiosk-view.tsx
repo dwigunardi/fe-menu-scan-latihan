@@ -22,6 +22,7 @@ import { useAuthStore, ROLE } from '@/store/use-auth-store';
 import { useKioskLockStore } from '@/store/use-kiosk-lock-store';
 import { toast } from 'sonner';
 import { ApiError } from '@/lib/api/api-error';
+import { useWibToday } from '@/hooks/use-wib-today';
 import { getRateLimitMessage } from '@/lib/api/error-translator';
 
 /** Message for a failed kiosk clock-in/out, shown under the PIN pad. */
@@ -53,7 +54,8 @@ export function CashierKioskView() {
     limit: 100,
   });
 
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  // WIB calendar day (matches the backend's attendance `date`); rolls over at midnight WIB
+  const todayStr = useWibToday();
   const { data: attendanceData } = useAdminAttendancePaginatedQuery({
     limit: 100,
     startDate: todayStr,
@@ -158,12 +160,18 @@ export function CashierKioskView() {
   const handleSubmitPin = async (enteredPin: string) => {
     if (!selectedStaff) return;
 
-    // Fallback coordinates: if GPS is denied or unavailable on desktop/kiosk, use branch coordinates
-    const lat = userCoords?.lat ?? branchLat;
-    const lon = userCoords?.lon ?? branchLon;
+    // A real GPS fix is required. Sending the branch coordinates instead would always pass the
+    // backend geofence check, so attendance could be recorded from anywhere.
+    if (!userCoords) {
+      setPinErrorMessage(
+        'Lokasi GPS belum terdeteksi. Izinkan akses lokasi di browser, lalu coba lagi.'
+      );
+      requestGpsPosition();
+      return;
+    }
+    const { lat, lon } = userCoords;
 
-    // Check geofence if actual user coords are present
-    if (userCoords && geofenceResult && !geofenceResult.isInside) {
+    if (geofenceResult && !geofenceResult.isInside) {
       setPinErrorMessage(
         `Di luar radius outlet (${geofenceResult.distanceMeters}m > ${branchRadius}m)`
       );

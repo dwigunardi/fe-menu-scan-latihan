@@ -13,12 +13,25 @@ import { useHandshakeStore } from '../../store/use-handshake-store';
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
+type HandshakeResult = Either<ApiError, { sessionKey: CryptoKey; handshakeToken: string }>;
+
+// Single-flight: the handshake currently in progress, shared by every caller that needs one
+let inFlightHandshake: Promise<HandshakeResult> | null = null;
+
 /**
- * Performs ECDH Handshake with NestJS backend.
+ * Performs an ECDH handshake with the backend.
+ *
+ * Single-flight: concurrent callers (e.g. several requests fired while a page loads) share one
+ * handshake instead of each starting its own, which would also overwrite each other's session.
  */
-export async function performHandshake(): Promise<
-  Either<ApiError, { sessionKey: CryptoKey; handshakeToken: string }>
-> {
+export function performHandshake(): Promise<HandshakeResult> {
+  inFlightHandshake ??= runHandshake().finally(() => {
+    inFlightHandshake = null;
+  });
+  return inFlightHandshake;
+}
+
+async function runHandshake(): Promise<HandshakeResult> {
   const handshakeStore = useHandshakeStore.getState();
 
   try {
@@ -110,11 +123,9 @@ export async function performHandshake(): Promise<
 
 /**
  * Ensures active ECDH session key & token are available in RAM cache.
- * If expired or absent, performs a new handshake transparently.
+ * If expired or absent, performs a new handshake transparently (shared with concurrent callers).
  */
-export async function ensureHandshakeSession(): Promise<
-  Either<ApiError, { sessionKey: CryptoKey; handshakeToken: string }>
-> {
+export async function ensureHandshakeSession(): Promise<HandshakeResult> {
   const handshakeStore = useHandshakeStore.getState();
 
   if (!handshakeStore.isExpired() && handshakeStore.sessionKey && handshakeStore.handshakeToken) {

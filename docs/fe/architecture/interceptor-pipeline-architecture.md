@@ -161,7 +161,7 @@ Jika refresh gagal:
 - Masih ada `user` di store → buka **modal login ulang** (`SessionExpiredModal`) supaya pekerjaan di halaman tidak hilang.
 - Tidak ada `user` → `logout()` lalu redirect ke `/login`.
 
-> Handshake ECDH **belum** memakai single-flight: beberapa request paralel saat halaman baru dibuka masing-masing bisa melakukan handshake sendiri. Tercatat sebagai tindak lanjut di roadmap (4C.15).
+> Handshake ECDH juga **single-flight**: `performHandshake()` menyimpan promise handshake yang sedang berjalan, dan request paralel (misalnya saat halaman baru dibuka) menunggu promise yang sama. Setelah selesai, berhasil atau gagal, promise itu dilepas sehingga handshake berikutnya bisa dimulai.
 
 ---
 
