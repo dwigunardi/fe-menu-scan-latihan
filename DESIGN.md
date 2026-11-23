@@ -1,221 +1,139 @@
-# Design System: Kumpul Cafe – Digital QR Menu & Ordering System
+﻿# Design System & UI/UX Specification: Kumpul Cafe Admin Portal
 
-> **Brand**: Kumpul Cafe  
-> **Target Platforms**: Mobile-First QR Web App (PWA) & Staff / Kitchen CMS Portal  
-> **Component System**: shadcn/ui Architecture + Radix UI Primitives  
-> **Styling Engine**: Tailwind CSS v4  
-> **Design Skills Referenced**: `taste-design`, `design-systems`, `shadcn-ui`, `design-md`  
-> **Document Location**: `d:\code\fe-menu-scan-latihan\DESIGN.md`  
-
----
-
-## 1. Visual Theme & Atmosphere
-
-**Kumpul Cafe** memadukan estetika *modern specialty coffeehouse* bernuansa hangat (*warm Scandinavian coffee bar*) dengan ketepatan fungsional aplikasi pemesanan digital kelas atas.
-
-- **Vibe**: Hangat, mengundang, taktil, dan bersih (*warm, artisanal, tactile, and appetizing*). Mengingatkan pada aroma espresso segar, susu oat creamy, dan tekstur kertas menu kafe premium.
-- **Density Spectrum**:
-  - **Customer Ordering View (Mobile-First)**: *Daily App Balanced* (Level 5) — Spasi lega yang nyaman disentuh jempol, foto menu menggugah selera, dan hierarki harga yang transparan.
-  - **Kitchen Display System & Admin CMS**: *Cockpit Dense* (Level 8) — Kartu pesanan kontras tinggi, navigasi keyboard/tap cepat untuk barista dan kasir yang sibuk.
-- **Variance & Structure**: Asymmetric visual balance, card overlays lembut, dan tipografi track-tight yang modern.
+> **Module**: Staff & Admin CMS Portal (Multi-Role RBAC)  
+> **Route Group**: `src/app/(admin)/admin/*`  
+> **Component Architecture**: shadcn/ui + Radix UI Primitives + Tailwind CSS v4  
+> **Design Skills Referenced**: `taste-design`, `design-md`, `shadcn-ui`, `frontend-design`  
+> **Document Location**: `docs/fe/design/ADMIN_DESIGN.md`  
 
 ---
 
-## 2. Three-Tier Token Architecture
+## 1. Visual Theme & Atmosphere (Back-Office Cockpit)
 
-Mengadopsi **Three-Tier Token Architecture** (`primitives` $\rightarrow$ `semantic` $\rightarrow$ `component`) agar theming dan kustomisasi dapat dikelola secara modular:
+Portal Admin & Staf **Kumpul Cafe** dirancang dengan estetika **Artisanal Coffeehouse Back-Office Cockpit** — menggabungkan efisiensi operasional tinggi khas sistem POS modern dengan kehangatan palet kopi specialty (*warm stone, dark espresso, and golden honey amber*).
 
-### A. Tier 1: Primitive Tokens (Raw Palette)
-```typescript
-export const primitives = {
-  amber: {
-    50: '#FFFBEB',
-    100: '#FEF3C7',
-    500: '#F59E0B',
-    600: '#D97706', // Primary Brand Roast
-    700: '#B45309',
-    900: '#78350F',
-  },
-  stone: {
-    50: '#FAF7F2',  // Cream Oat Milk Canvas
-    100: '#F5EFEB',
-    200: '#E7E0D8',
-    400: '#A8A29E',
-    500: '#78716C', // Muted Roast Text
-    800: '#292524',
-    900: '#1C1917', // Charcoal Ink
-    950: '#0C0A09',
-  },
-  emerald: {
-    500: '#10B981',
-    600: '#059669', // Success Paid Status
-  },
-  red: {
-    500: '#EF4444',
-    600: '#DC2626', // Out of Stock Alert
-  },
-  radius: {
-    sm: '0.375rem', // 6px
-    md: '0.5rem',   // 8px
-    lg: '0.75rem',  // 12px
-    xl: '1rem',     // 16px
-    '2xl': '1.25rem',// 20px
-    '3xl': '1.5rem', // 24px (Cards)
-    full: '9999px', // Pill Buttons
-  },
-};
+- **Density Level**: *Cockpit Dense (Level 8/10)* — Tata letak padat informasi, jarak klik/sentuh cepat, tabel data scannable, dan aksi 1-tap untuk kasir/barista yang sibuk.
+- **Color Temperature**: Netral hangat (*Stone-900 / Slate-50*) di mode terang, dan *Dark Zinc-900 / Espresso* di mode gelap.
+- **Typographic Character**:
+  - Headings & Labels: `Plus Jakarta Sans` (Track-tight `-0.02em`, SemiBold 600).
+  - Numbers & Currency: `JetBrains Mono` / `Geist Mono` (Tabular numeric alignment untuk harga, omset, dan timer pesanan).
+- **Anti-Patterns yang Dilarang**: Tidak ada gradien neon AI (*no purple glows*), tidak ada teks bertumpuk di atas gambar, tidak ada font generic Inter/Times New Roman, dan tidak ada warna hitam pekat `#000000`.
+
+---
+
+## 2. Three-Tier Token Architecture (Admin CMS)
+
+```text
+[ Cream Canvas: #FAF7F2 ] ──► [ Pure Surface: #FFFFFF ] ──► [ Charcoal Ink: #1C1917 ]
+                                      │
+                         [ Golden Amber Roast: #D97706 ] (Primary Accent)
 ```
 
-### B. Tier 2: Semantic Tokens (CSS Variables in `app/globals.css`)
-```css
-@layer base {
-  :root {
-    --background: #FAF7F2;          /* Canvas Cream */
-    --surface: #FFFFFF;             /* Pure White Container */
-    --surface-elevated: #FFFFFF;
-    
-    --foreground: #1C1917;          /* Charcoal Ink */
-    --foreground-muted: #78716C;    /* Muted Roast */
-    
-    --primary: #D97706;             /* Golden Amber Roast */
-    --primary-foreground: #FFFFFF;
-    --primary-hover: #B45309;
-    
-    --border: rgba(214, 207, 197, 0.45); /* Whisper Line */
-    --ring: #D97706;
-    
-    --success: #059669;
-    --destructive: #DC2626;
-  }
+### Palet Warna Semantik Admin:
+- **Canvas Background**: `#FAF7F2` (Light Mode) / `#18181B` (Dark / KDS Mode)
+- **Card & Table Surface**: `#FFFFFF` (Light) / `#27272A` (Dark Zinc)
+- **Border / Divider**: `rgba(214, 207, 197, 0.5)` (Light Whisper Line) / `#3F3F46` (Dark)
+- **Primary Action (Amber Roast)**: `#D97706` (Hover: `#B45309`, Active: `#92400E`)
+- **Status Paid / Available**: `#059669` (Emerald-600, Soft BG: `#ECFDF5`)
+- **Status Out of Stock / Alert**: `#DC2626` (Red-600, Soft BG: `#FEF2F2`)
+- **Text Primary**: `#1C1917` (Charcoal Ink) / `#F4F4F5` (Dark Foreground)
+- **Text Secondary / Muted**: `#78716C` (Muted Roast) / `#A1A1AA` (Dark Muted)
 
-  .dark, [data-theme="kds"] {
-    --background: #18181B;          /* Dark Espresso Backing for Kitchen */
-    --surface: #27272A;             /* Zinc-800 KDS Card */
-    --surface-elevated: #3F3F46;
-    
-    --foreground: #F4F4F5;
-    --foreground-muted: #A1A1AA;
-    
-    --primary: #F59E0B;
-    --primary-foreground: #18181B;
-    --primary-hover: #D97706;
-    
-    --border: #3F3F46;
-    --ring: #F59E0B;
-  }
-}
+---
+
+## 3. UI/UX Blueprint & Flow Breakdown
+
+### A. Screen 1: Staff Quick-Login Portal (`/admin/login`)
+- **Layout**: Centered luxury card (`max-w-md`) dengan latar belakang oat canvas hangat.
+- **Branding Header**: Logo cangkir Kumpul Cafe dengan badge `Staff & Management Portal`.
+- **Form Fields**: Input Username & Password dengan floating clean label dan error Zod inline.
+- **1-Click Demo Login Grid**: 4 tombol preset cepat untuk pengujian instan:
+  - 👑 **Super Admin** (`admin` / `admin123`) -> Akses Penuh
+  - 💵 **Kasir** (`kasir` / `kasir123`) -> Denah Meja & 1-Tap Reset Meja
+  - 🍳 **Barista Dapur** (`dapur` / `dapur123`) -> Live Kitchen Display System (KDS)
+  - 🛎️ **Pelayan / Waiter** (`pelayan` / `pelayan123`) -> Status Meja & Antaran
+- **Smart Redirect**: Otomatis mengarahkan staf ke halaman operasional utamanya sesuai peran (*Admin -> Dashboard/Menus, Dapur -> KDS, Kasir -> Meja*).
+
+---
+
+### B. Screen 2: Admin Layout & Responsive Shell (`/admin/*`)
+- **Sidebar Navigasi (Desktop)**:
+  - Lebar: 260px, fixed di sisi kiri dengan border tipis `border-border`.
+  - Item Navigasi Berbasis Role (RBAC):
+    - 📊 **Dashboard & Analytics** (`/admin/dashboard`) — `[ADMIN]`
+    - 🍳 **Kitchen Display System** (`/admin/orders`) — `[ADMIN, KITCHEN, CASHIER, WAITER]`
+    - 🪑 **Denah Meja & Kasir** (`/admin/tables`) — `[ADMIN, CASHIER, WAITER]`
+    - ☕ **Katalog Menu & Variasi** (`/admin/menus`) — `[ADMIN]`
+    - 🏷️ **Kategori Menu** (`/admin/categories`) — `[ADMIN]`
+    - 🖼️ **Promo Banners** (`/admin/banners`) — `[ADMIN]`
+  - Active State: Background Amber muda (`bg-amber-50 dark:bg-amber-950/40`), teks Amber tebal (`text-amber-700`), indikator bar vertikal emas di sisi kiri item.
+- **Top Header Bar**:
+  - Kiri: Breadcrumb lokasi halaman aktif (*"Admin / Katalog Menu"*).
+  - Kanan: Badge nama staf aktif (*"Dewi Sartika (Admin)"*), Switch Mode Gelap/Terang, dan tombol Logout dengan konfirmasi.
+
+---
+
+### C. Screen 3: Menu Catalog Management (`/admin/menus`)
+- **Toolbar Aksi Atas**:
+  - **Search Bar**: Input pencarian real-time dengan ikon Search dan shortcut keyboard `Ctrl+K`.
+  - **Category Pills Filter**: Tab horizontal (*"Semua", "Signature Coffee", "Manual Brew", "Non-Coffee", "Makanan Rempah", "Snack"*).
+  - **Tombol Aksi Utama**: `+ Tambah Menu Baru` (Button Amber) & `Kelola Kategori` (Button Outline).
+- **Interactive Data Table**:
+  - **Kolom 1 (Menu)**: Foto thumbnail 48x48px (rounded-xl) + Nama Menu + Badge Best Seller/Rekomendasi.
+  - **Kolom 2 (Kategori)**: Tag Pill Kategori (*"Signature Coffee"*).
+  - **Kolom 3 (Harga)**: Font monospace tabular (`Rp 28.000`), mencoret harga lama jika ada harga promo.
+  - **Kolom 4 (Variasi)**: Badge jumlah grup variasi (*"3 Grup Variasi"* misal: Suhu, Ukuran, Topping).
+  - **Kolom 5 (Ketersediaan Stok)**: **Instant Switch Toggle** (`Switch` Radix UI).
+    - Hijau = Stok Tersedia, Abu-abu/Merah = Stok Habis.
+    - Menggunakan *Optimistic Update* dengan konfirmasi toast Sonner seketika disentuh.
+  - **Kolom 6 (Aksi)**: Tombol Edit (Ikon Pensil) dan Hapus (Ikon Tempat Sampah Merah dengan Dialog Konfirmasi).
+
+---
+
+### D. Screen 4: Multi-Tab Menu & Variant Modal (`MenuFormModal`)
+- **Dialog Container**: Modal Radix (`max-w-2xl`), rounded-3xl, shadow-xl dengan 2 Tab Navigasi:
+- **Tab 1: Informasi Dasar & Harga**:
+  - Input Nama Menu (*"Kopi Kumpul Santuy"*).
+  - Select Dropdown Kategori (*"Signature Coffee"*).
+  - Textarea Deskripsi Bahan (*"Blend signature espresso + susu segar creamy + madu murni"*).
+  - Grid 2 Kolom: Harga Dasar (`price`) & Harga Promo (`promoPrice` opsional).
+  - Input URL Foto Menu dengan preview live thumbnail.
+  - Checkbox Flags: `Best Seller` & `Menu Rekomendasi Barista`.
+- **Tab 2: Grup Variasi & Batas Topping (`maxSelect`)**:
+  - **Dynamic Variant Group Builder**: Tombol `+ Tambah Grup Variasi` (misal: "Ukuran", "Pilihan Topping").
+  - Form per-grup:
+    - Nama Grup (*"Extra Topping"*).
+    - Tipe Seleksi: Wajib (`isRequired: true/false`).
+    - Aturan Seleksi: `minSelect` (0) dan `maxSelect` (3) (*"Pelanggan hanya boleh memilih maksimal 3 topping"*).
+    - List Opsi Variasi: Baris opsi dengan Nama (*"Coffee Jelly"*), Tambahan Harga (*"+Rp 4.000"*), dan tombol hapus baris.
+- **Modal Footer**: Tombol Batal & Tombol Simpan (`Button` Amber dengan loading spinner saat submit).
+
+---
+
+## 4. Google Stitch / AI Generation Prompts
+
+Berikut adalah prompt visual terkalibrasi yang dapat digunakan langsung di Google Stitch atau AI Designer:
+
+### 🎨 Prompt 1: Admin Staff Quick-Login Screen
+```text
+A modern, minimalist luxury Scandinavian coffeehouse staff login screen for "Kumpul Cafe". The background is a soft warm oat milk canvas (#FAF7F2). In the center is a pristine white floating card (rounded-3xl, whisper shadow) featuring an artisanal minimalist coffee icon, elegant typography in Plus Jakarta Sans saying "Kumpul Cafe - Staff Portal", username and password input fields with warm amber focus rings, and a primary Golden Amber submit button (#D97706). Below the form is a dedicated "1-Click Quick Demo Login" grid with 4 clean pill buttons: "Super Admin", "Kasir Meja", "Barista Dapur", and "Pelayan". No purple glows, no emojis as icons, ultra-clean UI.
 ```
 
-### C. Tier 3: Component Tokens (shadcn/ui Styling)
-- **`button.primary`**: `bg-primary text-primary-foreground hover:bg-primary-hover active:scale-[0.98]`
-- **`card.menu`**: `bg-surface rounded-3xl border border-border shadow-[0_4px_20px_rgba(0,0,0,0.03)]`
-- **`drawer.modifier`**: `bg-surface rounded-t-[32px] border-t border-border`
-
----
-
-## 3. Typography Architecture
-
-- **Display & Headlines**: `Plus Jakarta Sans` / `Outfit`
-  - Karakter: Geometris, sudut lembut ramah, track-tight (`letter-spacing: -0.02em`).
-  - Hierarki: Penekanan hierarki melalui ketebalan font (*SemiBold 600* & *Bold 700*) dan kontras warna, bukan sekadar ukuran raksasa.
-- **Body Text & Controls**: `Plus Jakarta Sans`
-  - Karakter: Line-height rileks (`leading-relaxed`), panjang baris maksimal 65 karakter, warna Muted Roast (`#78716C`).
-- **Tabular Data & Numbers**: `JetBrains Mono` / `Geist Mono`
-  - Digunakan untuk: Format mata uang Rupiah (`Rp 28.000`), nomor pesanan (`#ORD-20260811-001`), dan countdown timer QRIS (`⏱️ 14:45`).
-- **Banned Fonts**: `Inter`, generic serif (`Times New Roman`, `Georgia`, `Garamond`), dan generic system fonts.
-
----
-
-## 4. shadcn/ui Component Architecture & Composition
-
-Mengikuti prinsip **Composition Over Configuration** dari referensi `design-systems` & `shadcn-ui`. Membangun komponen modular menggunakan Radix UI primitives:
-
-### A. Primitive UI Components (`components/ui/`)
-1. **`Button` (`components/ui/button.tsx`)**:
-   - Varian via `cva`: `default` (Golden Amber), `secondary` (Cream tint), `outline` (Whisper border), `ghost`, `destructive`.
-   - Sizes: `sm`, `default` (44px touch target), `lg` (52px checkout CTA), `icon`.
-   - Menggunakan `asChild` slot pattern untuk fleksibilitas render Link Next.js.
-2. **`Dialog` / `Modal` (`components/ui/dialog.tsx`)**:
-   - Compound components: `Dialog.Root`, `Dialog.Trigger`, `Dialog.Content`, `Dialog.Header`, `Dialog.Title`, `Dialog.Description`, `Dialog.Footer`.
-   - Digunakan untuk QRIS Payment Popup dan Konfirmasi Gabung Meja Terisi.
-3. **`Drawer` (`components/ui/drawer.tsx`)**:
-   - Berbasis primitive `vaul` untuk interaksi *bottom-sheet drag-to-dismiss* yang mulus di smartphone.
-   - Digunakan untuk **Menu Modifier Modal** dan **Cart Summary Drawer**.
-4. **`Badge` (`components/ui/badge.tsx`)**:
-   - Varian: `bestseller` (Amber-600 fill), `rating` (Stone-100 pill), `paid` (Emerald-100 + text-Emerald-700), `preparing` (Blue-100), `outofstock` (Red-100 + text-Red-700).
-5. **`RadioGroup` & `Checkbox` (`components/ui/radio-group.tsx` & `checkbox.tsx`)**:
-   - Radio: Pilihan wajib variasi (Suhu Hot/Ice, Ukuran Regular/Large).
-   - Checkbox: Extra Add-ons (Topping) dengan *disable state* otomatis saat `maxSelect` tercapai.
-6. **`Switch` (`components/ui/switch.tsx`)**:
-   - Fast toggle ketersediaan item menu di Admin/Staff CMS.
-7. **`Skeleton` (`components/ui/skeleton.tsx`)**:
-   - Shimmer loader dengan background `bg-stone-200/60 animate-pulse` yang persis mencerminkan ukuran kartu menu.
-
----
-
-## 5. Domain Component Patterns (Kumpul Cafe)
-
-### A. Menu Card (`components/public/menu-card.tsx`)
-```tsx
-<article className="group relative flex gap-4 p-4 bg-surface rounded-3xl border border-border shadow-sm hover:shadow-md transition-all">
-  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-stone-100">
-    <Image src={imageUrl} alt={name} fill className="object-cover group-hover:scale-105 transition-transform" />
-    {isBestSeller && <Badge variant="bestseller" className="absolute top-2 left-2">Best Seller</Badge>}
-  </div>
-  <div className="flex flex-1 flex-col justify-between">
-    <div>
-      <h3 className="font-semibold text-foreground tracking-tight">{name}</h3>
-      <p className="text-xs text-foreground-muted line-clamp-2 mt-0.5">{description}</p>
-    </div>
-    <div className="flex items-center justify-between mt-2">
-      <span className="font-mono font-bold text-foreground">{formatRupiah(price)}</span>
-      <Button size="sm" onClick={onOpenModifier} disabled={!isAvailable}>
-        {hasVariants ? "+ Kustom" : "+ Tambah"}
-      </Button>
-    </div>
-  </div>
-</article>
+### 🎨 Prompt 2: Admin Menu Management Catalog Screen
+```text
+A high-density desktop dashboard screen for managing coffeehouse menus in "Kumpul Cafe". Top header features active staff badge "Dewi Sartika (Admin)" and breadcrumbs. Main content has a top toolbar with a search input, horizontal category pills ("All", "Signature Coffee", "Non-Coffee", "Food"), and an Amber CTA button "+ Tambah Menu". Below is a clean tabular data list showing menu items with 48x48px rounded thumbnails, bold menu names ("Kopi Kumpul Santuy", "Kopi Genyal"), monospace price tags ("Rp 28.000"), category tags, interactive green iOS-style availability toggle switches for stock status, and clean action buttons (Edit, Variants, Delete). Warm stone background, crisp typography, zero clutter.
 ```
 
-### B. Menu Modifier Bottom Drawer (`components/public/menu-modifier-modal.tsx`)
-- Compound Drawer layout dengan 4 bagian terstruktur:
-  1. **Header**: Foto hero menu, nama, rating bintang, dan harga dasar.
-  2. **Mandatory Groups (Radio)**: Pilihan Suhu (`Hot` / `Ice`) & Ukuran (`Regular` / `Large`).
-  3. **Optional Add-ons (Checkbox)**: Checkbox list topping dengan label *"Pilih Maksimal {maxSelect}"*.
-  4. **Special Notes Textarea**: Catatan barista (*"Kurangi es, gula dipisah"*).
-  5. **Sticky Sticky Footer**: Tombol CTA besar yang menghitung total harga real-time: `Base Price + Σ(Extra Prices)`.
+### 🎨 Prompt 3: Unified Multi-Tab Menu & Variant Editor Modal
+```text
+A centered multi-tab modal dialog (max-w-2xl, rounded-3xl, pure white surface) for creating and editing cafe menu items. Top of the modal has two tabs: "1. Info Dasar & Harga" and "2. Grup Variasi & Topping" styled with an active Golden Amber underline. The active tab shows a dynamic modifier builder with accordion cards for variant groups like "Suhu (Hot/Ice, Required: Yes)", "Ukuran (Regular/Large)", and "Extra Topping (Optional, Max Select: 3)". Inside the topping group are row inputs for option name ("Coffee Jelly", "Extra Shot") and price modifier ("+Rp 4.000"). Clean sticky footer with "Batal" and "Simpan Menu" buttons. Modern, accessible, tactile.
+```
 
 ---
 
-## 6. Layout & Spacing Principles
+## 5. Verification & Acceptance Criteria
 
-1. **Mobile-First Container Constraint**:
-   - Untuk antarmuka pelanggan QR Menu, seluruh layout dibatasi pada `max-w-md` (maksimal 448px) dan dipusatkan di layar desktop dengan latar belakang luar bernuansa warm cafe mockup.
-2. **Viewport Height Standard**:
-   - Seluruh section layar penuh menggunakan `min-h-[100dvh]` (menghindari bug loncatan *toolbar* pada browser mobile iOS Safari / Android Chrome).
-3. **Touch Target Size**:
-   - Seluruh tombol, switch, dan opsi pilihan memiliki area sentuh minimal **44x44px** untuk kenyamanan jari pelanggan.
-
----
-
-## 7. Motion & Interaction Engine
-
-1. **Spring Physics**:
-   - Transisi drawer dan modal menggunakan pegas alami (`stiffness: 120, damping: 18`).
-2. **Live Pulse Indicators**:
-   - Titik hijau/kuning berkedip lembut (*infinite pulse animation*) pada status pesanan live tracking dan indikator meja terisi.
-3. **Hardware Acceleration**:
-   - Semua animasi hanya memanipulasi properti `transform` dan `opacity` untuk menjamin rendering 60fps yang mulus.
-
----
-
-## 8. Explicit Anti-Patterns (Banned AI Clichés)
-
-- ❌ **DILARANG** menggunakan warna gradien neon ungu/biru (*AI Slop Aesthetic*).
-- ❌ **DILARANG** menggunakan font generic `Inter` atau `Times New Roman`.
-- ❌ **DILARANG** menggunakan warna hitam pekat `#000000` (Gunakan Charcoal Ink `#1C1917`).
-- ❌ **DILARANG** menggunakan bayangan neon berpendar (*outer glow drop shadows*).
-- ❌ **DILARANG** menggunakan layout kartu 3 kolom kaku yang membosankan di mobile.
-- ❌ **DILARANG** membiarkan foto menu tanpa fallback placeholder yang estetik.
-- ❌ **DILARANG** menampilkan teks generic ("Lorem ipsum", "John Doe", "Acme Cafe").
-- ❌ **DILARANG** membuat teks bertumpuk di atas elemen lain tanpa pemisahan spasial yang bersih.
+1. **RBAC Guard**: Pengguna yang belum login ditolak saat mengakses `/admin/*` dan diarahkan ke `/admin/login`.
+2. **Instant Availability Toggle**: Mengubah switch ketersediaan stok langsung mengupdate data di database Backend dan menampilkan toast konfirmasi Sonner.
+3. **Variant Group Constraints**: Form validasi Zod menjamin `maxSelect` tidak boleh lebih kecil dari `minSelect`, dan harga ekstra tidak boleh negatif.
+4. **Zero Type Errors**: Lulus uji `npm test` dan `npm run build` tanpa warning.

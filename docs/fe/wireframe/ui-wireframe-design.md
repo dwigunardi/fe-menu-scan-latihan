@@ -6,6 +6,7 @@
 > **Target Interface**: Public QR Ordering (Mobile-First PWA) & Staff / Admin CMS (Responsive Desktop/Tablet)  
 > **Styling**: Tailwind CSS v4  
 > **Document Location**: `docs/fe/wireframe/ui-wireframe-design.md`  
+> **Status implementasi (2026-11-20)**: wireframe pelanggan (bagian 1) **belum dibangun**. Untuk layar staf, rute sebenarnya: login `/login` (bukan `/admin/login`), route group `(dashboard)` (bukan `(admin)`), KDS `/kitchen/orders`, log pesanan `/admin/orders`. Real-time saat ini memakai polling, belum WebSocket.  
 
 ---
 

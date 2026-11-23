@@ -2,174 +2,182 @@
 
 > **Project**: Kumpul Cafe – Digital QR Code Menu System & Progressive Web App (PWA)  
 > **Brand Name**: Kumpul Cafe  
-> **Backend Integration**: NestJS 11 (`http://localhost:5000/api/v1`) + WebSocket (`http://localhost:5000/events`)  
-> **Framework**: Next.js 16 (App Router, TypeScript)  
-> **PWA Integration**: Progressive Web App (Web App Manifest, Service Worker, Offline Support)  
+> **Backend Integration**: NestJS 11 (`http://localhost:5000/api/v1`)  
+> **Framework**: Next.js 16 (App Router, TypeScript) + React 19  
 > **Styling**: Tailwind CSS v4  
-> **State Management**: Zustand (Auth, Crypto, Table Session, Cart, PWA Install Prompt)  
-> **Data Fetching & Cache**: `@tanstack/react-query` (v5) + Native `customFetch`  
-> **Real-Time Client**: `socket.io-client` (WebSockets)  
-> **Security Standard**: WebCrypto API (P-256 ECDH + AES-256-GCM Zero-Trust Encryption)  
+> **State Management**: Zustand (Auth, Handshake Session, Sidebar, PWA; Cart & Table untuk fase QR publik)  
+> **Data Fetching & Cache**: `@tanstack/react-query` (v5) + `apiTransport` & Interceptor Pipeline  
+> **Real-Time**: Polling React Query (KDS setiap 10 detik). `socket.io-client` sudah terpasang tapi belum dipakai.  
+> **Security Standard**: WebCrypto API (P-256 ECDH + AES-256-GCM payload encryption, di atas TLS)  
 > **Document Location**: `docs/fe/architecture/architecture-design.md`  
+> **Status**: Disinkronkan dengan kode pada 2026-11-20  
 
 ---
 
 ## 🏛️ 1. Architectural Pattern & Design Principles
 
-Sistem Frontend **Kumpul Cafe** dibangun dengan mengadopsi **Modular Component-Driven Architecture, PWA-Enabled, & Real-Time Socket-Driven** di atas **Next.js App Router**:
+Frontend **Kumpul Cafe** memakai **Domain-First Modular Component Architecture** di atas **Next.js App Router**, dengan enkripsi payload dan kontrol akses berbasis role.
 
 ### Prinsip Utama:
-1. **PWA First (Offline & App-Like Experience)**:
-   - Pelanggan **Kumpul Cafe** dapat menginstall aplikasi web ini langsung ke Home Screen smartphone (*Installable PWA*).
-   - Mendukung **Offline Caching Capabilities**: Menu dan banner yang sudah pernah dibuka tetap bisa diakses meskipun jaringan di cafe sedang lambat/terputus.
+1. **Domain-First Component Architecture**:
+   - Komponen UI dikelompokkan berdasarkan **domain bisnis** (`orders/`, `tables/`, `menus/`, `staff/`, `attendance/`, `kiosk/`, …), bukan berdasarkan role.
+   - Komponen bersama seperti `OrdersView` (Admin & Dapur) dan `TablesView` (Admin, Kasir, Pelayan) netral dan tidak terkunci di folder admin.
+   - Setiap folder domain punya **barrel export (`index.ts`)**.
 2. **Server vs. Client Component Boundaries**:
-   - **Server Components (RSC)**: Layouting dasar, PWA Meta tags, SEO metadata, dan static shell rendering.
-   - **Client Components ('use client')**: Komponen interaktif (Zustand, React Query, WebSockets, WebCrypto API, PWA hooks).
-3. **Zero-Trust Payload Encryption**:
-   - Menggunakan **Native `window.crypto.subtle` (WebCrypto API)** untuk enkripsi data payload AES-256-GCM dari browser ke backend NestJS.
-4. **Real-Time WebSockets (`socket.io-client`)**:
-   - Menerima push event `order:status-changed` instan dari backend ke smartphone pelanggan saat status berubah (`PAID` $\rightarrow$ `PREPARING` $\rightarrow$ `SERVED`).
-   - Menerima push live orders ke Kitchen Display System (KDS) & Kasir.
+   - **Server Components**: root layout, metadata.
+   - **Client Components (`'use client'`)**: hampir semua halaman dashboard, karena memakai Zustand, React Query, WebCrypto, dan form. Shell dashboard dirender setelah hydration (`AuthGuard`).
+3. **Interceptor Pipeline & Payload Encryption**:
+   - Request lewat `apiTransport` → `executePipeline` (`loggerMiddleware` → `authMiddleware` → `handshakeMiddleware` → `encryptionMiddleware`). Detail: [interceptor-pipeline-architecture.md](./interceptor-pipeline-architecture.md).
+4. **Type-Safe Role-Based Access Control (RBAC)**:
+   - Konstanta `ROLE`, `ROLE_GROUPS`, dan helper `getRoleHomePath()` di `src/lib/constants/roles.ts`.
+   - `<AuthGuard>` (login + karantina onboarding) dan `<RoleGuard>` (izin per halaman).
+   - ⚠️ Proteksi rute saat ini **hanya di sisi client**; belum ada `proxy.ts`. Proxy baru berguna setelah sesi tersimpan di cookie HttpOnly (roadmap 4C.15), karena token di `localStorage` tidak terbaca di server. Backend tetap wajib memvalidasi role pada setiap endpoint.
+   - Mode kiosk mengunci perangkat: `KioskLockGuard` (`src/components/kiosk/kiosk-lock-guard.tsx`) mengembalikan rute dashboard lain ke `/cashier/kiosk` selama `useKioskLockStore.isLocked` aktif. Kunci dilepas oleh PIN keluar yang terverifikasi atau logout.
+5. **Data Real-Time**:
+   - KDS memakai polling React Query (`use-admin-orders.ts`, interval 10 detik). WebSocket direncanakan untuk fase order tracking pelanggan (roadmap Phase 3).
 
 ---
 
-## 📁 2. Complete Directory Structure (`src/` & `public/`)
+## 📁 2. Directory Structure (`src/`)
 
 ```text
-public/                              # PWA Assets & Service Worker
-├── manifest.json                    # Web App Manifest (Kumpul Cafe Branding)
-├── sw.js                            # PWA Service Worker (Caching Strategies)
-├── icons/                           # App Icons (192x192, 512x512, Maskable)
-│   ├── icon-192x192.png
-│   ├── icon-512x512.png
-│   └── apple-touch-icon.png
-└── favicon.ico
-
 src/
-├── app/                             # Next.js App Router Pages & Routes
-│   ├── (public)/                    # Grouping Route Publik (Pelanggan Kumpul Cafe via QR)
-│   │   ├── menu/                    # Halaman Utama QR Code Menu & Banners
-│   │   │   └── page.tsx
-│   │   ├── order/
-│   │   │   ├── checkout/            # Rincian Pesanan & Pembayaran QRIS
-│   │   │   │   └── page.tsx
-│   │   │   └── status/[orderNumber]/# Live Tracking Status Pesanan Real-time
-│   │   │       └── page.tsx
-│   │   └── layout.tsx               # Public Mobile-First Layout
-│   │
-│   ├── (admin)/                     # Grouping Route Staff & Admin Portal (RBAC)
+├── app/                              # Next.js App Router
+│   ├── (auth)/login/page.tsx         # /login — login staf (satu pintu untuk semua role)
+│   ├── (public)/layout.tsx           # Shell mobile pelanggan (halaman QR publik belum dibuat)
+│   ├── (dashboard)/                  # Portal internal (AuthGuard + RoleGuard)
+│   │   ├── layout.tsx                # Shell: CommonHeader + CommonSidebar + CommonBottomNav
+│   │   ├── not-found.tsx
 │   │   ├── admin/
-│   │   │   ├── login/               # Halaman Login Multi-Role (Admin/Cashier/Kitchen/Waiter)
-│   │   │   │   └── page.tsx
-│   │   │   ├── dashboard/           # Summary Dashboard & Ringkasan Statistics (Admin)
-│   │   │   │   └── page.tsx
-│   │   │   ├── orders/              # Live Kitchen Display System (KDS) & Order Monitor
-│   │   │   │   └── page.tsx
-│   │   │   ├── tables/              # Floor Plan & 1-Tap Reset Meja (Kasir / Waiter)
-│   │   │   │   └── page.tsx
-│   │   │   ├── banners/             # Manajemen Promo Banners (Admin)
-│   │   │   │   └── page.tsx
-│   │   │   ├── categories/          # Pengelolaan Kategori Menu
-│   │   │   │   └── page.tsx
-│   │   │   ├── menus/               # Pengelolaan Item Menu & Variasi
-│   │   │   │   └── page.tsx
-│   │   │   └── reports/             # Laporan Pendapatan & Omset Harian (Admin)
-│   │   │       └── page.tsx
-│   │   └── layout.tsx               # Staff Portal Layout (Sidebar & Role Protection)
-│   │
-│   ├── layout.tsx                   # Root Application Layout & Global Providers
-│   ├── globals.css                  # Global Styles & Tailwind CSS v4 Directive
-│   └── page.tsx                     # Landing / Redirect Page
+│   │   │   ├── dashboard/            # Ringkasan omset
+│   │   │   ├── reports/              # Laporan penjualan + ekspor
+│   │   │   ├── menus/                # list, create, edit/[id], detail/[id]
+│   │   │   ├── categories/
+│   │   │   ├── tables/
+│   │   │   ├── orders/
+│   │   │   ├── banners/              # list, create, edit/[id]
+│   │   │   ├── shifts/               # Buka/tutup shift kasir, Z-Report
+│   │   │   ├── attendance/           # Monitoring presensi, lembur, koreksi
+│   │   │   ├── staff/                # Akun staf, PIN, kredensial
+│   │   │   └── settings/             # index + branch/, policies/, shifts/ (template shift)
+│   │   ├── cashier/
+│   │   │   ├── tables/               # Workstation kasir
+│   │   │   └── kiosk/                # Mode kiosk presensi di meja kasir
+│   │   ├── kitchen/orders/           # Kitchen Display System (KDS)
+│   │   └── waiter/tables/            # Denah meja pelayan
+│   ├── onboarding/page.tsx           # Ganti password + buat PIN saat login pertama
+│   ├── test/                         # Test halaman
+│   ├── layout.tsx                    # Root layout + providers
+│   ├── not-found.tsx                 # 404 global
+│   └── page.tsx                      # Landing
 │
-├── components/                      # UI Components Layer
-│   ├── ui/                          # Atom/Primitive Components
-│   │   ├── button.tsx
-│   │   ├── input.tsx
-│   │   ├── modal.tsx
-│   │   ├── drawer.tsx
-│   │   ├── badge.tsx
-│   │   ├── switch.tsx               # Fast toggle ketersediaan menu
-│   │   └── skeleton.tsx
-│   │
-│   ├── pwa/                         # PWA Components
-│   │   ├── pwa-installer-banner.tsx # Banner Ajakan Install PWA
-│   │   └── offline-banner.tsx       # Indikator Status Offline/Online
-│   │
-│   ├── public/                      # Public Customer Ordering Components
-│   │   ├── table-session-modal.tsx  # Modal Input Nama / Konfirmasi Meja Terisi
-│   │   ├── promo-carousel.tsx       # Banner Carousel Promo Kafe
-│   │   ├── category-tabs.tsx        # Tab Horizontal Kategori
-│   │   ├── menu-card.tsx            # Card Menu (Foto, Harga, Rating, Badge Best Seller)
-│   │   ├── menu-modifier-modal.tsx  # Modal Kustomisasi (Ukuran, Suhu, Topping, Notes)
-│   │   ├── cart-drawer.tsx          # Drawer Ringkasan Keranjang Pesanan
-│   │   ├── qris-modal.tsx           # Modal QRIS Dinamis + Countdown Timer
-│   │   └── live-order-tracker.tsx   # Visual Tracker Progress Pesanan Real-time
-│   │
-│   └── admin/                       # Staff & Admin Components
-│       ├── kds-order-card.tsx       # Kartu Pesanan Live Dapur dengan Audio Alert
-│       ├── table-grid.tsx           # Denah Grid Meja & 1-Tap Reset
-│       ├── revenue-chart.tsx        # Grafik Visual Omset & Transaksi
-│       ├── top-selling-table.tsx    # Tabel Menu Paling Laris
-│       ├── menu-form-modal.tsx      # Modal CRUD Menu & Nested Variant Groups
-│       └── qr-printer-modal.tsx     # Modal Cetak QR Code Meja
+├── components/                       # Komponen per domain (+ index.ts)
+│   ├── attendance/                   # ClockInModal, tabel & filter presensi, lembur, cuti, koreksi
+│   ├── banners/                      # Form, kartu, uploader, PromoCarousel
+│   ├── common/                       # AuthGuard, RoleGuard, shell, dialog, pagination, breadcrumb, …
+│   ├── illustrations/                # SVG animasi (cangkir kopi 404)
+│   ├── kiosk/                        # CashierKioskView, grid staf, PIN modal, exit dialog, overlay
+│   ├── menus/                        # MenuForm, tabel/kartu menu, filter, kategori
+│   ├── orders/                       # OrdersView (KDS/log), kartu pesanan, struk
+│   ├── reports/                      # KPI, top selling, breakdown status, ekspor
+│   ├── settings/                     # Form cabang + peta geofence, kebijakan toko, template shift
+│   ├── shifts/                       # Buka/tutup shift, handover, riwayat, Z-Report
+│   ├── staff/                        # Tabel & form staf, PIN, kredensial
+│   ├── tables/                       # TablesView, modal meja/zona/QR/reset
+│   ├── ui/                           # Primitif (button, dialog, select, AppImage, …)
+│   └── test/<domain>/                # Test komponen, simetris dengan folder domain
 │
-├── lib/                             # Core Utilities & Integration Layer
-│   ├── api/                         # Native customFetch & API Endpoints
-│   │   ├── custom-fetch.ts          # Encrypted Native fetch Wrapper
-│   │   ├── auth-api.ts              # /api/v1/auth/*
-│   │   ├── banners-api.ts           # /api/v1/public & admin banners
-│   │   ├── categories-api.ts        # /api/v1/public & admin categories
-│   │   ├── menus-api.ts             # /api/v1/public & admin menus
-│   │   ├── tables-api.ts            # /api/v1/public & admin tables
-│   │   ├── orders-api.ts            # /api/v1/public & admin orders
-│   │   ├── payments-api.ts          # /api/v1/public/payments/create-qris
-│   │   └── reports-api.ts           # /api/v1/admin/reports/*
-│   │
-│   ├── crypto/                      # WebCrypto Encryption Service
-│   │   ├── ecdh.ts                  # P-256 Keypair, HKDF, AES-256-GCM
-│   │   └── session-manager.ts       # RAM Session Key Storage
-│   │
-│   ├── socket/                      # WebSocket Socket.IO Client
-│   │   └── socket-client.ts         # Socket.IO Singleton Connection to /events
-│   │
-│   ├── pwa/                         # Service Worker Registration
-│   │   └── register-sw.ts
-│   │
-│   ├── validations/                 # Zod Schemas
-│   │   ├── auth.schema.ts
-│   │   ├── order.schema.ts
-│   │   ├── menu.schema.ts
-│   │   └── table.schema.ts
-│   │
-│   └── utils/
-│       ├── format-currency.ts       # Format IDR (Rupiah)
-│       └── cn.ts                    # Classnames Merger (clsx + tailwind-merge)
+├── hooks/
+│   ├── queries/use-admin-*.ts        # Hook React Query per domain
+│   ├── use-unsaved-changes-guard.ts  # Peringatan perubahan belum disimpan
+│   └── test/
 │
-├── store/                           # Global State Management (Zustand)
-│   ├── use-auth-store.ts            # Token, Role (ADMIN/CASHIER/KITCHEN/WAITER)
-│   ├── use-handshake-store.ts       # RAM SessionKey & HandshakeToken
-│   ├── use-table-store.ts           # Table Number, Active Session Token, Customer Name
-│   ├── use-cart-store.ts            # Items, Selected Variants, Item Notes, Total
-│   └── use-pwa-store.ts             # PWA Install Prompt & Offline State
+├── lib/
+│   ├── api/                          # Lihat interceptor-pipeline-architecture.md
+│   │   ├── api-transport.ts          # apiTransport (alias: hardenedFetch)
+│   │   ├── pipeline/                 # executePipeline + 4 middleware
+│   │   ├── handshake-session.ts      # Handshake ECDH
+│   │   ├── mock-fallback.ts          # Gate fallback mock (dev saja)
+│   │   ├── either.ts, api-error.ts, error-codes.ts, error-translator.ts, notify-error.ts
+│   │   └── *-api.ts                  # Fungsi per domain
+│   ├── constants/                    # roles.ts, navigation.ts, attendance.ts, branch-settings.ts
+│   ├── crypto/ecdh.ts                # ECDH P-256 + HKDF + AES-256-GCM
+│   ├── pwa/register-sw.ts            # Registrasi service worker (production saja)
+│   ├── validations/*.schema.ts       # Schema Zod per domain
+│   ├── utils/                        # Rupiah, tanggal, haversine, parser gmaps, geocoding, audio, …
+│   ├── logger.ts                     # Pino (browser production: mati)
+│   ├── query-keys.ts                 # Factory query key terpusat
+│   └── test/
 │
-├── hooks/                           # Custom React Hooks
-│   ├── use-table-session.ts         # Hook Validasi Status Meja saat Scan QR
-│   ├── use-live-orders.ts           # Hook WebSocket Listeners untuk Order Status
-│   ├── use-menus.ts                 # React Query Hooks untuk Menus & Categories
-│   ├── use-banners.ts               # React Query Hooks untuk Promo Banners
-│   └── use-handshake.ts             # Hook Auto ECDH Handshake
-│
-└── providers/                       # Context Providers
-    ├── query-provider.tsx           # TanStack React Query Client Provider
-    ├── socket-provider.tsx          # Real-time WebSocket Provider (/events)
-    ├── handshake-provider.tsx       # ECDH Initializer Provider
-    └── pwa-provider.tsx             # PWA & Offline Provider
+├── providers/                        # Query, theme, toaster, handshake, PWA
+├── store/                            # Zustand: auth (persist), handshake (RAM), sidebar, pwa, theme, cart, table
+├── test/                             # Setup Vitest, handler MSW, renderWithProviders
+└── types/                            # Tipe bersama (pagination)
 ```
 
 ---
 
-## 🔗 3. Terhubung ke Dokumen Terkait
+## 🔒 3. Role Access Strategy (`src/lib/constants/roles.ts`)
 
-- 📄 Spesifikasi Enkripsi Kriptografi FE: [client-crypto-strategy.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/security/client-crypto-strategy.md)
-- 📄 Spesifikasi UI/UX & Wireframe Kumpul Cafe: [ui-wireframe-design.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/wireframe/ui-wireframe-design.md)
-- 📄 Milestones & Roadmap Kumpul Cafe: [implementation-milestones.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/roadmap/implementation-milestones.md)
+```typescript
+export const ROLE = {
+  ADMIN: 'ADMIN',
+  CASHIER: 'CASHIER',
+  KITCHEN: 'KITCHEN',
+  WAITER: 'WAITER',
+  // Sinonim yang bisa dikirim backend
+  KASIR: 'KASIR',
+  DAPUR: 'DAPUR',
+  PELAYAN: 'PELAYAN',
+} as const;
+
+export const ROLE_GROUPS = {
+  ADMIN_ONLY: [ROLE.ADMIN],
+  CASHIER_OR_ADMIN: [ROLE.ADMIN, ROLE.CASHIER, ROLE.KASIR],
+  // Catatan: kasir juga termasuk, sehingga kasir bisa membuka KDS. Perlu dikonfirmasi apakah disengaja.
+  KITCHEN_OR_ADMIN: [ROLE.ADMIN, ROLE.KITCHEN, ROLE.DAPUR, ROLE.CASHIER, ROLE.KASIR],
+  WAITER_OR_ADMIN: [ROLE.ADMIN, ROLE.WAITER, ROLE.PELAYAN],
+  ALL_STAFF: ALL_ROLES, // ketujuh nilai di atas
+} as const;
+```
+
+**Halaman awal per role** — selalu pakai `getRoleHomePath(role)`, jangan menulis ulang `switch`:
+
+| Role | Halaman |
+| :--- | :--- |
+| `ADMIN` | `/admin/dashboard` |
+| `CASHIER` / `KASIR` | `/cashier/tables` |
+| `KITCHEN` / `DAPUR` | `/kitchen/orders` |
+| `WAITER` / `PELAYAN` | `/waiter/tables` |
+| (belum login) | `/login` |
+
+Dipakai oleh halaman login, onboarding, `AuthGuard`, `RoleGuard`, dan breadcrumb.
+
+---
+
+## 📝 4. Standard Form & Validation Architecture (`react-hook-form` + `zodResolver`)
+
+```mermaid
+flowchart LR
+    A[Zod Schema<br/>src/lib/validations/*.schema.ts] --> B[zodResolver]
+    B --> C[useForm]
+    C --> D[UI: Input, Select, Switch, Dialog]
+    D -->|handleSubmit| E[Mutation hook React Query<br/>→ fungsi domain → apiTransport]
+```
+
+### Prinsip:
+1. **Single Source of Truth**: aturan validasi, default value, dan pesan error didefinisikan di schema Zod (`src/lib/validations/`).
+2. **Tanpa `useState` ad-hoc untuk field form**: gunakan `useForm<T>({ resolver: zodResolver(schema) })`.
+3. **Error inline per field** via `formState.errors.<field>?.message`.
+4. **Simpan lewat mutation hook** (`useCreate…Mutation`, `useUpdate…Mutation`), bukan memanggil fungsi API langsung, supaya cache React Query ikut diinvalidasi.
+
+---
+
+## 🔗 5. Dokumen Terkait
+
+- 📘 [frontend-development-handbook.md](../guidelines/frontend-development-handbook.md): aturan & resep
+- 📄 [interceptor-pipeline-architecture.md](./interceptor-pipeline-architecture.md): transport & middleware
+- 📄 [api-endpoints.md](../integration/api-endpoints.md): daftar endpoint
+- 📄 [cafe-branch-operational-blueprint.md](./cafe-branch-operational-blueprint.md): kebutuhan operasional cabang
+- 📄 [client-crypto-strategy.md](../security/client-crypto-strategy.md): handshake ECDH
+- 📄 [implementation-milestones.md](../roadmap/implementation-milestones.md): roadmap

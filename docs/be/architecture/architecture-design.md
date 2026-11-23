@@ -1,26 +1,35 @@
 # MenuScan Backend System Architecture Specification
 
-> **Project**: MenuScan – Digital QR Code Menu System  
-> **Backend Framework**: NestJS (TypeScript)  
-> **Database & ORM**: PostgreSQL & Prisma ORM  
+> **Project**: MenuScan – Digital QR Code Menu System & Multi-Branch FnB SaaS  
+> **Backend Framework**: NestJS 11 (TypeScript)  
+> **Database & ORM**: PostgreSQL 16 & Prisma ORM 7  
 > **Validation & Schema**: Zod & `nestjs-zod`  
+> **Cache & Distributed Store**: Redis (`ioredis`)  
+> **Real-Time Gateway**: WebSockets (`@nestjs/websockets` + Socket.IO)  
 > **Security & Auth**: Dual JWT (Access + Refresh Token) & ECDH AES-256-GCM Payload Encryption  
 > **Logging**: Structured Step-Tracing Logger (`nestjs-pino`)  
-> **Document Location**: `docs/architecture/architecture-design.md`  
+> **Document Location**: `docs/be/architecture/architecture-design.md`  
+> **Status**: Up-to-Date Architecture Specification  
 
 ---
 
 ## 🏛️ 1. Architectural Pattern & Design Principles
 
-Arsitektur aplikasi ini dibangun dengan mengadopsi **Feature-Based Modular Architecture** sesuai panduan resmi *NestJS Best Practices*. 
+Arsitektur aplikasi Backend ini mengadopsi **Feature-Based Modular Architecture** sesuai panduan resmi *NestJS Best Practices* dengan fokus pada skalabilitas, keamanan *Zero-Trust*, dan performa tinggi:
 
 ### Prinsip Utama:
-1. **High Cohesion, Low Coupling**: Setiap domain bisnis (Auth, Categories, Menus) diisolasi dalam modulnya masing-masing.
-2. **Single Responsibility Principle (SRP)**:
-   - **Controller**: Hanya menangani HTTP routing, ekstraksi request, dan pemanggilan service.
-   - **Service**: Menangani seluruh *business logic* dan interaksi dengan database (Prisma).
-   - **DTO (Zod)**: Bertanggung jawab atas kontrak dan validasi tipe data *input/output*.
-3. **Layered Lifecycle Pipeline**: Keamanan (Enkripsi/Deskripsi), Otentikasi (JWT), Validasi (Zod), dan Logging dipisahkan secara tegas pada layer *Middleware*, *Guard*, *Pipe*, *Interceptor*, dan *Exception Filter*.
+1. **High Cohesion, Low Coupling**: Setiap domain bisnis (Auth, Categories, Menus, Tables, Orders, Banners, Reports, Payments) diisolasi dalam modul mandirinya masing-masing.
+2. **Layered Lifecycle Pipeline**:
+   - **Middleware**: `DecryptPayloadMiddleware` mendekripsi payload request terenkripsi sebelum validasi.
+   - **Guards**: `JwtAuthGuard` & `RolesGuard` menegakkan otorisasi berbasis role (`ADMIN`, `CASHIER`, `KITCHEN`, `WAITER`).
+   - **Pipes**: `ZodValidationPipe` memvalidasi dan mem-parsing DTO secara runtime.
+   - **Interceptors**: `TransformInterceptor` membungkus response terstandar dan `EncryptPayloadInterceptor` mengenkripsi payload keluar.
+   - **Exception Filter**: `GlobalExceptionFilter` menangkap ZodError, HttpException, dan PrismaError dengan format seragam.
+3. **High-Speed Redis Caching**:
+   - Caching katalog menu dan kategori dengan invalidasi otomatis saat ada operasi *create/update/delete*.
+   - Penyimpanan sesi handshake ECDH terdistribusi di Redis.
+4. **Real-Time Event Dispatching (WebSocket Gateway)**:
+   - Namespace `/events` dengan room-based broadcasting (`room:kitchen`, `room:waiter`, `room:table:<number>`).
 
 ---
 
@@ -37,46 +46,94 @@ src/
 │   │   ├── crypto.service.ts    # AES-256-GCM Encrypt/Decrypt & HKDF Derivation
 │   │   ├── ecdh.service.ts      # Pertukaran kunci ECDH (prime256v1)
 │   │   └── crypto.module.ts
+│   │
+│   ├── redis/                   # Redis Cache & Distributed Session
+│   │   ├── redis.service.ts     # Redis Client & Helper Methods
+│   │   └── redis.module.ts      # @Global() Redis Module
+│   │
 │   ├── decorators/              # Custom Decorators
 │   │   ├── public.decorator.ts       # @Public() -> Bypass JwtAuthGuard
-│   │   ├── skip-encrypt.decorator.ts# @SkipEncryption() -> Bypass Payload Encryption
-│   │   └── current-user.decorator.ts# @CurrentUser() -> Extract req.user
+│   │   ├── roles.decorator.ts        # @Roles('ADMIN', 'CASHIER') -> RBAC Access
+│   │   ├── skip-encrypt.decorator.ts # @SkipEncryption() -> Bypass Payload Encryption
+│   │   └── current-user.decorator.ts # @CurrentUser() -> Extract req.user
+│   │
 │   ├── filters/                 # Global Exception Handling
 │   │   ├── global-exception.filter.ts # Tangkap ZodError, HttpException, & PrismaError
 │   │   └── http-exception.filter.ts
-│   ├── guards/                  # Security Guards
-│   │   ├── jwt-auth.guard.ts     # Memeriksa Access Token
-│   │   ├── jwt-refresh.guard.ts  # Memeriksa Refresh Token saat /auth/refresh
-│   │   └── handshake.guard.ts    # Memeriksa Keberadaan x-handshake-token
+│   │
+│   ├── guards/                  # Security & RBAC Guards
+│   │   ├── jwt-auth.guard.ts    # Memeriksa Access Token
+│   │   ├── jwt-refresh.guard.ts # Memeriksa Refresh Token saat /auth/refresh
+│   │   ├── handshake.guard.ts   # Memeriksa Keberadaan x-handshake-token
+│   │   └── roles.guard.ts       # Role-Based Access Control Validator
+│   │
 │   ├── interceptors/            # Response Transformation & Encryption
 │   │   ├── encrypt-payload.interceptor.ts # Enkripsi Response JSON
 │   │   └── transform.interceptor.ts       # Standarisasi JSON Response Wrapper
+│   │
 │   ├── logger/                  # Step-Tracing Logger Module (nestjs-pino)
 │   │   ├── logger.module.ts     # Pino Logger & Redaction Setup
 │   │   └── logger.service.ts    # Utility untuk Step Logging
+│   │
 │   ├── middlewares/             # Request Decryption
-│   │   └── decrypt-payload.middleware.ts  # Deskripsi Request Body sebelum masuk Pipe
+│   │   └── decrypt-payload.middleware.ts  # Dekripsi Request Body sebelum masuk Pipe
+│   │
 │   └── prisma/                  # Database Singleton Module
-│       ├── prisma.service.ts    # Lifecycle Connection Hook & Slow Query Logging (>500ms)
+│       ├── prisma.service.ts    # Lifecycle Hook & Slow Query Logging (>500ms)
 │       └── prisma.module.ts     # @Global() Module
 │
 ├── modules/                     # Domain Feature Modules
-│   ├── auth/                    # Modul Otentikasi & Handshake
-│   │   ├── dto/                 # Zod Schemas (LoginDto, HandshakeDto, RefreshTokenDto)
-│   │   ├── strategies/          # Passport Strategies (JwtStrategy, JwtRefreshStrategy)
-│   │   ├── auth.controller.ts
-│   │   ├── auth.service.ts
-│   │   └── auth.module.ts
+│   ├── auth/                    # Modul Otentikasi & ECDH Handshake
+│   │   ├── dto/                 # HandshakeDto, LoginDto, RefreshTokenDto
+│   │   ├── strategies/          # JwtStrategy, JwtRefreshStrategy
+│   │   ├── auth.controller.ts   # POST /auth/handshake, /login, /refresh, /logout
+│   │   └── auth.service.ts
+│   │
 │   ├── categories/              # Modul Pengelolaan Kategori
-│   │   ├── dto/                 # Zod Schemas (CreateCategoryDto, UpdateCategoryDto)
-│   │   ├── categories.controller.ts
-│   │   ├── categories.service.ts
-│   │   └── categories.module.ts
-│   └── menus/                   # Modul Pengelolaan Menu & Status Availability
-│       ├── dto/                 # Zod Schemas (CreateMenuDto, UpdateMenuDto, QueryMenuDto)
-│       ├── menus.controller.ts
-│       ├── menus.service.ts
-│       └── menus.module.ts
+│   │   ├── dto/                 # CreateCategoryDto, UpdateCategoryDto, ReorderDto
+│   │   ├── categories.controller.ts # Admin & Public Category Endpoints
+│   │   └── categories.service.ts
+│   │
+│   ├── menus/                   # Modul Pengelolaan Menu & Variasi Bersarang
+│   │   ├── dto/                 # CreateMenuDto, UpdateMenuDto, ToggleMenuStatusDto
+│   │   ├── menus.controller.ts  # Admin & Public Menu Endpoints
+│   │   └── menus.service.ts
+│   │
+│   ├── tables/                  # Modul Manajemen Meja & Sesi Meja
+│   │   ├── dto/                 # CreateTableDto, UpdateTableDto, TableSessionDto
+│   │   ├── tables.controller.ts # Admin & Public Table Session & Reset Endpoints
+│   │   └── tables.service.ts
+│   │
+│   ├── table-zones/             # Modul Pengelolaan Zona Meja
+│   │   ├── dto/                 # CreateTableZoneDto, UpdateTableZoneDto
+│   │   ├── table-zones.controller.ts
+│   │   └── table-zones.service.ts
+│   │
+│   ├── orders/                  # Modul Pesanan & Real-Time KDS
+│   │   ├── dto/                 # CreateOrderDto, UpdateOrderStatusDto
+│   │   ├── orders.controller.ts # Admin & Public Order Endpoints
+│   │   └── orders.service.ts
+│   │
+│   ├── banners/                 # Modul Banner Promo
+│   │   ├── dto/                 # CreateBannerDto, UpdateBannerDto
+│   │   ├── banners.controller.ts# Admin & Public Banner Endpoints
+│   │   └── banners.service.ts
+│   │
+│   ├── reports/                 # Modul Laporan & Analitik Penjualan
+│   │   ├── reports.controller.ts# /admin/reports/dashboard-overview, /revenue, /top-selling
+│   │   └── reports.service.ts   # Aggregation & Revenue Calculation Engine
+│   │
+│   ├── payments/                # Modul Pembayaran & QRIS Dinamis
+│   │   ├── dto/                 # CreateQrisDto, PaymentWebhookDto
+│   │   ├── payments.controller.ts # /public/payments/create-qris, /webhook
+│   │   └── payments.service.ts
+│   │
+│   ├── uploads/                 # Modul Upload Media & Gambar
+│   │   ├── uploads.controller.ts# POST /admin/uploads/image
+│   │   └── uploads.service.ts
+│   │
+│   └── events/                  # WebSocket Gateway
+│       └── events.gateway.ts    # Socket.IO Gateway namespace /events
 │
 ├── app.module.ts                # Root Application Module
 └── main.ts                      # Entry Point & Bootstrap Pipeline Setup
@@ -85,8 +142,6 @@ src/
 ---
 
 ## 🔄 3. Request & Response Lifecycle Flow (Step-Tracing)
-
-Berikut adalah alur perjalanan HTTP Request terenkripsi yang dicatat langkah demi langkah (*step-by-step*) oleh sistem logging:
 
 ```mermaid
 flowchart TD
@@ -99,13 +154,13 @@ flowchart TD
         B3 -->|Step: PAYLOAD_DECRYPT| C
     end
 
-    C[JwtAuthGuard / HandshakeGuard]
+    C[JwtAuthGuard / RolesGuard]
 
-    subgraph Step 2: SECURITY_AUTH
+    subgraph Step 2: SECURITY_AUTH & RBAC
         C -->|Check @Public Decorator| C1{Is Endpoint Public?}
         C1 -- Yes --> D[ZodValidationPipe]
-        C1 -- No --> C2{Is Access Token Valid?}
-        C2 -- No --> C3[Throw 401 Unauthorized]
+        C1 -- No --> C2{Is Access Token & Role Valid?}
+        C2 -- No --> C3[Throw 401 Unauthorized / 403 Forbidden]
         C2 -- Yes -->|Step: SECURITY_AUTH| C4[Attach User Object to req.user] --> D
     end
 
@@ -116,8 +171,10 @@ flowchart TD
     end
 
     subgraph Step 4 & 5: SERVICE_EXECUTION & DATABASE_QUERY
-        E -->|Step: SERVICE_EXECUTION| E1[Prisma Database Query]
-        E1 -->|Step: DATABASE_QUERY| E2[Return Raw Response Object]
+        E -->|Check Redis Cache| E0{Cached in Redis?}
+        E0 -- Yes --> E2[Return Cached Data]
+        E0 -- No -->|Step: SERVICE_EXECUTION| E1[Prisma Database Query]
+        E1 -->|Step: DATABASE_QUERY| E2[Return Raw Response Object & Cache to Redis]
     end
 
     E2 --> F[EncryptPayloadInterceptor]
@@ -135,54 +192,10 @@ flowchart TD
 
 ---
 
-## 🛠️ 4. Spesifikasi Layer Teknis
+## 🔗 4. Dokumen Terkait
 
-### A. Database Layer (`PrismaModule` & PostgreSQL)
-- **Tipe Modul**: `@Global()` agar `PrismaService` dapat langsung di-inject tanpa re-import.
-- **Connection Management**: `onModuleInit()` dan `onModuleDestroy()` untuk *graceful shutdown*.
-- **Indexing & Soft Delete**: Rincian lengkap strategi query, indexing, dan soft delete tersedia di [database-strategy.md](file:///d:/code/be-menu-scan-latihan/docs/architecture/database-strategy.md).
-
-### B. Logging Layer (`nestjs-pino`)
-- **Step-Tracing Engine**: Menempelkan `requestId` (UUID) & `step` tag pada setiap layer eksekusi.
-- **Redaction Rules**: Mengenkripsi/menyembunyikan field sensitif (`password`, `payload`, `iv`, `tag`, `authorization`, `refreshToken`).
-- Rincian lengkap tersedia di [logging-strategy.md](file:///d:/code/be-menu-scan-latihan/docs/architecture/logging-strategy.md).
-
-### C. Security & Authentication Layer
-1. **Dual JWT Token Strategy**:
-   - **Access Token**: Berisi `userId`, `email`, `role`. Masa berlaku 15 menit. Disahkan oleh `JwtStrategy`.
-   - **Refresh Token**: Berisi `userId`. Masa berlaku 7 hari. Disimpan ter-hash di DB (`User.refreshToken`). Disahkan oleh `JwtRefreshStrategy` pada endpoint `/api/v1/auth/refresh`.
-2. **ECDH Payload Encryption Layer**:
-   - `DecryptPayloadMiddleware`: Berjalan sebelum Guard & Controller. Membaca `x-handshake-token` untuk mengambil `SessionKey` dari Cache/Memory.
-   - `EncryptPayloadInterceptor`: Interceptor global yang menangkap return value Controller dan membungkusnya menjadi ciphertext terenkripsi.
-
-### D. Validation Layer (`nestjs-zod`)
-- Menggunakan `ZodValidationPipe` menggantikan `class-validator`.
-- Keuntungan Zod:
-  - Tipe data TypeScript otomatis diturunkan dari Schema (`z.infer<typeof Schema>`).
-  - Integrasi otomatis ke `@nestjs/swagger` untuk pembuatan OpenAPI Docs interaktif.
-
-### E. Global Exception Handling Layer (`GlobalExceptionFilter`)
-Menangkap error dan mencatat log dengan `step: "EXCEPTION_CATCH"`. Format response error terstandar:
-```json
-{
-  "statusCode": 400,
-  "error": "Bad Request",
-  "message": "Validation failed",
-  "details": [
-    {
-      "field": "price",
-      "message": "Price must be greater than 0"
-    }
-  ],
-  "timestamp": "2026-08-06T09:47:00.000Z"
-}
-```
-
----
-
-## 🔗 5. Terhubung ke Dokumen Terkait
-
-- 📄 Wireframe API & Blueprint Schema: [wireframe-api-not-final.md](file:///d:/code/be-menu-scan-latihan/docs/wireframe/wireframe-api-not-final.md)
-- 📄 Spesifikasi Enkripsi Payload: [encryption-decryption-strategy.md](file:///d:/code/be-menu-scan-latihan/docs/security/encryption-decryption-strategy.md)
-- 📄 Spesifikasi Step-Tracing Logging: [logging-strategy.md](file:///d:/code/be-menu-scan-latihan/docs/architecture/logging-strategy.md)
-- 📄 Spesifikasi Database & Query Strategy: [database-strategy.md](file:///d:/code/be-menu-scan-latihan/docs/architecture/database-strategy.md)
+- 📄 Blueprint Operasional Cabang Kafe: [cafe-branch-operational-blueprint.md](file:///d:/code/fe-menu-scan-latihan/docs/be/architecture/cafe-branch-operational-blueprint.md)
+- 📄 Spesifikasi Enkripsi Payload: [encryption-decryption-strategy.md](file:///d:/code/fe-menu-scan-latihan/docs/be/security/encryption-decryption-strategy.md)
+- 📄 Spesifikasi Step-Tracing Logging: [logging-strategy.md](file:///d:/code/fe-menu-scan-latihan/docs/be/architecture/logging-strategy.md)
+- 📄 Spesifikasi Database & Query Strategy: [database-strategy.md](file:///d:/code/fe-menu-scan-latihan/docs/architecture/database-strategy.md)
+- 📄 Milestones & Roadmap Backend: [implementation-milestones.md](file:///d:/code/fe-menu-scan-latihan/docs/be/roadmap/implementation-milestones.md)

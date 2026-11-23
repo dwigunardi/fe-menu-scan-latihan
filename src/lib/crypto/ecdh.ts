@@ -7,12 +7,11 @@
 
 export interface EncryptedEnvelope {
   encrypted: true;
-  iv: string; // Base64 or Hex
-  tag?: string; // Hex/Base64 if separated, or appended to payload
+  iv: string; // Base64
+  tag: string; // Base64
   payload: string; // Base64 ciphertext
 }
 
-// Global crypto accessor safe for browser and Node.js environments
 const getCrypto = (): Crypto => {
   if (typeof window !== 'undefined' && window.crypto) {
     return window.crypto;
@@ -23,9 +22,6 @@ const getCrypto = (): Crypto => {
   throw new Error('WebCrypto API is not supported in this runtime environment.');
 };
 
-/**
- * Converts ArrayBuffer to Hex string
- */
 export function bufToHex(buffer: ArrayBuffer | Uint8Array): string {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   return Array.from(bytes)
@@ -33,9 +29,6 @@ export function bufToHex(buffer: ArrayBuffer | Uint8Array): string {
     .join('');
 }
 
-/**
- * Converts Hex string to Uint8Array
- */
 export function hexToBuf(hex: string): Uint8Array {
   const cleanHex = hex.replace(/^0x/, '');
   const bytes = new Uint8Array(cleanHex.length / 2);
@@ -45,9 +38,6 @@ export function hexToBuf(hex: string): Uint8Array {
   return bytes;
 }
 
-/**
- * Converts ArrayBuffer to Base64 string
- */
 export function bufToBase64(buffer: ArrayBuffer | Uint8Array): string {
   const bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
   let binary = '';
@@ -59,9 +49,6 @@ export function bufToBase64(buffer: ArrayBuffer | Uint8Array): string {
     : Buffer.from(bytes).toString('base64');
 }
 
-/**
- * Converts Base64 string to Uint8Array
- */
 export function base64ToBuf(base64: string): Uint8Array {
   if (typeof atob !== 'undefined') {
     const binary = atob(base64);
@@ -74,9 +61,6 @@ export function base64ToBuf(base64: string): Uint8Array {
   return new Uint8Array(Buffer.from(base64, 'base64'));
 }
 
-/**
- * Generates an ephemeral ECDH P-256 key pair.
- */
 export async function generateClientKeyPair(): Promise<CryptoKeyPair> {
   const crypto = getCrypto();
   return crypto.subtle.generateKey(
@@ -84,23 +68,17 @@ export async function generateClientKeyPair(): Promise<CryptoKeyPair> {
       name: 'ECDH',
       namedCurve: 'P-256',
     },
-    true, // extractable
+    true,
     ['deriveKey', 'deriveBits']
   );
 }
 
-/**
- * Exports a CryptoKey to uncompressed raw hex format (04 || X || Y).
- */
 export async function exportPublicKeyHex(publicKey: CryptoKey): Promise<string> {
   const crypto = getCrypto();
   const rawBuffer = await crypto.subtle.exportKey('raw', publicKey);
   return bufToHex(rawBuffer);
 }
 
-/**
- * Imports an uncompressed raw hex public key (from server).
- */
 export async function importServerPublicKey(serverPublicKeyHex: string): Promise<CryptoKey> {
   const crypto = getCrypto();
   const rawBuffer = hexToBuf(serverPublicKeyHex);
@@ -117,17 +95,17 @@ export async function importServerPublicKey(serverPublicKeyHex: string): Promise
 }
 
 /**
- * Derives a 256-bit AES-GCM session key from ECDH shared bits using HKDF-SHA256.
- * Salt default is 'kumpul-cafe-handshake-salt-v1'.
+ * Derives a 256-bit AES-GCM session key matching backend NestJS CryptoService.
  */
 export async function deriveSessionKey(
   clientPrivateKey: CryptoKey,
   serverPublicKey: CryptoKey,
-  saltStr = 'kumpul-cafe-handshake-salt-v1'
+  nonce: string,
+  appSecret = process.env.NEXT_PUBLIC_APP_SECRET || 'menuscan_app_handshake_secret_32bytes_key_secure_xyz'
 ): Promise<CryptoKey> {
   const crypto = getCrypto();
 
-  // 1. Derive shared bits using ECDH
+  // 1. Derive shared bits using ECDH (256 bits)
   const sharedBits = await crypto.subtle.deriveBits(
     {
       name: 'ECDH',
@@ -147,10 +125,10 @@ export async function deriveSessionKey(
   );
 
   const encoder = new TextEncoder();
-  const salt = encoder.encode(saltStr);
-  const info = encoder.encode('aes-256-gcm-session-key');
+  const salt = encoder.encode(appSecret);
+  const info = encoder.encode(`menuscan-session-${nonce}`);
 
-  // 3. Derive AES-GCM 256-bit key via HKDF
+  // 3. Derive AES-GCM 256-bit key via HKDF (HMAC-SHA256)
   return crypto.subtle.deriveKey(
     {
       name: 'HKDF',
@@ -163,14 +141,11 @@ export async function deriveSessionKey(
       name: 'AES-GCM',
       length: 256,
     },
-    false, // RAM-only, non-extractable for maximum security
+    false,
     ['encrypt', 'decrypt']
   );
 }
 
-/**
- * Encrypts a plain JavaScript object or string into an EncryptedEnvelope.
- */
 export async function encryptPayload(
   data: unknown,
   sessionKey: CryptoKey
@@ -180,10 +155,9 @@ export async function encryptPayload(
   const encoder = new TextEncoder();
   const encodedData = encoder.encode(text);
 
-  // 12-byte random IV for GCM
+  // 12-byte random IV
   const iv = crypto.getRandomValues(new Uint8Array(12));
 
-  // WebCrypto encrypts and appends the 16-byte authentication tag to the end of ciphertext
   const ciphertextBuffer = await crypto.subtle.encrypt(
     {
       name: 'AES-GCM',
@@ -194,32 +168,32 @@ export async function encryptPayload(
     encodedData
   );
 
+  const ciphertextBytes = new Uint8Array(ciphertextBuffer);
+  // WebCrypto appends 16-byte auth tag at the end of ciphertext
+  const payloadBytes = ciphertextBytes.slice(0, -16);
+  const tagBytes = ciphertextBytes.slice(-16);
+
   return {
     encrypted: true,
-    iv: bufToHex(iv),
-    payload: bufToBase64(ciphertextBuffer),
+    iv: bufToBase64(iv),
+    tag: bufToBase64(tagBytes),
+    payload: bufToBase64(payloadBytes),
   };
 }
 
-/**
- * Decrypts an EncryptedEnvelope back into the original plain JavaScript object.
- */
 export async function decryptPayload<T = unknown>(
-  envelope: { iv: string; payload: string; tag?: string },
+  envelope: { iv: string; payload: string; tag: string },
   sessionKey: CryptoKey
 ): Promise<T> {
   const crypto = getCrypto();
-  const iv = hexToBuf(envelope.iv);
-  let ciphertext = base64ToBuf(envelope.payload);
+  const iv = base64ToBuf(envelope.iv);
+  const ciphertextBytes = base64ToBuf(envelope.payload);
+  const tagBytes = base64ToBuf(envelope.tag);
 
-  // If server returns separate hex tag, append it to ciphertext for WebCrypto
-  if (envelope.tag) {
-    const tagBytes = hexToBuf(envelope.tag);
-    const combined = new Uint8Array(ciphertext.length + tagBytes.length);
-    combined.set(ciphertext, 0);
-    combined.set(tagBytes, ciphertext.length);
-    ciphertext = combined;
-  }
+  // Combine ciphertext and auth tag for WebCrypto decrypt
+  const combined = new Uint8Array(ciphertextBytes.length + tagBytes.length);
+  combined.set(ciphertextBytes, 0);
+  combined.set(tagBytes, ciphertextBytes.length);
 
   const decryptedBuffer = await crypto.subtle.decrypt(
     {
@@ -228,7 +202,7 @@ export async function decryptPayload<T = unknown>(
       tagLength: 128,
     },
     sessionKey,
-    ciphertext as BufferSource
+    combined as BufferSource
   );
 
   const decoder = new TextDecoder();

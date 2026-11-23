@@ -149,8 +149,68 @@ if (executionTimeMs > 500) {
 
 ---
 
-## 🔗 9. Terhubung ke Dokumen Terkait
+## 🏢 10. Multi-Branch Database Architecture & Outbox Sync Schema
 
-- 📄 Wireframe API & Blueprint Schema: [wireframe-api-not-final.md](file:///d:/code/be-menu-scan-latihan/docs/wireframe/wireframe-api-not-final.md)
-- 📄 Arsitektur Utama Backend: [architecture-design.md](file:///d:/code/be-menu-scan-latihan/docs/architecture/architecture-design.md)
-- 📄 Spesifikasi Logging: [logging-strategy.md](file:///d:/code/be-menu-scan-latihan/docs/architecture/logging-strategy.md)
+Dalam roadmap ekspansi **Multi-Branch FnB SaaS**, strategi database berkembang menjadi **Multi-DB Hybrid (Branch DB + Central DB)**:
+
+### A. Tabel `branches` & Tenant Scoping
+Setiap record transaksional diikat oleh `branchId`:
+```prisma
+model Branch {
+  id          String   @id @default(cuid())
+  code        String   @unique // contoh: "BDG-01", "JKT-02"
+  name        String
+  address     String?
+  timezone    String   @default("Asia/Jakarta")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders      Order[]
+  tables      Table[]
+  zones       TableZone[]
+  outboxLogs  OutboxEvent[]
+
+  @@index([isActive])
+}
+```
+
+### B. Tabel `outbox_events` (Reliable Event-Driven Sync)
+Menjamin pengiriman data pesanan & pembayaran lokal ke Cloud DB tanpa kehilangan data saat internet mati (*Offline-First*):
+```prisma
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  SYNCED
+  FAILED
+}
+
+model OutboxEvent {
+  id          String       @id @default(cuid())
+  branchId    String
+  eventType   String       // e.g. "ORDER_CREATED", "PAYMENT_COMPLETED", "TABLE_RESET"
+  aggregateId String       // e.g. orderId
+  payload     Json         // Full encrypted / sanitized event payload
+  status      OutboxStatus @default(PENDING)
+  retryCount  Int          @default(0)
+  lastError   String?
+  syncedAt    DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  branch      Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([branchId, status])
+}
+```
+
+---
+
+## 🔗 11. Terhubung ke Dokumen Terkait
+
+- 📄 Arsitektur Microservices & Sync SaaS: [saas-multi-branch-microservices.md](file:///d:/code/fe-menu-scan-latihan/docs/be/architecture/saas-multi-branch-microservices.md)
+- 📄 Arsitektur Utama Backend: [architecture-design.md](file:///d:/code/fe-menu-scan-latihan/docs/be/architecture/architecture-design.md)
+- 📄 Spesifikasi Logging: [logging-strategy.md](file:///d:/code/fe-menu-scan-latihan/docs/be/architecture/logging-strategy.md)
+- 📄 Frontend SaaS Blueprint: [multi-tenant-auth-and-routing.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/architecture/multi-tenant-auth-and-routing.md)
+

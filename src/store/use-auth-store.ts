@@ -1,22 +1,43 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import {
+  ROLE,
+  USER_ROLE,
+  UserRole,
+  ROLE_GROUPS,
+  ALL_ROLES,
+} from '@/lib/constants/roles';
 
-export type UserRole = 'ADMIN' | 'CASHIER' | 'KITCHEN' | 'WAITER';
+export { ROLE, USER_ROLE, ROLE_GROUPS, ALL_ROLES };
+export type { UserRole };
 
 export interface StaffUser {
   id: string;
-  username: string;
+  employeeId?: string | null;
+  username?: string | null;
+  email?: string | null;
+  phone?: string | null;
   name: string;
   role: UserRole;
+  needsOnboarding?: boolean;
+  pinCodeSet?: boolean;
 }
 
 interface AuthState {
   user: StaffUser | null;
   accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
-  setAuth: (user: StaffUser, accessToken: string) => void;
+  _hasHydrated: boolean;
+  isReauthModalOpen: boolean;
+  setHasHydrated: (state: boolean) => void;
+  setAuth: (user: StaffUser, accessToken: string, refreshToken?: string | null) => void;
+  updateTokens: (accessToken: string, refreshToken?: string | null) => void;
+  completeOnboarding: (updatedUser?: Partial<StaffUser>) => void;
+  openReauthModal: () => void;
+  closeReauthModal: () => void;
   logout: () => void;
-  hasRole: (allowedRoles: UserRole[]) => boolean;
+  hasRole: (allowedRoles: UserRole[] | readonly UserRole[]) => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -24,14 +45,65 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       accessToken: null,
+      refreshToken: null,
       isAuthenticated: false,
+      _hasHydrated: false,
+      isReauthModalOpen: false,
 
-      setAuth: (user, accessToken) => {
-        set({ user, accessToken, isAuthenticated: true });
+      setHasHydrated: (state: boolean) => {
+        set({ _hasHydrated: state });
+      },
+
+      setAuth: (user, accessToken, refreshToken = null) => {
+        set((state) => ({
+          user,
+          accessToken,
+          refreshToken: refreshToken || state.refreshToken,
+          isAuthenticated: true,
+          _hasHydrated: true,
+          isReauthModalOpen: false,
+        }));
+      },
+
+      updateTokens: (accessToken, refreshToken = null) => {
+        set((state) => ({
+          accessToken,
+          refreshToken: refreshToken || state.refreshToken,
+          isAuthenticated: true,
+          isReauthModalOpen: false,
+        }));
+      },
+
+      completeOnboarding: (updatedUser) => {
+        set((state) => ({
+          user: state.user
+            ? {
+                ...state.user,
+                ...updatedUser,
+                needsOnboarding: false,
+                pinCodeSet: true,
+              }
+            : null,
+        }));
+      },
+
+      openReauthModal: () => {
+        set({ isReauthModalOpen: true });
+      },
+
+      closeReauthModal: () => {
+        set({ isReauthModalOpen: false });
       },
 
       logout: () => {
-        set({ user: null, accessToken: null, isAuthenticated: false });
+        set({
+          user: null,
+          accessToken: null,
+          refreshToken: null,
+          isAuthenticated: false,
+          _hasHydrated: true,
+          isReauthModalOpen: false,
+        });
       },
 
       hasRole: (allowedRoles) => {
@@ -43,6 +115,15 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'kumpul_cafe_auth',
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        isAuthenticated: state.isAuthenticated,
+      }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

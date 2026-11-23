@@ -1,164 +1,95 @@
-# Client-Side Payload Encryption & ECDH Handshake Strategy (Native `fetch`)
+# Client-Side Payload Encryption & ECDH Handshake Strategy
 
-> **Document Status**: Complete Architecture Specification  
+> **Document Status**: Disinkronkan dengan kode pada 2026-11-20 (`src/lib/crypto/ecdh.ts`, `src/lib/api/handshake-session.ts`)  
 > **Scope**: Next.js (Frontend Client Application)  
-> **Backend Base URL**: `http://localhost:5000/api/v1` (NestJS 11)  
-> **Security Standard**: Application Layer Zero-Trust Encryption via Web Crypto API (P-256 ECDH + AES-256-GCM) + Native `fetch`  
+> **Backend Base URL**: `NEXT_PUBLIC_API_BASE_URL` (default `http://localhost:5000/api/v1`, NestJS 11)  
+> **Security Standard**: Enkripsi payload di application layer via Web Crypto API (P-256 ECDH + HKDF-SHA256 + AES-256-GCM), **di atas TLS**  
 > **Document Location**: `docs/fe/security/client-crypto-strategy.md`  
 
 ---
 
-## 🎯 1. Overview & Objective
+## 🎯 1. Overview
 
-Untuk menjaga integritas dan kerahasiaan data pada sistem **MenuScan**, aplikasi Next.js menerapkan enkripsi data pada **Application Layer**. Seluruh data sensitif yang dikirim dan diterima dari backend NestJS dibungkus dalam ciphertext **AES-256-GCM**.
+Frontend Kumpul Cafe mengenkripsi body request dan response pada **application layer** dengan **AES-256-GCM**. Kunci simetris (*session key*) dibuat di browser lewat **handshake ECDH** dengan backend, memakai Web Crypto API (`crypto.subtle`).
 
-Proses pembuatan kunci simetris (*Session Key*) dilakukan di sisi browser menggunakan **Web Crypto API** native (`window.crypto.subtle`) melalui protokol **ECDH Handshake**.
-
-Seluruh request HTTP dieksekusi menggunakan **Native `fetch` Wrapper (`customFetch`)** tanpa membutuhkan library eksternal seperti Axios.
+Enkripsi dan dekripsi dilakukan otomatis oleh `encryptionMiddleware` di pipeline API. Cara kerja pipeline dan opsi untuk melewati enkripsi dijelaskan di [interceptor-pipeline-architecture.md](../architecture/interceptor-pipeline-architecture.md).
 
 ---
 
-## 🔐 2. Spesifikasi Kriptografi Client
+## 🔐 2. Spesifikasi Kriptografi
 
-| Komponen | Spesifikasi Browser Native | Keterangan |
+| Komponen | Spesifikasi | Keterangan |
 | :--- | :--- | :--- |
-| **Backend Target** | `http://localhost:5000/api/v1` | Server Backend NestJS. |
-| **Crypto Engine** | `window.crypto.subtle` | Native browser WebCrypto API (sangat cepat & aman). |
-| **Key Exchange Protocol** | **ECDH (`P-256` / `prime256v1`)** | Menghasilkan Public/Private Keypair 256-bit di browser. |
-| **Key Derivation Function** | **HKDF (SHA-256)** | Derivasi Shared Secret + Client Nonce menjadi 256-bit AES-GCM Key. |
-| **Symmetric Cipher** | **AES-256-GCM** | Ciphertext terotentikasi dengan IV 12-byte & Tag 16-byte. |
-| **HTTP Engine** | Native `fetch` | Ringan, modern, tanpa overhead Axios. |
-| **Session Lifetime** | **2 Jam** | Otomatis melakukan *auto-rehandshake* jika token kadaluarsa. |
+| **Crypto Engine** | `crypto.subtle` | Web Crypto API bawaan browser. |
+| **Key Exchange** | **ECDH `P-256`** | Keypair baru dibuat untuk setiap handshake. Public key diekspor `raw` lalu dikirim sebagai **hex**. |
+| **Nonce** | 16 byte acak, dikirim sebagai **hex** | Dipakai di parameter `info` HKDF. |
+| **Key Derivation** | **HKDF-SHA256** | `salt` = `NEXT_PUBLIC_APP_SECRET` (UTF-8), `info` = `menuscan-session-<nonce>`, input = 256 bit shared secret ECDH. |
+| **Symmetric Cipher** | **AES-256-GCM** | IV 12 byte acak per pesan, tag 16 byte. |
+| **Session Lifetime** | `expiresIn` dari server (default 7200 detik bila tidak dikirim) | Dianggap kedaluwarsa 30 detik lebih awal, lalu handshake ulang otomatis. |
+
+### Format envelope terenkripsi (request & response)
+
+```json
+{
+  "encrypted": true,
+  "iv": "<base64, 12 byte>",
+  "tag": "<base64, 16 byte>",
+  "payload": "<base64 ciphertext tanpa tag>"
+}
+```
 
 ---
 
-## 🤝 3. Detail Implementasi ECDH Handshake di Browser
+## 🤝 3. Alur Handshake (`performHandshake`)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant App as Next.js Client App
-    participant Crypto as WebCrypto API (SubtleCrypto)
-    participant Server as NestJS Backend API (Port 5000)
+    participant App as Browser
+    participant Crypto as crypto.subtle
+    participant Server as Backend NestJS
 
-    Note over App,Server: Step 1: Client Key Pair & Nonce Generation
-    App->>Crypto: generateKey({ name: "ECDH", namedCurve: "P-256" })
+    App->>Crypto: generateKey(ECDH, P-256)
     Crypto-->>App: { publicKey, privateKey }
-    App->>Crypto: exportKey("raw", publicKey) -> Convert to Base64
-    App->>Crypto: getRandomValues(16 bytes) -> Client Nonce (Base64)
+    App->>Crypto: exportKey("raw", publicKey) → hex
+    App->>Crypto: getRandomValues(16 byte) → nonce (hex)
 
-    Note over App,Server: Step 2: Handshake Request to Backend
-    App->>Server: POST http://localhost:5000/api/v1/auth/handshake { clientPublicKey, nonce }
-    Server-->>App: 200 OK { serverPublicKey, handshakeToken, expiresIn }
+    App->>Server: POST /auth/handshake { clientPublicKey, nonce }
+    Server-->>App: { serverPublicKey (hex), handshakeToken, expiresIn }
 
-    Note over App,Server: Step 3: Derivasi Session Key di Browser
     App->>Crypto: importKey("raw", serverPublicKey)
-    App->>Crypto: deriveBits(ECDH, ClientPrivateKey, ServerPublicKey) -> SharedSecret
-    App->>Crypto: importKey("raw", SharedSecret) -> HKDF Master Key
-    App->>Crypto: deriveKey(HKDF, SHA-256, ClientNonce) -> SessionKey (AES-GCM 256-bit)
-    
-    Note over App,Server: Client & Server kini memiliki SessionKey yang IDENTIK!
+    App->>Crypto: deriveBits(ECDH) → shared secret 256 bit
+    App->>Crypto: deriveKey(HKDF-SHA256, salt=APP_SECRET, info="menuscan-session-"+nonce)
+    Crypto-->>App: sessionKey (AES-GCM 256, non-extractable)
+
+    Note over App,Server: Request berikutnya membawa header x-handshake-token
 ```
 
----
+### Kapan handshake diulang
 
-## 🔄 4. Implementasi Native `customFetch` Wrapper
-
-Seluruh komunikasi API dibungkus oleh fungsi **`customFetch`** (`lib/api/custom-fetch.ts`).
-
-```typescript
-// Blueprint Konseptual Native customFetch Wrapper Function
-export interface CustomFetchOptions extends RequestInit {
-  skipEncryption?: boolean;
-}
-
-export async function customFetch<T = any>(
-  endpoint: string,
-  options: CustomFetchOptions = {}
-): Promise<T> {
-  const { skipEncryption = false, headers = {}, body, ...restOptions } = options;
-
-  // 1. Pastikan Handshake Token & SessionKey tersedia di RAM
-  const { handshakeToken, sessionKey } = await ensureHandshakeSession();
-
-  const reqHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-    'x-handshake-token': handshakeToken,
-    ...(headers as Record<string, string>),
-  };
-
-  let reqBody = body;
-
-  // 2. Enkripsi Request Body jika ada data JSON dan tidak skipEncryption
-  if (body && !skipEncryption && typeof body === 'string') {
-    const iv = window.crypto.getRandomValues(new Uint8Array(12));
-    const encryptedBuffer = await window.crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv, tagLength: 128 },
-      sessionKey,
-      new TextEncoder().encode(body)
-    );
-
-    const ciphertext = encryptedBuffer.slice(0, encryptedBuffer.byteLength - 16);
-    const tag = encryptedBuffer.slice(encryptedBuffer.byteLength - 16);
-
-    reqBody = JSON.stringify({
-      encrypted: true,
-      iv: bufferToBase64(iv),
-      tag: bufferToBase64(tag),
-      payload: bufferToBase64(ciphertext),
-    });
-  }
-
-  // 3. Eksekusi Native fetch() ke Backend Port 5000
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
-  const response = await fetch(`${baseUrl}${endpoint}`, {
-    ...restOptions,
-    headers: reqHeaders,
-    body: reqBody,
-  });
-
-  // 4. Tangani Status 401 HANDSHAKE_EXPIRED -> Silent Re-Handshake & Auto Retry
-  if (response.status === 401) {
-    const clonedRes = response.clone();
-    const errData = await clonedRes.json().catch(() => ({}));
-    if (errData?.errorCode === 'HANDSHAKE_EXPIRED') {
-      await performHandshake(); // Handshake ulang
-      return customFetch<T>(endpoint, options); // Retry request
-    }
-  }
-
-  const json = await response.json();
-
-  // 5. Dekripsi Response Payload jika terenkripsi
-  if (json && json.encrypted && json.payload) {
-    const iv = base64ToBuffer(json.iv);
-    const tag = base64ToBuffer(json.tag);
-    const ciphertext = base64ToBuffer(json.payload);
-    const combinedBuffer = concatBuffers(ciphertext, tag);
-
-    const decryptedBuffer = await window.crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv, tagLength: 128 },
-      sessionKey,
-      combinedBuffer
-    );
-
-    return JSON.parse(new TextDecoder().decode(decryptedBuffer));
-  }
-
-  return json;
-}
-```
+- Session key belum ada atau sudah (hampir) kedaluwarsa → `ensureHandshakeSession()` melakukan handshake baru sebelum request.
+- Backend membalas **400/401** dengan kata `handshake` di `message`/`error`, atau `code === 'HANDSHAKE_FAILED'` → handshake ulang lalu request diulang **sekali**.
 
 ---
 
-## 🔒 5. Keamanan Session Key di Client Side
+## 🔒 4. Penyimpanan Session Key
 
-1. **Memory-Only Storage**: `SessionKey` (CryptoKey object) disimpan dalam **RAM / Closures State** (via Zustand store `useHandshakeStore`), **bukan** di `localStorage` atau `sessionStorage` dalam bentuk plaintext string agar aman dari XSS.
-2. **Strict Expiry**: Jika aplikasi ditinggalkan selama > 2 jam, sesi dianggap kadaluarsa dan otomatis memicu handshake baru saat user berinteraksi kembali.
+1. **Memori saja**: `sessionKey` (objek `CryptoKey`, non-extractable) dan `handshakeToken` disimpan di `useHandshakeStore` (Zustand **tanpa** persist). Reload halaman = handshake baru.
+2. **Kedaluwarsa ketat**: mengikuti `expiresIn` dari server, dikurangi buffer 30 detik.
 
 ---
 
-## 🔗 6. Terhubung ke Dokumen Terkait
+## ⚠️ 5. Batasan Keamanan (Baca Sebelum Mengandalkan Enkripsi Ini)
 
-- 📄 Arsitektur Utama Frontend: [architecture-design.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/architecture/architecture-design.md)
-- 📄 Wireframe & UI/UX Design: [ui-wireframe-design.md](file:///d:/code/fe-menu-scan-latihan/docs/fe/wireframe/ui-wireframe-design.md)
+- **Bukan pengganti TLS.** `NEXT_PUBLIC_APP_SECRET` adalah variabel `NEXT_PUBLIC_*`, jadi ikut ter-bundle ke browser dan bisa dibaca siapa pun. Kode juga punya nilai fallback hardcoded jika env tidak diisi.
+- **Public key server tidak diautentikasi.** Tanpa TLS, pihak di tengah jaringan bisa melakukan handshake sendiri dengan browser (MITM). Perlindungan utama tetap HTTPS.
+- **Tidak semua endpoint dienkripsi.** Login, refresh token, onboarding (password + PIN), dan endpoint `/public/*` memakai `skipHandshakeToken`, sehingga hanya dilindungi TLS. Upload file memakai `skipEncryption`.
+- Yang diberikan enkripsi ini: payload tidak terbaca di tab Network DevTools atau log proxy biasa, serta setiap pesan punya integritas (GCM tag).
+
+---
+
+## 🔗 6. Dokumen Terkait
+
+- 📄 [interceptor-pipeline-architecture.md](../architecture/interceptor-pipeline-architecture.md): pipeline & opsi transport
+- 📄 [api-endpoints.md](../integration/api-endpoints.md): endpoint mana yang dienkripsi
+- 📄 [architecture-design.md](../architecture/architecture-design.md): arsitektur frontend
