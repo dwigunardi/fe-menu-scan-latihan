@@ -88,6 +88,7 @@
   - Admin membuat akun + kredensial sementara (`StaffCredentialModal`); staf wajib ganti password & membuat PIN 4-digit di login pertama (`POST /auth/onboard`), lalu diarahkan ke workstation sesuai role.
 - [x] **4C.12. Mode Kiosk Presensi di Meja Kasir (`/cashier/kiosk`)**
   - Grid staf, numpad PIN, overlay sukses, dan exit guard. Lihat `docs/fe/architecture/attendance-kiosk-enhancement.md`.
+  - ✅ Grid staf & status hadir hari ini memakai `GET /admin/attendance/kiosk-roster` (2026-11-23, ADMIN & CASHIER). Sebelumnya kiosk memanggil `GET /admin/staff` dan `GET /admin/attendance` yang khusus ADMIN, sehingga kosong saat dibuka kasir. Kartu staf tanpa PIN dinonaktifkan ("PIN belum dibuat").
   - ✅ Exit guard memverifikasi PIN kasir lewat `POST /auth/verify-pin` (sudah di `main` backend). Perangkat terkunci di kiosk sampai PIN terverifikasi atau logout. Lihat `docs/fe/integration/api-endpoints.md`.
 - [x] **4C.13. Template Shift (`/admin/settings/shifts`)**
   - CRUD template shift + seed default (`admin-shift-templates-api.ts`).

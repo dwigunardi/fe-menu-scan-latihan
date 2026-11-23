@@ -9,8 +9,7 @@ import {
   Briefcase,
   IdCard,
 } from 'lucide-react';
-import { StaffItem } from '@/lib/validations/staff.schema';
-import { AttendanceItem } from '@/lib/validations/attendance.schema';
+import { KioskRosterItem } from '@/lib/validations/kiosk.schema';
 import { ATTENDANCE_TYPE, AttendanceType } from '@/lib/constants/attendance';
 import { ROLE } from '@/lib/constants/roles';
 import { Input } from '@/components/ui/input';
@@ -18,11 +17,11 @@ import { getInitials } from '@/lib/utils/get-initials';
 import { cn } from '@/lib/utils/cn';
 
 interface KioskStaffGridProps {
-  staffList: StaffItem[];
-  activeAttendanceMap: Map<string, AttendanceItem>;
+  /** Kiosk roster: active, onboarded staff with today's (WIB) attendance in `today`. */
+  staffList: KioskRosterItem[];
   mode: AttendanceType;
   onModeChange: (mode: AttendanceType) => void;
-  onSelectStaff: (staff: StaffItem) => void;
+  onSelectStaff: (staff: KioskRosterItem) => void;
   isLoading?: boolean;
 }
 
@@ -69,7 +68,6 @@ const ROLE_COLORS: Record<string, { bg: string; text: string; border: string }> 
 
 export function KioskStaffGrid({
   staffList,
-  activeAttendanceMap,
   mode,
   onModeChange,
   onSelectStaff,
@@ -80,22 +78,19 @@ export function KioskStaffGrid({
 
   // Filter staff based on search (name/NIK) and role
   const filteredStaff = useMemo(() => {
+    // The roster only contains active, onboarded staff, so no activity filter is needed here
     return staffList.filter((staff) => {
-      // Must be active staff
-      if (!staff.isActive) return false;
-
       // Role filter
       if (selectedRoleFilter !== 'ALL' && staff.role !== selectedRoleFilter) {
         return false;
       }
 
-      // Search filter (name, employeeId, email)
+      // Search filter (name, employeeId); the roster has no email on purpose
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchName = staff.name.toLowerCase().includes(q);
         const matchNik = staff.employeeId?.toLowerCase().includes(q);
-        const matchEmail = staff.email.toLowerCase().includes(q);
-        if (!matchName && !matchNik && !matchEmail) {
+        if (!matchName && !matchNik) {
           return false;
         }
       }
@@ -213,25 +208,31 @@ export function KioskStaffGrid({
               border: 'border-stone-200',
             };
 
-            const attendance = activeAttendanceMap.get(staff.id);
+            const attendance = staff.today;
             const isOnDuty = Boolean(attendance?.clockInTime && !attendance?.clockOutTime);
             const isCompletedToday = Boolean(attendance?.clockInTime && attendance?.clockOutTime);
 
             // In Clock-Out mode, emphasize staff currently on duty
             const isHighlightedInMode =
-              mode === ATTENDANCE_TYPE.CLOCK_OUT ? isOnDuty : !isOnDuty && !isCompletedToday;
+              staff.hasPin &&
+              (mode === ATTENDANCE_TYPE.CLOCK_OUT ? isOnDuty : !isOnDuty && !isCompletedToday);
 
             return (
               <button
                 key={staff.id}
                 type="button"
+                // Clock-in/out needs the staff PIN; without one the request would always fail
+                disabled={!staff.hasPin}
                 onClick={() => onSelectStaff(staff)}
                 className={cn(
-                  'group p-4 rounded-3xl bg-white dark:bg-zinc-900 border text-left transition-all relative flex flex-col justify-between cursor-pointer select-none',
-                  'hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:scale-[0.98]',
+                  'group p-4 rounded-3xl bg-white dark:bg-zinc-900 border text-left transition-all relative flex flex-col justify-between select-none',
                   isHighlightedInMode
                     ? 'border-amber-400/80 dark:border-amber-600/80 shadow-md shadow-amber-500/5 ring-2 ring-amber-500/10'
-                    : 'border-stone-200/80 dark:border-zinc-800/80 opacity-80 hover:opacity-100'
+                    : 'border-stone-200/80 dark:border-zinc-800/80 opacity-80 hover:opacity-100',
+                  // Last so it wins over the opacity above
+                  staff.hasPin
+                    ? 'cursor-pointer hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:scale-[0.98]'
+                    : 'cursor-not-allowed opacity-50 hover:opacity-50'
                 )}
                 id={`kiosk-staff-card-${staff.id}`}
               >
@@ -282,9 +283,15 @@ export function KioskStaffGrid({
                     <IdCard className="h-3.5 w-3.5 shrink-0" />
                     <span className="truncate">{staff.employeeId || 'NIK -'}</span>
                   </div>
-                  <span className="font-bold text-amber-600 dark:text-amber-400 shrink-0 text-[10px]">
-                    Tap & Absen →
-                  </span>
+                  {staff.hasPin ? (
+                    <span className="font-bold text-amber-600 dark:text-amber-400 shrink-0 text-[10px]">
+                      Tap & Absen →
+                    </span>
+                  ) : (
+                    <span className="font-bold text-stone-400 dark:text-zinc-500 shrink-0 text-[10px]">
+                      PIN belum dibuat
+                    </span>
+                  )}
                 </div>
               </button>
             );

@@ -8,14 +8,13 @@ import { KioskPinModal } from './kiosk-pin-modal';
 import { KioskExitDialog } from './kiosk-exit-dialog';
 import { KioskSuccessOverlay } from './kiosk-success-overlay';
 import { usePublicBranchLocationQuery } from '@/hooks/queries/use-admin-settings';
-import { useAdminStaffPaginatedQuery } from '@/hooks/queries/use-admin-staff';
 import {
-  useAdminAttendancePaginatedQuery,
+  useKioskRosterQuery,
   useClockInMutation,
   useClockOutMutation,
 } from '@/hooks/queries/use-admin-attendance';
-import { StaffItem } from '@/lib/validations/staff.schema';
-import { AttendanceItem } from '@/lib/validations/attendance.schema';
+import { KioskRosterItem } from '@/lib/validations/kiosk.schema';
+import { Button } from '@/components/ui/button';
 import { ATTENDANCE_TYPE, AttendanceType } from '@/lib/constants/attendance';
 import { checkGeofence, GeofenceCheckResult } from '@/lib/utils/haversine';
 import { useAuthStore, ROLE } from '@/store/use-auth-store';
@@ -50,17 +49,21 @@ export function CashierKioskView() {
 
   // Queries
   const { data: branchSetting } = usePublicBranchLocationQuery();
-  const { data: staffData, isLoading: isStaffLoading } = useAdminStaffPaginatedQuery({
-    limit: 100,
-  });
-
-  // WIB calendar day (matches the backend's attendance `date`); rolls over at midnight WIB
-  const todayStr = useWibToday();
-  const { data: attendanceData } = useAdminAttendancePaginatedQuery({
-    limit: 100,
-    startDate: todayStr,
-    endDate: todayStr,
-  });
+  // Staff cards + today's attendance in one call, open to cashiers (GET /admin/staff and
+  // GET /admin/attendance are ADMIN-only). The WIB day is in the query key so the roster reloads
+  // at midnight WIB; the backend decides which day "today" is.
+  const todayWib = useWibToday();
+  const {
+    data: rosterData,
+    isLoading: isRosterLoading,
+    isError: isRosterError,
+    isFetching: isRosterFetching,
+    refetch: refetchRoster,
+  } = useKioskRosterQuery(todayWib);
+  const roster = rosterData ?? [];
+  // A failed background refetch keeps the last roster, so only block the grid when nothing loaded
+  const rosterFailedToLoad = isRosterError && !rosterData;
+  const rosterRefreshFailed = isRosterError && Boolean(rosterData);
 
   // Mutations
   const clockInMutation = useClockInMutation();
@@ -70,7 +73,7 @@ export function CashierKioskView() {
   const [mode, setMode] = useState<AttendanceType>(ATTENDANCE_TYPE.CLOCK_IN);
 
   // Active staff selection & PIN modal state
-  const [selectedStaff, setSelectedStaff] = useState<StaffItem | null>(null);
+  const [selectedStaff, setSelectedStaff] = useState<KioskRosterItem | null>(null);
   const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
   const [pinErrorMessage, setPinErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -80,7 +83,7 @@ export function CashierKioskView() {
 
   // Success Overlay state
   const [isSuccessOverlayOpen, setIsSuccessOverlayOpen] = useState<boolean>(false);
-  const [successStaff, setSuccessStaff] = useState<StaffItem | null>(null);
+  const [successStaff, setSuccessStaff] = useState<KioskRosterItem | null>(null);
   const [successMode, setSuccessMode] = useState<AttendanceType>(ATTENDANCE_TYPE.CLOCK_IN);
 
   // GPS Geolocation state
@@ -140,17 +143,8 @@ export function CashierKioskView() {
     requestGpsPosition();
   }, [requestGpsPosition]);
 
-  // Map today's attendance for quick lookup
-  const activeAttendanceMap = useMemo(() => {
-    const map = new Map<string, AttendanceItem>();
-    attendanceData?.items?.forEach((item) => {
-      map.set(item.staffId, item);
-    });
-    return map;
-  }, [attendanceData?.items]);
-
   // Staff card click
-  const handleSelectStaff = (staff: StaffItem) => {
+  const handleSelectStaff = (staff: KioskRosterItem) => {
     setSelectedStaff(staff);
     setPinErrorMessage(null);
     setIsPinModalOpen(true);
@@ -248,14 +242,47 @@ export function CashierKioskView() {
 
       {/* Main Content Area: Staff Grid */}
       <main className="flex-1 p-4 sm:p-6 lg:p-8 flex flex-col">
-        <KioskStaffGrid
-          staffList={staffData?.items || []}
-          activeAttendanceMap={activeAttendanceMap}
-          mode={mode}
-          onModeChange={setMode}
-          onSelectStaff={handleSelectStaff}
-          isLoading={isStaffLoading}
-        />
+        {rosterFailedToLoad ? (
+          <div className="max-w-md mx-auto mt-12 p-6 rounded-3xl bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-900/60 text-center space-y-3">
+            <p className="font-bold text-stone-900 dark:text-zinc-100">Daftar staf gagal dimuat</p>
+            <p className="text-xs text-stone-500 dark:text-zinc-400">
+              Periksa koneksi ke server, lalu muat ulang.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void refetchRoster()}
+              disabled={isRosterFetching}
+            >
+              Muat Ulang
+            </Button>
+          </div>
+        ) : (
+          <>
+            {rosterRefreshFailed && (
+              <div className="max-w-7xl mx-auto w-full mb-4 px-4 py-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 flex items-center justify-between gap-3 text-xs text-amber-800 dark:text-amber-300">
+                <span>Gagal memperbarui daftar staf. Menampilkan data terakhir.</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void refetchRoster()}
+                  disabled={isRosterFetching}
+                  className="h-7 text-xs shrink-0"
+                >
+                  Muat Ulang
+                </Button>
+              </div>
+            )}
+            <KioskStaffGrid
+              staffList={roster}
+              mode={mode}
+              onModeChange={setMode}
+              onSelectStaff={handleSelectStaff}
+              isLoading={isRosterLoading}
+            />
+          </>
+        )}
       </main>
 
       {/* PIN Verification Modal */}

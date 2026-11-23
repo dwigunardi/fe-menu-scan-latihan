@@ -5,7 +5,9 @@ import {
   recordClockIn,
   recordClockOut,
   createLeaveRequest,
+  getKioskRoster,
 } from '@/lib/api/admin-attendance-api';
+import { KioskRosterSchema } from '@/lib/validations/kiosk.schema';
 import * as apiTransportModule from '@/lib/api/api-transport';
 import { right, left } from '@/lib/api/either';
 import { ApiError } from '@/lib/api/api-error';
@@ -172,6 +174,53 @@ describe('admin-attendance-api', () => {
       if (result.isRight()) {
         expect(result.value.success).toBe(true);
       }
+    });
+  });
+
+  describe('getKioskRoster', () => {
+    it('calls GET /admin/attendance/kiosk-roster with the roster schema', async () => {
+      const roster = [
+        {
+          id: 'staff-1',
+          employeeId: 'KC-001',
+          name: 'Budi',
+          role: ROLE.CASHIER,
+          avatarUrl: null,
+          hasPin: true,
+          today: null,
+        },
+      ];
+      vi.mocked(apiTransportModule.apiTransport).mockResolvedValue(right(roster));
+
+      const result = await getKioskRoster();
+
+      expect(apiTransportModule.apiTransport).toHaveBeenCalledWith(
+        '/admin/attendance/kiosk-roster',
+        KioskRosterSchema
+      );
+      expect(result.isRight()).toBe(true);
+    });
+  });
+
+  describe('KioskRosterSchema', () => {
+    it('accepts the backend roster shape, including today attendance', () => {
+      const parsed = KioskRosterSchema.safeParse([
+        {
+          id: 'staff-1',
+          employeeId: null,
+          name: 'Budi',
+          role: 'ADMIN',
+          avatarUrl: null,
+          hasPin: false,
+          today: {
+            attendanceId: 'att-1',
+            clockInTime: '2026-11-23T01:00:00.000Z',
+            clockOutTime: null,
+            status: 'LATE',
+          },
+        },
+      ]);
+      expect(parsed.success).toBe(true);
     });
   });
 });
