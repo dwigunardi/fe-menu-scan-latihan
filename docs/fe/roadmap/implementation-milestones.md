@@ -71,6 +71,7 @@
   - Pemisahan omset uang digital (QRIS) dan kas fisik (Cash) pada Laporan dan Dashboard.
 - [x] **4C.6. Manajemen Akun Staf Cabang (`/admin/staff`)**
   - CRUD staf kasir, chef dapur, pelayan, dan manager dengan role badge, PIN 4-digit untuk clock-in, kontak WhatsApp, dan reset password mandiri.
+  - Serah terima shift (2026-11-23, `ShiftHandoverModal`): staf pengganti login dengan email + password miliknya, dan sesi (profil **dan** token) diganti dengan hasil login itu. Kasir yang masih memegang shift kas terbuka wajib menutup shift (Z-Report) lebih dulu. Sebelumnya modal hanya mengganti profil di store tanpa verifikasi PIN dan tetap memakai token kasir lama, sehingga semua aksi tercatat atas nama kasir lama di backend. Tab "Magic Link" (route `/handover` tidak ada) dihapus.
 - [x] **4C.7. Pengaturan Lokasi Cabang, Geofence, Jam Operasional & Mesin Kontingensi (`/admin/settings`)**
   - 3-Way Hybrid Geolocation (1-Tap GPS, Google Maps Link Extractor, Leaflet Interactive Map Picker), Slider Radius Geofence 50m - 500m (field `geofenceRadius`, bukan 100m tetap), Jadwal Operasional Mingguan, Delegasi Shift Sementara, dan Alert Ketidakhadiran Kasir 3-Opsi.
   - Dipecah menjadi sub-halaman: `/admin/settings/branch`, `/admin/settings/policies`, `/admin/settings/shifts`.
