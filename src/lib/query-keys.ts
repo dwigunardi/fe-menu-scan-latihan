@@ -32,6 +32,8 @@ export const adminQueryKeys = {
     ['admin', 'attendance', 'paginated', params] as const,
   attendanceSummary: (params: Record<string, unknown> = {}) =>
     ['admin', 'attendance', 'summary', params] as const,
+  // Under the attendance prefix so clock-in/out invalidation also refreshes the kiosk roster
+  kioskRoster: (wibDate: string) => ['admin', 'attendance', 'kiosk-roster', wibDate] as const,
 };
 
 

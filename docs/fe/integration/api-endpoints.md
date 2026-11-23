@@ -105,7 +105,8 @@ Role: `ADMIN` dan `CASHIER`. Respons cocok dengan `ShiftItemSchema` (`src/lib/va
 
 | Method | Endpoint | Fungsi | Transport | Respons |
 | :--- | :--- | :--- | :--- | :--- |
-| GET | `/admin/attendance?…` | `getAdminAttendancePaginated` | E2E | `{ items: AttendanceItem[], meta }` |
+| GET | `/admin/attendance?…` | `getAdminAttendancePaginated` | E2E | `{ items: AttendanceItem[], meta }`. Hanya ADMIN. |
+| GET | `/admin/attendance/kiosk-roster` | `getKioskRoster` (`useKioskRosterQuery`) | E2E | ADMIN & CASHIER. `[{ id, employeeId, name, role, avatarUrl, hasPin, today: null \| { attendanceId, clockInTime, clockOutTime, status } }]`: staf aktif & sudah onboarding (termasuk ADMIN), tanpa email/telepon; `today` = presensi tanggal WIB hari ini. Dipakai grid kiosk (`KioskRosterSchema`). |
 | GET | `/admin/attendance/summary?…` | `getAdminAttendanceSummary` | E2E | `AttendanceSummarySchema` (+ `date`, dibuang Zod). `attendanceRatePercent` = hadir ÷ staf aktif × 100. |
 | POST | `/admin/attendance/clock-in` | `recordClockIn` | E2E | `AttendanceItem` |
 | POST | `/admin/attendance/clock-out` | `recordClockOut` | E2E | `AttendanceItem` |

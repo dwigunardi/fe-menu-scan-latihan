@@ -1,22 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { KioskPinModal } from '@/components/kiosk/kiosk-pin-modal';
-import { StaffItem } from '@/lib/validations/staff.schema';
+import { KioskRosterItem } from '@/lib/validations/kiosk.schema';
 import { ATTENDANCE_TYPE } from '@/lib/constants/attendance';
 import { ROLE } from '@/lib/constants/roles';
 
 describe('KioskPinModal Component', () => {
-  const mockStaff: StaffItem = {
+  const mockStaff: KioskRosterItem = {
     id: 'staff-10',
     employeeId: 'KC-010',
     name: 'Ahmad Fauzi',
-    email: 'ahmad@kumpulcafe.com',
     role: ROLE.CASHIER,
-    isActive: true,
-    pinCodeSet: true,
-    dailyShiftHours: 8,
-    isEmailVerified: true,
-    isPhoneVerified: true,
+    avatarUrl: null,
+    hasPin: true,
+    today: null,
   };
 
   beforeEach(() => {

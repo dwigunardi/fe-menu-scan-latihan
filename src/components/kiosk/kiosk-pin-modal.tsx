@@ -10,7 +10,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Delete, RotateCcw, X, Loader2, ShieldAlert } from 'lucide-react';
-import { StaffItem } from '@/lib/validations/staff.schema';
+import { KioskRosterItem } from '@/lib/validations/kiosk.schema';
 import { ATTENDANCE_TYPE, AttendanceType } from '@/lib/constants/attendance';
 import { getInitials } from '@/lib/utils/get-initials';
 import { playErrorBeep } from '@/lib/utils/audio-feedback';
@@ -18,7 +18,7 @@ import { cn } from '@/lib/utils/cn';
 
 interface KioskPinModalProps {
   isOpen: boolean;
-  staff: StaffItem | null;
+  staff: KioskRosterItem | null;
   mode: AttendanceType;
   isSubmitting: boolean;
   errorMessage: string | null;

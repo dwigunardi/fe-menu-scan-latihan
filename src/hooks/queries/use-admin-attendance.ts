@@ -8,6 +8,7 @@ import {
   createLeaveRequest,
   reviewOvertime,
   correctAttendanceTime,
+  getKioskRoster,
 } from '@/lib/api/admin-attendance-api';
 import {
   AttendanceQueryParams,
@@ -31,6 +32,26 @@ export function useAdminAttendancePaginatedQuery(params: AttendanceQueryParams =
       }
       return res.value;
     },
+  });
+}
+
+/**
+ * Kiosk staff cards with today's attendance (ADMIN + CASHIER).
+ * `wibDate` is part of the key so the roster reloads when the WIB day changes at midnight;
+ * the backend decides which day "today" is.
+ */
+export function useKioskRosterQuery(wibDate: string) {
+  return useQuery({
+    queryKey: adminQueryKeys.kioskRoster(wibDate),
+    queryFn: async () => {
+      const res = await getKioskRoster();
+      if (res.isLeft()) {
+        throw res.value;
+      }
+      return res.value;
+    },
+    // Other devices may clock staff in or out too
+    refetchInterval: 60_000,
   });
 }
 

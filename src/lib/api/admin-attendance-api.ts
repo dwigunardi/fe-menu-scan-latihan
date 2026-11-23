@@ -17,6 +17,7 @@ import {
   OvertimeReviewInput,
   AttendanceCorrectionInput,
 } from '../validations/attendance.schema';
+import { KioskRosterItem, KioskRosterSchema } from '../validations/kiosk.schema';
 
 const BASE_URL = '/admin/attendance';
 
@@ -95,4 +96,12 @@ export async function correctAttendanceTime(
     method: 'PATCH',
     body: payload,
   });
+}
+
+/**
+ * Staff cards for the attendance kiosk with today's (WIB) attendance, for ADMIN and CASHIER.
+ * Replaces GET /admin/staff + GET /admin/attendance on the kiosk, which are ADMIN-only.
+ */
+export async function getKioskRoster(): Promise<Either<ApiError, KioskRosterItem[]>> {
+  return apiTransport(`${BASE_URL}/kiosk-roster`, KioskRosterSchema);
 }

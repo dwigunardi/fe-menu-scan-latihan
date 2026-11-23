@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, Clock, LogIn, LogOut, ArrowRight } from 'lucide-react';
-import { StaffItem } from '@/lib/validations/staff.schema';
+import { KioskRosterItem } from '@/lib/validations/kiosk.schema';
 import { ATTENDANCE_TYPE, AttendanceType } from '@/lib/constants/attendance';
 import { playSuccessChime } from '@/lib/utils/audio-feedback';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils/cn';
 
 interface KioskSuccessOverlayProps {
   isOpen: boolean;
-  staff: StaffItem | null;
+  staff: KioskRosterItem | null;
   mode: AttendanceType;
   onDismiss: () => void;
   autoCloseDurationMs?: number;

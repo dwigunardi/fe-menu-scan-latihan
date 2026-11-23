@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { CashierKioskView } from '@/components/kiosk/cashier-kiosk-view';
 import { ROLE } from '@/lib/constants/roles';
+import { getTodayWib } from '@/lib/utils/date-helpers';
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
@@ -29,64 +30,51 @@ vi.mock('@/hooks/queries/use-admin-settings', () => ({
   }),
 }));
 
-vi.mock('@/hooks/queries/use-admin-staff', () => ({
-  useAdminStaffPaginatedQuery: () => ({
-    data: {
-      items: [
-        {
-          id: 'staff-1',
-          employeeId: 'KC-001',
-          name: 'Budi Santoso',
-          email: 'budi@kumpulcafe.com',
-          role: ROLE.ADMIN,
-          isActive: true,
-          pinCodeSet: true,
-          dailyShiftHours: 8,
-        },
-        {
-          id: 'staff-2',
-          employeeId: 'KC-002',
-          name: 'Siti Rahma',
-          email: 'siti@kumpulcafe.com',
-          role: ROLE.CASHIER,
-          isActive: true,
-          pinCodeSet: true,
-          dailyShiftHours: 8,
-        },
-        {
-          id: 'staff-3',
-          employeeId: 'KC-003',
-          name: 'Agus Pratama',
-          email: 'agus@kumpulcafe.com',
-          role: ROLE.KITCHEN,
-          isActive: true,
-          pinCodeSet: true,
-          dailyShiftHours: 8,
-        },
-      ],
-      meta: { totalItems: 3 },
+// Kiosk roster (GET /admin/attendance/kiosk-roster): staff cards + today's attendance
+const ROSTER = [
+  {
+    id: 'staff-1',
+    employeeId: 'KC-001',
+    name: 'Budi Santoso',
+    role: ROLE.ADMIN,
+    avatarUrl: null,
+    hasPin: true,
+    today: {
+      attendanceId: 'att-1',
+      clockInTime: '2026-11-23T01:00:00.000Z',
+      clockOutTime: null,
+      status: 'ON_TIME',
     },
-    isLoading: false,
-  }),
-}));
+  },
+  {
+    id: 'staff-2',
+    employeeId: 'KC-002',
+    name: 'Siti Rahma',
+    role: ROLE.CASHIER,
+    avatarUrl: null,
+    hasPin: true,
+    today: null,
+  },
+  {
+    id: 'staff-3',
+    employeeId: 'KC-003',
+    name: 'Agus Pratama',
+    role: ROLE.KITCHEN,
+    avatarUrl: null,
+    hasPin: true,
+    today: null,
+  },
+];
+
+const mockRefetchRoster = vi.fn();
+const mockRosterQuery = vi.fn();
+let mockRosterResult: Record<string, unknown> = {};
 
 vi.mock('@/hooks/queries/use-admin-attendance', () => ({
-  useAdminAttendancePaginatedQuery: () => ({
-    data: {
-      items: [
-        {
-          id: 'att-1',
-          staffId: 'staff-1',
-          staffName: 'Budi Santoso',
-          clockInTime: '08:00',
-          clockOutTime: null,
-          status: 'ON_TIME',
-        },
-      ],
-      meta: { totalItems: 1 },
-    },
-    isLoading: false,
-  }),
+  useKioskRosterQuery: (wibDate: string) => {
+    mockRosterQuery(wibDate);
+    return mockRosterResult;
+  },
   useClockInMutation: () => ({
     mutateAsync: mockMutateClockIn,
     isPending: false,
@@ -103,6 +91,12 @@ import { useKioskLockStore } from '@/store/use-kiosk-lock-store';
 describe('CashierKioskView Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRosterResult = {
+      data: ROSTER,
+      isLoading: false,
+      isError: false,
+      refetch: mockRefetchRoster,
+    };
     useAuthStore.setState({
       user: {
         id: 'cashier-1',
@@ -130,8 +124,51 @@ describe('CashierKioskView Component', () => {
   it('shows duty status for clocked-in staff', () => {
     render(<CashierKioskView />);
 
-    // Budi Santoso has clockInTime in mock
+    // Budi Santoso has today.clockInTime in the roster
     expect(screen.getByText('Bertugas')).toBeInTheDocument();
+  });
+
+  it('loads the roster for the current WIB day', () => {
+    render(<CashierKioskView />);
+
+    expect(mockRosterQuery).toHaveBeenCalledWith(getTodayWib());
+  });
+
+  it('disables staff cards without a PIN', () => {
+    mockRosterResult = {
+      ...mockRosterResult,
+      data: [{ ...ROSTER[1], hasPin: false }],
+    };
+    render(<CashierKioskView />);
+
+    const card = document.getElementById('kiosk-staff-card-staff-2') as HTMLButtonElement;
+    expect(card).toBeDisabled();
+    expect(screen.getByText('PIN belum dibuat')).toBeInTheDocument();
+
+    fireEvent.click(card);
+    expect(screen.queryByText(/Ketik 4-digit PIN presensi Anda/i)).not.toBeInTheDocument();
+  });
+
+  it('keeps the last roster usable when a background refresh fails', () => {
+    // TanStack Query reports isError while still holding the previous data
+    mockRosterResult = { data: ROSTER, isLoading: false, isError: true, refetch: mockRefetchRoster };
+    render(<CashierKioskView />);
+
+    expect(screen.getByText('Siti Rahma')).toBeInTheDocument();
+    expect(screen.queryByText('Daftar staf gagal dimuat')).not.toBeInTheDocument();
+    expect(screen.getByText(/Gagal memperbarui daftar staf/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Muat Ulang/i }));
+    expect(mockRefetchRoster).toHaveBeenCalled();
+  });
+
+  it('shows a reload button when the roster fails to load', () => {
+    mockRosterResult = { data: undefined, isLoading: false, isError: true, refetch: mockRefetchRoster };
+    render(<CashierKioskView />);
+
+    expect(screen.getByText('Daftar staf gagal dimuat')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Muat Ulang/i }));
+    expect(mockRefetchRoster).toHaveBeenCalled();
   });
 
   it('filters staff by search query input', () => {
