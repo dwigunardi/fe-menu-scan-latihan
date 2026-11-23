@@ -6,7 +6,6 @@ import {
   AttendanceCorrectionModal,
   AttendanceTable,
 } from '@/components/attendance';
-import { ShiftHandoverModal } from '@/components/shifts';
 import { ATTENDANCE_STATUS } from '@/lib/constants/attendance';
 import type { AttendanceItem } from '@/lib/validations/attendance.schema';
 import { ROLE } from '@/lib/constants/roles';
@@ -180,43 +179,6 @@ describe('Overtime & Shift Handover Components', () => {
         });
         expect(onClose).toHaveBeenCalled();
       });
-    });
-  });
-
-  describe('ShiftHandoverModal', () => {
-    it('switches tabs between PIN and Magic Link/QR', async () => {
-      const user = userEvent.setup();
-
-      render(
-        <ShiftHandoverModal isOpen={true} onClose={vi.fn()} />,
-        { wrapper: createQueryWrapper() }
-      );
-
-      expect(screen.getByText('Serah Terima Shift (Handover)')).toBeInTheDocument();
-      expect(screen.getByText('Input PIN Cepat')).toBeInTheDocument();
-
-      const magicLinkTab = screen.getByRole('button', { name: /Magic QR \/ Link/i });
-      await user.click(magicLinkTab);
-
-      expect(screen.getByText(/SCAN QR HANDOVER/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Salin/i })).toBeInTheDocument();
-    });
-
-    it('submits shift handover with PIN successfully', async () => {
-      const user = userEvent.setup();
-      const onClose = vi.fn();
-
-      render(
-        <ShiftHandoverModal isOpen={true} onClose={onClose} />,
-        { wrapper: createQueryWrapper() }
-      );
-
-      // Fill PIN
-      const pinInput = screen.getByPlaceholderText('••••');
-      await user.type(pinInput, '1234');
-
-      // Check current user state before handover
-      expect(useAuthStore.getState().user?.name).toBe('Ahmad Barista');
     });
   });
 

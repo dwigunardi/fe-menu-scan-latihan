@@ -19,8 +19,10 @@ import { toast } from 'sonner';
 /**
  * Hook to retrieve and observe the currently active cashier shift.
  */
-export function useCurrentShiftQuery() {
+export function useCurrentShiftQuery(options: { enabled?: boolean } = {}) {
   return useQuery({
+    // Shift endpoints are ADMIN/CASHIER only; other roles should pass enabled: false
+    enabled: options.enabled ?? true,
     queryKey: adminQueryKeys.shiftsCurrent(),
     queryFn: async () => {
       const res = await getCurrentShift();

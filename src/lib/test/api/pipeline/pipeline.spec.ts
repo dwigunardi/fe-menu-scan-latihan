@@ -10,6 +10,7 @@ import { useHandshakeStore } from '@/store/use-handshake-store';
 import { server } from '@/test/mocks/server';
 import { http, HttpResponse } from 'msw';
 import * as authApiModule from '@/lib/api/auth-api';
+import { right } from '@/lib/api/either';
 
 const API_BASE = 'http://localhost:5000/api/v1';
 
@@ -234,6 +235,45 @@ describe('Interceptor Middleware Pipeline', () => {
         expect(result.value.success).toBe(true);
       }
       expect(useAuthStore.getState().accessToken).toBe('renewed-access-token-789');
+    });
+
+    it('drops a refresh result if the session changed meanwhile (e.g. shift handover)', async () => {
+      useAuthStore.getState().setAuth(
+        { id: 'outgoing', name: 'Kasir Lama', role: 'CASHIER' },
+        'outgoing-expired-access',
+        'outgoing-refresh'
+      );
+
+      // While the outgoing staff's refresh is in flight, a handover swaps in the incoming staff
+      vi.spyOn(authApiModule, 'refreshTokenApi').mockImplementation(async () => {
+        useAuthStore.getState().setAuth(
+          { id: 'incoming', name: 'Kasir Baru', role: 'CASHIER' },
+          'incoming-access',
+          'incoming-refresh'
+        );
+        return right({ accessToken: 'outgoing-renewed-access', refreshToken: 'outgoing-renewed-refresh' });
+      });
+
+      server.use(
+        http.get(`${API_BASE}/admin/test-handover-race`, ({ request }) => {
+          if (request.headers.get('Authorization') === 'Bearer incoming-access') {
+            return HttpResponse.json({ statusCode: 200, data: { ok: true } });
+          }
+          return HttpResponse.json(
+            { statusCode: 401, error: 'Unauthorized', message: 'Token expired' },
+            { status: 401 }
+          );
+        })
+      );
+
+      const result = await executePipeline<{ ok: boolean }>('/admin/test-handover-race');
+
+      // The retry used the incoming session, and the outgoing tokens never replaced it
+      expect(result.isRight()).toBe(true);
+      const state = useAuthStore.getState();
+      expect(state.user?.id).toBe('incoming');
+      expect(state.accessToken).toBe('incoming-access');
+      expect(state.refreshToken).toBe('incoming-refresh');
     });
 
     it('handles concurrent 401 requests with single-flight mutex refresh', async () => {
