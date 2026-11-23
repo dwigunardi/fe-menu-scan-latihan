@@ -118,6 +118,8 @@ export async function executePipeline<T = unknown>(
       method: context.method,
       headers: context.headers,
       body: context.body as BodyInit,
+      // Lets callers cancel a request (e.g. a logout that outlived its timeout)
+      signal: context.options.signal ?? undefined,
     });
 
     context.rawResponse = response;

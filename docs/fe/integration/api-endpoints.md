@@ -24,6 +24,7 @@ Semua request lewat `apiTransport` → `executePipeline` (lihat [interceptor-pip
 | POST | `/auth/login` | `loginStaff` | Plain | Body `{ email, password }`. |
 | POST | `/auth/refresh` | `refreshTokenApi` | Plain | Header `Authorization: Bearer <refreshToken>` + body `{ refreshToken }`. |
 | POST | `/auth/onboard` | `onboardStaff` | Plain | Body `{ currentPassword, newPassword, pinCode }`. Response sama dengan login. |
+| POST | `/auth/logout` | `logoutApi` (dipakai `signOutStaff`) | Plain | Mencabut refresh token di backend. Butuh access token yang valid; tanpa silent refresh pipeline. Semua tombol logout memanggil `signOutStaff()`: logout ke server (jika `401`, refresh token dipakai sekali untuk access token baru lalu logout diulang), maksimal 3 detik, lalu sesi lokal **selalu** dihapus. |
 | POST | `/auth/verify-pin` | `verifyStaffPin` | E2E | ✅ Ada di `main` backend (commit `c2b72cc`). Body `{ pinCode }` → `200 { valid }`. Lihat [kontrak](#kontrak-post-authverify-pin). |
 
 ## Menu & Kategori

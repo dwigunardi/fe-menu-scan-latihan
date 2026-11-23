@@ -254,6 +254,21 @@ export const handlers = [
     );
   }),
 
+  // Auth Logout: revokes the refresh token; like the backend, it needs a valid access token
+  http.post(`${API_BASE}/auth/logout`, ({ request }) => {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader || authHeader === 'Bearer expired-access-token') {
+      return HttpResponse.json(
+        { statusCode: 401, error: 'Unauthorized', message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    return HttpResponse.json({
+      statusCode: 200,
+      data: { success: true, message: 'Logged out successfully' },
+    });
+  }),
+
   // Auth Refresh Token
   http.post(`${API_BASE}/auth/refresh`, async ({ request }) => {
     const body = await extractRequestBody(request);

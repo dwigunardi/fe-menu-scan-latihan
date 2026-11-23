@@ -55,7 +55,8 @@ export async function loginStaff(credentials: {
  * Renews access token using active refreshToken via POST /auth/refresh.
  */
 export async function refreshTokenApi(
-  refreshToken: string
+  refreshToken: string,
+  signal?: AbortSignal
 ): Promise<Either<ApiError, RefreshTokenResponse>> {
   return apiTransport('/auth/refresh', RefreshTokenResponseSchema, {
     method: 'POST',
@@ -67,7 +68,94 @@ export async function refreshTokenApi(
     },
     skipEncryption: true,
     skipHandshakeToken: true,
+    signal,
   });
+}
+
+const LogoutResponseSchema = z.object({
+  success: z.boolean().optional(),
+  message: z.string().optional(),
+});
+
+/**
+ * Revokes the session's refresh token on the backend via POST /auth/logout.
+ * Needs a valid access token. Pass one explicitly to use it instead of the stored token.
+ * The pipeline's silent refresh is disabled here, since it would open the re-login modal
+ * in the middle of a logout; `signOutStaff` handles the expired-token case itself.
+ */
+export async function logoutApi(
+  accessToken?: string,
+  signal?: AbortSignal
+): Promise<Either<ApiError, z.infer<typeof LogoutResponseSchema>>> {
+  return apiTransport('/auth/logout', LogoutResponseSchema, {
+    method: 'POST',
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined,
+    skipEncryption: true,
+    skipHandshakeToken: true,
+    retryOnTokenExpired: false,
+    signal,
+  });
+}
+
+/** Upper bound for the backend part of a logout, so a dead network never blocks signing out. */
+export const LOGOUT_TIMEOUT_MS = 3000;
+
+async function revokeServerSession(signal: AbortSignal): Promise<void> {
+  const { accessToken, refreshToken } = useAuthStore.getState();
+  if (!accessToken && !refreshToken) return;
+
+  const first = await logoutApi(accessToken ?? undefined, signal);
+  if (signal.aborted || first.isRight() || first.value.statusCode !== 401) return;
+
+  // A background request may have rotated the tokens meanwhile (pipeline silent refresh)
+  const afterFirst = useAuthStore.getState();
+  if (afterFirst.accessToken && afterFirst.accessToken !== accessToken) {
+    await logoutApi(afterFirst.accessToken, signal);
+    return;
+  }
+  if (!afterFirst.refreshToken) return;
+
+  // The access token expired (e.g. after a long idle period): get a fresh one, then revoke
+  const renewed = await refreshTokenApi(afterFirst.refreshToken, signal);
+  if (signal.aborted) return;
+  if (renewed.isRight()) {
+    await logoutApi(renewed.value.accessToken, signal);
+    return;
+  }
+
+  // Our refresh lost to a concurrent silent refresh (the backend accepts each refresh token once).
+  // That refresh stored its new tokens; revoke with them so the rotated session does not survive.
+  const latest = useAuthStore.getState();
+  if (latest.accessToken && latest.accessToken !== accessToken) {
+    await logoutApi(latest.accessToken, signal);
+  }
+}
+
+/**
+ * Signs the current staff member out: revokes the refresh token on the backend (best effort,
+ * capped at LOGOUT_TIMEOUT_MS), then always clears the local session.
+ * Use this instead of calling `useAuthStore.getState().logout()` directly from the UI, which
+ * only forgets the tokens locally and leaves the refresh token valid on the server.
+ */
+export async function signOutStaff(): Promise<void> {
+  // Aborted when the timeout wins, so a slow revoke cannot land after the next login of the
+  // same user and revoke that new session instead
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      revokeServerSession(controller.signal),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, LOGOUT_TIMEOUT_MS);
+      }),
+    ]);
+  } catch {
+    // Best effort: a failed revoke must never keep the user signed in locally
+  } finally {
+    clearTimeout(timer);
+    controller.abort();
+    useAuthStore.getState().logout();
+  }
 }
 
 /**

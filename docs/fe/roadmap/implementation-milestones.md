@@ -98,6 +98,7 @@
 - [ ] **4C.15. Tindak lanjut audit**
   - [x] Kunci navigasi mode kiosk (2026-11-21): `useKioskLockStore` (persist `localStorage`) + `KioskLockGuard` di layout dashboard. Selama terkunci, tombol back, URL yang diketik, dan reload selalu kembali ke `/cashier/kiosk`. Kunci dibuka hanya oleh PIN yang terverifikasi atau logout (tombol "Lupa PIN? Keluar akun & login ulang" di dialog keluar).
   - [ ] Proteksi rute di sisi server (`proxy.ts`) **ditunda** dan dikerjakan bersama pemindahan token ke cookie HttpOnly. Selama token masih di `localStorage`, proxy tidak bisa membaca sesi; cookie penanda yang bisa dipalsukan sengaja tidak dipakai.
+  - [x] Logout mencabut sesi di server (2026-11-23): header, bottom-nav, dialog keluar kiosk, modal sesi habis, dan onboarding memanggil `signOutStaff()` → `POST /auth/logout`. Sebelumnya logout hanya menghapus token di browser, sehingga refresh token tetap berlaku di backend sampai 7 hari. Ini juga prasyarat Tahap 2 migrasi cookie.
   - [ ] Token tidak lagi di `localStorage` (refresh token di cookie HttpOnly). Butuh dukungan backend (set-cookie di login/refresh, CORS `credentials: true`).
   - [x] Single-flight handshake (2026-11-23): request paralel memakai satu handshake ECDH (`performHandshake` di `src/lib/api/handshake-session.ts`), tidak lagi masing-masing handshake dan saling menimpa sesi.
   - [x] GPS kiosk (2026-11-23): tanpa lokasi GPS, presensi ditolak dan kiosk meminta GPS ulang. Sebelumnya koordinat cabang dikirim sebagai lokasi staf, sehingga cek geofence backend selalu lolos dari mana pun.

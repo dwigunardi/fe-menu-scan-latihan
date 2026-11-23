@@ -3,6 +3,7 @@ import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { CashierKioskView } from '@/components/kiosk/cashier-kiosk-view';
 import { ROLE } from '@/lib/constants/roles';
 import { getTodayWib } from '@/lib/utils/date-helpers';
+import * as authApi from '@/lib/api/auth-api';
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
@@ -265,14 +266,35 @@ describe('CashierKioskView Component', () => {
     expect(useKioskLockStore.getState().isLocked).toBe(true);
   });
 
-  it('logging out from the exit dialog releases the lock', () => {
+  it('blocks the kiosk and ignores repeated logout taps while signing out', async () => {
+    let finish: () => void = () => {};
+    const signOutSpy = vi
+      .spyOn(authApi, 'signOutStaff')
+      .mockImplementation(() => new Promise<void>((resolve) => (finish = resolve)));
+    render(<CashierKioskView />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Keluar Kios/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lupa PIN\? Keluar akun/i }));
+    expect(screen.getByText('Mengakhiri sesi...')).toBeInTheDocument();
+
+    // A second attempt while the first is still running does not start another sign-out
+    fireEvent.click(screen.getByRole('button', { name: /Keluar Kios/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lupa PIN\? Keluar akun/i }));
+    expect(signOutSpy).toHaveBeenCalledTimes(1);
+
+    await act(async () => finish());
+    signOutSpy.mockRestore();
+  });
+
+  it('logging out from the exit dialog releases the lock', async () => {
     render(<CashierKioskView />);
     expect(useKioskLockStore.getState().isLocked).toBe(true);
 
     fireEvent.click(screen.getByRole('button', { name: /Keluar Kios/i }));
     fireEvent.click(screen.getByRole('button', { name: /Lupa PIN\? Keluar akun/i }));
 
+    // Sign-out first revokes the session on the server, then clears it locally
+    await waitFor(() => expect(useAuthStore.getState().user).toBeNull());
     expect(useKioskLockStore.getState().isLocked).toBe(false);
-    expect(useAuthStore.getState().user).toBeNull();
   });
 });

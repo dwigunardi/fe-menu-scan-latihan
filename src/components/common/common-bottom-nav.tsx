@@ -26,11 +26,12 @@ import { ClockInModal } from '@/components/attendance/clock-in-modal';
 import { ShiftHandoverModal } from '@/components/shifts/shift-handover-modal';
 import { useIsClient } from '@/hooks/use-is-client';
 import { toast } from 'sonner';
+import { signOutStaff } from '@/lib/api/auth-api';
 
 export function CommonBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const { resolvedTheme, setTheme } = useTheme();
   const mounted = useIsClient();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -56,9 +57,15 @@ export function CommonBottomNav() {
       (item.href !== '/admin' && pathname.startsWith(item.href))
   );
 
-  const handleConfirmLogout = () => {
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleConfirmLogout = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    // Revokes the refresh token on the server, then clears the local session
+    await signOutStaff();
+    setIsSigningOut(false);
     setIsDrawerOpen(false);
-    logout();
     toast.success('Berhasil keluar dari sesi akun');
     router.replace('/login');
   };
@@ -328,10 +335,11 @@ export function CommonBottomNav() {
                   <button
                     type="button"
                     onClick={handleConfirmLogout}
-                    className="w-full h-11 rounded-2xl border border-red-200 dark:border-red-900/60 bg-red-50/60 dark:bg-red-950/20 text-red-600 dark:text-red-400 font-bold text-xs flex items-center justify-center gap-2 hover:bg-red-100 transition-colors cursor-pointer active:scale-98"
+                    disabled={isSigningOut}
+                    className="w-full h-11 rounded-2xl border border-red-200 dark:border-red-900/60 bg-red-50/60 dark:bg-red-950/20 text-red-600 dark:text-red-400 font-bold text-xs flex items-center justify-center gap-2 hover:bg-red-100 transition-colors cursor-pointer active:scale-98 disabled:opacity-60 disabled:cursor-wait"
                   >
                     <LogOut className="h-4 w-4" />
-                    <span>Keluar dari Sesi Akun</span>
+                    <span>{isSigningOut ? 'Mengakhiri sesi...' : 'Keluar dari Sesi Akun'}</span>
                   </button>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   normalizeStaffEmail,
   loginStaff,
@@ -6,6 +6,8 @@ import {
   reloginStaff,
   getHandoverCandidates,
   handoverShift,
+  signOutStaff,
+  LOGOUT_TIMEOUT_MS,
 } from '@/lib/api/auth-api';
 import { useAuthStore } from '@/store/use-auth-store';
 import { ErrorCode } from '@/lib/api/error-codes';
@@ -180,6 +182,108 @@ describe('auth-api', () => {
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) expect(result.value.code).toBe(ErrorCode.SHIFT_STILL_OPEN);
+    });
+  });
+
+  describe('signOutStaff', () => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
+
+    function trackLogoutCalls() {
+      const authHeaders: (string | null)[] = [];
+      server.events.on('request:start', ({ request }) => {
+        if (request.url.endsWith('/auth/logout')) authHeaders.push(request.headers.get('Authorization'));
+      });
+      return authHeaders;
+    }
+
+    afterEach(() => {
+      server.events.removeAllListeners('request:start');
+      vi.useRealTimers();
+    });
+
+    it('revokes the session on the server, then clears it locally', async () => {
+      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'valid-access', 'valid-refresh');
+      const calls = trackLogoutCalls();
+
+      await signOutStaff();
+
+      expect(calls).toEqual(['Bearer valid-access']);
+      expect(useAuthStore.getState().user).toBeNull();
+      expect(useAuthStore.getState().refreshToken).toBeNull();
+    });
+
+    it('renews an expired access token with the refresh token, then revokes', async () => {
+      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'expired-access-token', 'valid-refresh');
+      const calls = trackLogoutCalls();
+
+      await signOutStaff();
+
+      // First attempt is rejected (401), the second uses the renewed access token
+      expect(calls).toEqual(['Bearer expired-access-token', 'Bearer renewed-access-token-789']);
+      expect(useAuthStore.getState().user).toBeNull();
+      expect(useAuthStore.getState().isReauthModalOpen).toBe(false);
+    });
+
+    it('still signs out locally when the refresh token is already invalid', async () => {
+      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'expired-access-token', 'expired-refresh-token');
+      const calls = trackLogoutCalls();
+
+      await signOutStaff();
+
+      expect(calls).toEqual(['Bearer expired-access-token']);
+      expect(useAuthStore.getState().user).toBeNull();
+      // No re-login modal in the middle of a logout
+      expect(useAuthStore.getState().isReauthModalOpen).toBe(false);
+    });
+
+    it('gives up on an unresponsive server after the timeout, aborts the request and signs out locally', async () => {
+      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'valid-access', 'valid-refresh');
+      let logoutSignal: AbortSignal | undefined;
+      server.use(
+        http.post(`${API_BASE}/auth/logout`, ({ request }) => {
+          logoutSignal = request.signal;
+          return new Promise<never>(() => {});
+        })
+      );
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+
+      const pending = signOutStaff();
+      await vi.advanceTimersByTimeAsync(LOGOUT_TIMEOUT_MS);
+      await pending;
+
+      expect(useAuthStore.getState().user).toBeNull();
+      // The abandoned request is cancelled, so it cannot revoke a later login of the same user
+      expect(logoutSignal?.aborted).toBe(true);
+    });
+
+    it('revokes with the rotated tokens when a concurrent silent refresh won the race', async () => {
+      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'expired-access-token', 'stale-refresh');
+      // Simulates a background poll's silent refresh rotating the tokens first: the backend then
+      // rejects our refresh with the old token (each refresh token is accepted only once)
+      server.use(
+        http.post(`${API_BASE}/auth/refresh`, () => {
+          useAuthStore.getState().updateTokens('rotated-access', 'rotated-refresh');
+          return HttpResponse.json(
+            { statusCode: 401, error: 'Unauthorized', message: 'Session was revoked or refreshed elsewhere' },
+            { status: 401 }
+          );
+        })
+      );
+      const calls = trackLogoutCalls();
+
+      await signOutStaff();
+
+      expect(calls).toEqual(['Bearer expired-access-token', 'Bearer rotated-access']);
+      expect(useAuthStore.getState().user).toBeNull();
+    });
+
+    it('does not call the server when there is no session', async () => {
+      const calls = trackLogoutCalls();
+
+      await signOutStaff();
+
+      expect(calls).toEqual([]);
+      expect(useAuthStore.getState().user).toBeNull();
     });
   });
 });
