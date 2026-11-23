@@ -257,5 +257,5 @@ Yang masih berbeda:
 
 | Dokumen | Catatan |
 | :--- | :--- |
-| `wireframe/wireframe-api-not-final.md` | Masih menulis `PATCH` untuk update banner, kategori, menu, dan status order. Backend menerima `PUT` maupun `PATCH`, jadi tidak berdampak. FE memakai `PUT`. Backend akan menandainya sebagai draf lama (bukan kontrak API); salin ulang setelah perubahan itu di-commit di backend. |
+| `wireframe/wireframe-api-not-final.md` | Masih menulis `PATCH` untuk update banner, kategori, menu, dan status order. Backend menerima `PUT` maupun `PATCH`, jadi tidak berdampak. FE memakai `PUT`. Sejak BE `29cbd51` dokumen ini diberi peringatan sebagai draf lama (bukan kontrak API) dan sudah disalin ulang. |
 | `architecture/architecture-design.md`, `architecture/database-strategy.md` | Salinan FE berisi tambahan yang ditulis di sisi FE (multi-branch, versi stack) dan tidak ada di repo backend. Tidak ditimpa. |
