@@ -249,6 +249,7 @@ Disalin ulang pada 2026-11-23 dari branch BE `feat/cashier-shift-payment` (commi
 - `architecture/staff-and-attendance-blueprint.md`
 - `roadmap/implementation-milestones.md`
 - `handoff/2026-11-20-fe-audit-handoff.md` (baru)
+- `architecture/auth-ecdh-dual-token-flow.md`, `architecture/branch-settings-and-geofence-blueprint.md`, `security/staff-login-and-token-lifecycle.md` (baru; sebelumnya hanya ada di repo backend)
 
 Perbedaan yang sebelumnya tercatat di sini sudah **diselesaikan di dokumen backend**: `PUT` untuk update status, path presensi `/admin/attendance/*`, `POST /admin/shifts/:id/close`, `PUT /admin/staff/:id/pin`, `/admin/settings/branch`, serta endpoint onboard, verify-pin, template shift, dan upload kini terdokumentasi.
 
@@ -256,6 +257,5 @@ Yang masih berbeda:
 
 | Dokumen | Catatan |
 | :--- | :--- |
-| `wireframe/wireframe-api-not-final.md` | Masih menulis `PATCH` untuk update banner, kategori, menu, dan status order. Backend menerima `PUT` maupun `PATCH`, jadi tidak berdampak. FE memakai `PUT`. |
+| `wireframe/wireframe-api-not-final.md` | Masih menulis `PATCH` untuk update banner, kategori, menu, dan status order. Backend menerima `PUT` maupun `PATCH`, jadi tidak berdampak. FE memakai `PUT`. Backend akan menandainya sebagai draf lama (bukan kontrak API); salin ulang setelah perubahan itu di-commit di backend. |
 | `architecture/architecture-design.md`, `architecture/database-strategy.md` | Salinan FE berisi tambahan yang ditulis di sisi FE (multi-branch, versi stack) dan tidak ada di repo backend. Tidak ditimpa. |
-| Belum disalin | `architecture/auth-ecdh-dual-token-flow.md`, `architecture/branch-settings-and-geofence-blueprint.md`, `security/staff-login-and-token-lifecycle.md` hanya ada di repo backend. |
