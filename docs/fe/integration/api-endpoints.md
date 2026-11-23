@@ -228,17 +228,34 @@ Berlaku di branch BE `feat/cashier-shift-payment`. Bentuk respons endpoint order
 | 4 | `startDate`/`endDate` laporan wajib `YYYY-MM-DD` atau ISO datetime; selain itu `400`. | `date-helpers.ts` mengirim ISO datetime. Aman. | — |
 | 5 | `create-qris` dibalas `409` untuk order yang sudah dibayar atau dibatalkan. | Belum dipakai FE. | Tangani saat Fase 3. |
 
+### Audit role & keamanan backend (2026-11-23, commit BE `ebe263f`…`6b66ff3`)
+
+| # | Perubahan backend | Kondisi FE saat ini | Tindak lanjut FE |
+| :---: | :--- | :--- | :--- |
+| 6 | `PUT /admin/orders/:id/status` ke `PAID`/`CANCELLED` hanya `ADMIN` & `CASHIER`; `KITCHEN`/`WAITER` dibalas `403`. `PENDING`/`PREPARING`/`SERVED` tetap semua role. | Tombol bayar/batal masih tampil untuk semua role yang bisa membuka KDS/pesanan. | ⏳ Sembunyikan tombol bayar & batal untuk `KITCHEN`/`WAITER`. |
+| 7 | Lockout PIN dipakai bersama oleh `verify-pin`, clock-in, dan clock-out: 5x salah berturut-turut di endpoint mana pun mengunci PIN staf itu 5 menit di ketiganya. Clock-in/out saat terkunci → `429` dengan pesan sisa menit (PIN salah tetap `400`). | Belum dicek apakah `ClockInModal`/kiosk menampilkan pesan `429` dari backend. | ⏳ Tampilkan `error.message` untuk `429` di clock-in/out (dan di dialog keluar kiosk). |
+| 8 | Create/update/delete meja & zona khusus `ADMIN` (sebelumnya `DELETE /admin/tables/:id` terbuka untuk semua staf). Kasir hanya melihat dan `POST /admin/tables/:id/reset`. | Halaman meja kasir masih menampilkan tombol CRUD meja & zona. | ⏳ Sembunyikan CRUD meja & zona untuk non-admin. |
+
+Kasir memang boleh membuka KDS (`GET /admin/orders`, `PUT` status). Route `admin/*` tanpa `@Roles` kini ditolak `403` secara default; semua route yang dipakai FE sudah punya `@Roles`. `@ZodResponse` sekarang diterapkan sebelum enkripsi, dan bentuk amplop terenkripsi tidak berubah.
+
 ---
 
 ## Perbedaan dengan dokumen di `docs/be/` (snapshot)
 
-Dokumen backend yang disalin ke `docs/be/` sudah tertinggal dari kode backend-nya sendiri. Kode backend **sudah cocok** dengan FE untuk poin-poin di bawah (method `PUT` diterima bersama `PATCH`, path presensi `/admin/attendance/*` dengan `staffId`/`latitude`/`longitude`, `/admin/staff/:id/pin`, `/admin/settings/branch`). Yang perlu diperbarui adalah dokumennya.
+Disalin ulang pada 2026-11-23 dari branch BE `feat/cashier-shift-payment` (commit docs `f4c8e18`):
 
-| Area | Frontend (kode) | Dokumen backend (snapshot) |
-| :--- | :--- | :--- |
-| Update status pesanan & menu | `PUT` | `PATCH` di `frontend-integration-guide.md` dan wireframe API (roadmap backend sendiri menyebut `PUT`) |
-| Presensi | `/admin/attendance/*` dengan field `staffId`, `clockInLat`, `isWithinGeofence` | `/staff/attendance/*` dan `/admin/attendance/overview\|logs\|:id/approve` dengan field `userId`, `clockInLatitude`, `isWithinRadius` |
-| Tutup shift | `POST /admin/shifts/:id/close` | `/admin/shifts/close` |
-| Reset PIN staf | `PUT /admin/staff/:id/pin` | `/admin/staff/:id/password` |
-| Pengaturan cabang | `/admin/settings/branch` | `/admin/settings` |
-| Belum terdokumentasi di backend | `/auth/onboard`, `/auth/verify-pin`, `/admin/settings/shift-templates[/seed-defaults]`, `/admin/uploads/image` | — |
+- `integration/frontend-integration-guide.md`
+- `architecture/api-contract-and-security-guidelines.md` (baru)
+- `architecture/staff-and-attendance-blueprint.md`
+- `roadmap/implementation-milestones.md`
+- `handoff/2026-11-20-fe-audit-handoff.md` (baru)
+
+Perbedaan yang sebelumnya tercatat di sini sudah **diselesaikan di dokumen backend**: `PUT` untuk update status, path presensi `/admin/attendance/*`, `POST /admin/shifts/:id/close`, `PUT /admin/staff/:id/pin`, `/admin/settings/branch`, serta endpoint onboard, verify-pin, template shift, dan upload kini terdokumentasi.
+
+Yang masih berbeda:
+
+| Dokumen | Catatan |
+| :--- | :--- |
+| `wireframe/wireframe-api-not-final.md` | Masih menulis `PATCH` untuk update banner, kategori, menu, dan status order. Backend menerima `PUT` maupun `PATCH`, jadi tidak berdampak. FE memakai `PUT`. |
+| `architecture/architecture-design.md`, `architecture/database-strategy.md` | Salinan FE berisi tambahan yang ditulis di sisi FE (multi-branch, versi stack) dan tidak ada di repo backend. Tidak ditimpa. |
+| Belum disalin | `architecture/auth-ecdh-dual-token-flow.md`, `architecture/branch-settings-and-geofence-blueprint.md`, `security/staff-login-and-token-lifecycle.md` hanya ada di repo backend. |
