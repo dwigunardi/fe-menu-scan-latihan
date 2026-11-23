@@ -96,7 +96,8 @@
 - [ ] **4C.15. Tindak lanjut audit**
   - [x] Kunci navigasi mode kiosk (2026-11-21): `useKioskLockStore` (persist `localStorage`) + `KioskLockGuard` di layout dashboard. Selama terkunci, tombol back, URL yang diketik, dan reload selalu kembali ke `/cashier/kiosk`. Kunci dibuka hanya oleh PIN yang terverifikasi atau logout (tombol "Lupa PIN? Keluar akun & login ulang" di dialog keluar).
   - [ ] Proteksi rute di sisi server (`proxy.ts`) **ditunda** dan dikerjakan bersama pemindahan token ke cookie HttpOnly. Selama token masih di `localStorage`, proxy tidak bisa membaca sesi; cookie penanda yang bisa dipalsukan sengaja tidak dipakai.
-  - Sisanya: token tidak lagi di `localStorage` (HttpOnly cookie, butuh BE), single-flight handshake, fallback GPS kiosk tidak boleh memakai koordinat cabang, tanggal "hari ini" kiosk memakai zona waktu cabang (WIB), dan review cakupan role (`KITCHEN_OR_ADMIN` mencakup kasir; kasir bisa CRUD meja).
+  - Sisanya: token tidak lagi di `localStorage` (HttpOnly cookie, butuh BE), single-flight handshake, fallback GPS kiosk tidak boleh memakai koordinat cabang, dan tanggal "hari ini" kiosk memakai zona waktu cabang (WIB).
+  - [x] Review cakupan role (2026-11-23, mengikuti audit backend): kasir memang boleh membuka KDS; bayar/batal pesanan hanya `ADMIN`/`CASHIER`; CRUD meja & zona hanya `ADMIN`. UI menyembunyikan aksi yang akan ditolak `403`.
 
 
 ---

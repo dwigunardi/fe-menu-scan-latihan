@@ -21,6 +21,20 @@ import { checkGeofence, GeofenceCheckResult } from '@/lib/utils/haversine';
 import { useAuthStore, ROLE } from '@/store/use-auth-store';
 import { useKioskLockStore } from '@/store/use-kiosk-lock-store';
 import { toast } from 'sonner';
+import { ApiError } from '@/lib/api/api-error';
+import { getRateLimitMessage } from '@/lib/api/error-translator';
+
+/** Message for a failed kiosk clock-in/out, shown under the PIN pad. */
+function describeClockError(err: unknown): string {
+  // 429 = the staff PIN is locked (shared with verify-pin) or the request was throttled
+  if (err instanceof ApiError && err.statusCode === 429) {
+    return getRateLimitMessage(err) ?? 'Terlalu banyak percobaan. Tunggu sebentar.';
+  }
+  if (err && typeof err === 'object' && 'message' in err) {
+    return String(err.message);
+  }
+  return 'PIN salah atau gagal melakukan presensi';
+}
 
 export function CashierKioskView() {
   const router = useRouter();
@@ -186,11 +200,7 @@ export function CashierKioskView() {
       setIsSuccessOverlayOpen(true);
     } catch (err: unknown) {
       setIsSubmitting(false);
-      const apiErrMessage =
-        err && typeof err === 'object' && 'message' in err
-          ? String(err.message)
-          : 'PIN salah atau gagal melakukan presensi';
-      setPinErrorMessage(apiErrMessage);
+      setPinErrorMessage(describeClockError(err));
     }
   };
 

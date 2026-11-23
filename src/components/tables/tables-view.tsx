@@ -33,6 +33,7 @@ import { TableQrModal } from './table-qr-modal';
 import { TableResetModal } from './table-reset-modal';
 import { TableDeleteModal } from './table-delete-modal';
 import { ZoneManagerModal } from './zone-manager-modal';
+import { useAuthStore, ROLE } from '@/store/use-auth-store';
 
 const SEATING_ICONS: Record<string, string> = {
   DINING: '🍽️',
@@ -54,6 +55,10 @@ const TAG_LABELS: Record<string, { label: string; icon: string }> = {
 interface TablesViewProps {
   pageTitle?: string;
   pageSubtitle?: string;
+  /**
+   * Shows the POS tools (kiosk shortcut) and, for ADMIN only, table & zone create/edit/delete.
+   * The backend restricts table & zone CRUD to ADMIN; cashiers may only view and reset tables.
+   */
   allowManagement?: boolean;
 }
 
@@ -62,6 +67,10 @@ export function TablesView({
   pageSubtitle = 'Visual floor plan real-time, stiker QR fisik permanen, dan 1-tap reset sesi meja.',
   allowManagement = true,
 }: Readonly<TablesViewProps>) {
+  const isAdmin = useAuthStore((state) => state.user?.role === ROLE.ADMIN);
+  // Table & zone CRUD is ADMIN-only on the backend (403 for other roles)
+  const canManageLayout = allowManagement && isAdmin;
+
   const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [selectedZoneFilter] = useState<string>('ALL');
   const [searchInput, setSearchInput] = useState<string>('');
@@ -259,24 +268,28 @@ export function TablesView({
               </Button>
             </Link>
 
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setIsZoneManagerOpen(true)}
-              className="text-xs font-semibold rounded-xl border-stone-300 dark:border-zinc-700 cursor-pointer h-9"
-            >
-              <MapPin className="h-3.5 w-3.5 mr-1.5 text-amber-600" />
-              Kelola Zona
-            </Button>
+            {canManageLayout && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsZoneManagerOpen(true)}
+                  className="text-xs font-semibold rounded-xl border-stone-300 dark:border-zinc-700 cursor-pointer h-9"
+                >
+                  <MapPin className="h-3.5 w-3.5 mr-1.5 text-amber-600" />
+                  Kelola Zona
+                </Button>
 
-            <Button
-              size="sm"
-              onClick={handleOpenCreate}
-              className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl shadow-xs cursor-pointer h-9"
-            >
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
-              Tambah Meja
-            </Button>
+                <Button
+                  size="sm"
+                  onClick={handleOpenCreate}
+                  className="text-xs bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-xl shadow-xs cursor-pointer h-9"
+                >
+                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                  Tambah Meja
+                </Button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -613,7 +626,7 @@ export function TablesView({
                                   </SimpleTooltip>
                                 )}
 
-                                {allowManagement && (
+                                {canManageLayout && (
                                   <div className="flex items-center gap-1 shrink-0">
                                     <SimpleTooltip content="Edit Meja" side="top">
                                       <button
@@ -651,7 +664,7 @@ export function TablesView({
       )}
 
       {/* Form Modal */}
-      {allowManagement && (
+      {canManageLayout && (
         <>
           <TableFormModal
             isOpen={isFormModalOpen}

@@ -4,6 +4,7 @@ import { TablesView } from '@/components/tables/tables-view';
 import { createQueryWrapper } from '@/test/test-utils';
 import { TableData, TableZoneData } from '@/lib/validations/table.schema';
 import * as tablesHooks from '@/hooks/queries/use-admin-tables';
+import { useAuthStore, ROLE } from '@/store/use-auth-store';
 import type { ComponentProps } from 'react';
 import type { TableFormModal } from '@/components/tables/table-form-modal';
 import type { TableQrModal } from '@/components/tables/table-qr-modal';
@@ -140,6 +141,21 @@ describe('TablesView Component', () => {
       mutateAsync: mockDeleteMutate,
       isPending: false,
     } as unknown as ReturnType<typeof tablesHooks.useDeleteTableMutation>);
+
+    // Table & zone CRUD is ADMIN-only; tests below run as admin unless they switch role
+    useAuthStore.getState().setAuth({ id: 'admin-1', name: 'Admin', role: ROLE.ADMIN }, 'token');
+  });
+
+  it('hides table & zone CRUD from cashiers but keeps reset and kiosk mode', () => {
+    useAuthStore.getState().setAuth({ id: 'cashier-1', name: 'Kasir', role: ROLE.CASHIER }, 'token');
+    const wrapper = createQueryWrapper();
+    render(<TablesView allowManagement={true} />, { wrapper });
+
+    expect(screen.queryByRole('button', { name: /Tambah Meja/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Kelola Zona/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Mode Kios/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /Reset/i }).length).toBeGreaterThan(0);
+    expect(screen.queryByTestId('mock-form-modal')).not.toBeInTheDocument();
   });
 
   it('renders floor plan header, stats, and table cards', () => {

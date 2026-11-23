@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ApiError } from '@/lib/api/api-error';
 import { ErrorCode } from '@/lib/api/error-codes';
-import { translateErrorToFriendlyMessage } from '@/lib/api/error-translator';
+import { translateErrorToFriendlyMessage, getRateLimitMessage } from '@/lib/api/error-translator';
 
 describe('Error Translator', () => {
   it('translates TABLE_OCCUPIED into user-friendly message', () => {
@@ -77,6 +77,28 @@ describe('Error Translator', () => {
 
     const contractErr = new ApiError(500, 'Contract', 'CV', { code: ErrorCode.CONTRACT_VIOLATION });
     expect(translateErrorToFriendlyMessage(contractErr).title).toBe('Pembaruan Data Diperlukan');
+  });
+
+  describe('429 messages', () => {
+    const LOCKOUT = 'Terlalu banyak percobaan PIN. Coba lagi dalam 4 menit.';
+
+    it('keeps the backend PIN lockout message with its wait time', () => {
+      const err = new ApiError(429, 'Too Many Requests', LOCKOUT);
+      expect(getRateLimitMessage(err)).toBe(LOCKOUT);
+      expect(translateErrorToFriendlyMessage(err).description).toBe(LOCKOUT);
+    });
+
+    it('falls back to generic wording for the throttler default message', () => {
+      const err = new ApiError(429, 'Too Many Requests', 'ThrottlerException: Too Many Requests');
+      expect(getRateLimitMessage(err)).toBeNull();
+      expect(translateErrorToFriendlyMessage(err).description).toBe(
+        'Mohon tunggu beberapa detik sebelum mencoba kembali.'
+      );
+    });
+
+    it('returns null for non-429 errors', () => {
+      expect(getRateLimitMessage(new ApiError(400, 'Bad Request', 'PIN salah'))).toBeNull();
+    });
   });
 
   it('translates gateway and service unavailable errors', () => {

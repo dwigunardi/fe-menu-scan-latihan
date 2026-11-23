@@ -14,6 +14,7 @@ import { useAuthStore } from '@/store/use-auth-store';
 import { playErrorBeep } from '@/lib/utils/audio-feedback';
 import { verifyStaffPin } from '@/lib/api/auth-api';
 import { ApiError } from '@/lib/api/api-error';
+import { getRateLimitMessage } from '@/lib/api/error-translator';
 import { cn } from '@/lib/utils/cn';
 
 const WRONG_PIN_MESSAGE = 'PIN kasir salah. Akses keluar ditolak.';
@@ -27,7 +28,8 @@ function describeVerifyError(error: ApiError): string {
     return 'Verifikasi PIN belum tersedia di server.';
   }
   if (error.statusCode === 429) {
-    return 'Terlalu banyak percobaan. Tunggu sebentar.';
+    // PIN lockout is shared with clock-in/out; the backend message says how many minutes are left
+    return getRateLimitMessage(error) ?? 'Terlalu banyak percobaan. Tunggu sebentar.';
   }
   if (error.statusCode >= 400 && error.statusCode < 500) {
     return WRONG_PIN_MESSAGE;
