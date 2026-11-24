@@ -76,8 +76,8 @@ export default function StaffLoginPage() {
       return;
     }
 
-    const { user: loggedInUser, accessToken, refreshToken } = result.value;
-    setAuth(loggedInUser, accessToken, refreshToken);
+    const { user: loggedInUser, accessToken } = result.value;
+    setAuth(loggedInUser, accessToken);
     toast.success(`Selamat datang kembali, ${loggedInUser.name}!`);
 
     router.replace(getRoleHomePath(loggedInUser.role));

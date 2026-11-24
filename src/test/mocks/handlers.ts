@@ -231,9 +231,9 @@ export const handlers = [
       return HttpResponse.json({
         statusCode: 200,
         message: 'Login successful',
+        // Like the backend: the refresh token is only set as the HttpOnly cookie, never in the body
         data: {
           accessToken: 'fake-jwt-token-123',
-          refreshToken: 'fake-refresh-token-456',
           user: {
             id: 'user-1',
             username: 'admin',
@@ -254,34 +254,21 @@ export const handlers = [
     );
   }),
 
-  // Auth Logout: revokes the refresh token; like the backend, it needs a valid access token
-  http.post(`${API_BASE}/auth/logout`, ({ request }) => {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader || authHeader === 'Bearer expired-access-token') {
-      return HttpResponse.json(
-        { statusCode: 401, error: 'Unauthorized', message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+  // Auth Logout: like the backend, revokes via the refresh cookie, always 200, never 401
+  http.post(`${API_BASE}/auth/logout`, () => {
     return HttpResponse.json({
       statusCode: 200,
       data: { success: true, message: 'Logged out successfully' },
     });
   }),
 
-  // Auth Refresh Token
+  // Auth Refresh Token: the backend reads the HttpOnly cookie only and rejects a token in the body.
+  // Tests that need a dead session override this handler with a 401.
   http.post(`${API_BASE}/auth/refresh`, async ({ request }) => {
     const body = await extractRequestBody(request);
-    const authHeader = request.headers.get('Authorization');
-    const token = body.refreshToken || authHeader?.replace('Bearer ', '');
-
-    if (token === 'expired-refresh-token') {
+    if (body.refreshToken) {
       return HttpResponse.json(
-        {
-          statusCode: 401,
-          error: 'Unauthorized',
-          message: 'Invalid or revoked refresh token',
-        },
+        { statusCode: 401, error: 'Unauthorized', message: 'Refresh token must come from the cookie' },
         { status: 401 }
       );
     }
@@ -291,7 +278,6 @@ export const handlers = [
       message: 'Tokens renewed',
       data: {
         accessToken: 'renewed-access-token-789',
-        refreshToken: 'renewed-refresh-token-789',
       },
     });
   }),

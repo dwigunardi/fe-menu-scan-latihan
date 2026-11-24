@@ -23,15 +23,15 @@ export const StaffUserSchema = z.object({
   pinCodeSet: z.boolean().optional(),
 });
 
+// The refresh token is never in a response body: the backend sets it as the HttpOnly cookie
+// `menuscan_rt` on login, onboard, handover and refresh.
 export const LoginResponseSchema = z.object({
   accessToken: z.string(),
-  refreshToken: z.string().optional().nullable(),
   user: StaffUserSchema,
 });
 
 export const RefreshTokenResponseSchema = z.object({
   accessToken: z.string(),
-  refreshToken: z.string().optional().nullable(),
 });
 
 export const LoginInputSchema = z.object({

@@ -6,6 +6,7 @@ import {
   reloginStaff,
   getHandoverCandidates,
   handoverShift,
+  onboardStaff,
   signOutStaff,
   LOGOUT_TIMEOUT_MS,
 } from '@/lib/api/auth-api';
@@ -32,16 +33,22 @@ describe('auth-api', () => {
   });
 
   describe('loginStaff', () => {
-    it('successfully logs in with valid staff credentials and returns refreshToken', async () => {
+    it('logs in with credentials included, so the browser stores the refresh cookie', async () => {
+      let credentials: RequestCredentials | undefined;
+      server.events.on('request:start', ({ request }) => {
+        if (request.url.endsWith('/auth/login')) credentials = request.credentials;
+      });
+
       const result = await loginStaff({
         usernameOrEmail: 'admin',
         password: 'password123',
       });
+      server.events.removeAllListeners('request:start');
 
+      expect(credentials).toBe('include');
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
         expect(result.value.accessToken).toBe('fake-jwt-token-123');
-        expect(result.value.refreshToken).toBe('fake-refresh-token-456');
         expect(result.value.user.username).toBe('admin');
         expect(result.value.user.role).toBe('ADMIN');
       }
@@ -62,18 +69,39 @@ describe('auth-api', () => {
   });
 
   describe('refreshTokenApi', () => {
-    it('renews tokens successfully with valid refreshToken', async () => {
-      const result = await refreshTokenApi('valid-refresh-token');
+    it('renews the access token with the cookie only: JSON {} body, credentials included', async () => {
+      let seen: { credentials?: RequestCredentials; contentType?: string | null; body?: string } = {};
+      server.use(
+        http.post('http://localhost:5000/api/v1/auth/refresh', async ({ request }) => {
+          seen = {
+            credentials: request.credentials,
+            contentType: request.headers.get('Content-Type'),
+            body: await request.text(),
+          };
+          return HttpResponse.json({ statusCode: 200, data: { accessToken: 'renewed-access-token-789' } });
+        })
+      );
+
+      const result = await refreshTokenApi();
 
       expect(result.isRight()).toBe(true);
       if (result.isRight()) {
         expect(result.value.accessToken).toBe('renewed-access-token-789');
-        expect(result.value.refreshToken).toBe('renewed-refresh-token-789');
       }
+      // The backend's CSRF guard requires JSON; no refresh token may travel in the body
+      expect(seen.credentials).toBe('include');
+      expect(seen.contentType).toContain('application/json');
+      expect(seen.body).toBe('{}');
     });
 
-    it('returns ApiError when refreshToken is expired or revoked', async () => {
-      const result = await refreshTokenApi('expired-refresh-token');
+    it('returns ApiError when the refresh cookie is missing, expired or revoked', async () => {
+      server.use(
+        http.post('http://localhost:5000/api/v1/auth/refresh', () =>
+          HttpResponse.json({ statusCode: 401, message: 'No active session' }, { status: 401 })
+        )
+      );
+
+      const result = await refreshTokenApi();
 
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
@@ -98,7 +126,6 @@ describe('auth-api', () => {
 
       expect(result.isRight()).toBe(true);
       expect(useAuthStore.getState().accessToken).toBe('fake-jwt-token-123');
-      expect(useAuthStore.getState().refreshToken).toBe('fake-refresh-token-456');
       expect(useAuthStore.getState().isAuthenticated).toBe(true);
     });
 
@@ -189,11 +216,13 @@ describe('auth-api', () => {
     const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
     function trackLogoutCalls() {
-      const authHeaders: (string | null)[] = [];
+      const calls: { credentials: RequestCredentials; body: Promise<string> }[] = [];
       server.events.on('request:start', ({ request }) => {
-        if (request.url.endsWith('/auth/logout')) authHeaders.push(request.headers.get('Authorization'));
+        if (request.url.endsWith('/auth/logout')) {
+          calls.push({ credentials: request.credentials, body: request.clone().text() });
+        }
       });
-      return authHeaders;
+      return calls;
     }
 
     afterEach(() => {
@@ -201,43 +230,46 @@ describe('auth-api', () => {
       vi.useRealTimers();
     });
 
-    it('revokes the session on the server, then clears it locally', async () => {
-      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'valid-access', 'valid-refresh');
+    it('revokes the session with the refresh cookie, then clears it locally', async () => {
+      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'valid-access');
       const calls = trackLogoutCalls();
 
       await signOutStaff();
 
-      expect(calls).toEqual(['Bearer valid-access']);
+      expect(calls).toHaveLength(1);
+      expect(calls[0].credentials).toBe('include');
+      expect(await calls[0].body).toBe('{}');
       expect(useAuthStore.getState().user).toBeNull();
-      expect(useAuthStore.getState().refreshToken).toBeNull();
+      expect(useAuthStore.getState().accessToken).toBeNull();
     });
 
-    it('renews an expired access token with the refresh token, then revokes', async () => {
-      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'expired-access-token', 'valid-refresh');
+    it('needs no valid access token (the backend reads the cookie)', async () => {
+      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'expired-access-token');
       const calls = trackLogoutCalls();
 
       await signOutStaff();
 
-      // First attempt is rejected (401), the second uses the renewed access token
-      expect(calls).toEqual(['Bearer expired-access-token', 'Bearer renewed-access-token-789']);
+      // One call, no refresh-then-retry dance
+      expect(calls).toHaveLength(1);
       expect(useAuthStore.getState().user).toBeNull();
       expect(useAuthStore.getState().isReauthModalOpen).toBe(false);
     });
 
-    it('still signs out locally when the refresh token is already invalid', async () => {
-      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'expired-access-token', 'expired-refresh-token');
-      const calls = trackLogoutCalls();
+    it('still signs out locally when the server fails', async () => {
+      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'valid-access');
+      server.use(
+        http.post(`${API_BASE}/auth/logout`, () =>
+          HttpResponse.json({ statusCode: 500, message: 'boom' }, { status: 500 })
+        )
+      );
 
       await signOutStaff();
 
-      expect(calls).toEqual(['Bearer expired-access-token']);
       expect(useAuthStore.getState().user).toBeNull();
-      // No re-login modal in the middle of a logout
-      expect(useAuthStore.getState().isReauthModalOpen).toBe(false);
     });
 
     it('gives up on an unresponsive server after the timeout, aborts the request and signs out locally', async () => {
-      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'valid-access', 'valid-refresh');
+      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'valid-access');
       let logoutSignal: AbortSignal | undefined;
       server.use(
         http.post(`${API_BASE}/auth/logout`, ({ request }) => {
@@ -252,37 +284,96 @@ describe('auth-api', () => {
       await pending;
 
       expect(useAuthStore.getState().user).toBeNull();
-      // The abandoned request is cancelled, so it cannot revoke a later login of the same user
       expect(logoutSignal?.aborted).toBe(true);
     });
+  });
 
-    it('revokes with the rotated tokens when a concurrent silent refresh won the race', async () => {
-      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'expired-access-token', 'stale-refresh');
-      // Simulates a background poll's silent refresh rotating the tokens first: the backend then
-      // rejects our refresh with the old token (each refresh token is accepted only once)
-      server.use(
-        http.post(`${API_BASE}/auth/refresh`, () => {
-          useAuthStore.getState().updateTokens('rotated-access', 'rotated-refresh');
-          return HttpResponse.json(
-            { statusCode: 401, error: 'Unauthorized', message: 'Session was revoked or refreshed elsewhere' },
-            { status: 401 }
-          );
-        })
-      );
-      const calls = trackLogoutCalls();
+  describe('cookie lock around cookie-changing requests', () => {
+    const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
+    const originalLocks = Object.getOwnPropertyDescriptor(navigator, 'locks');
 
-      await signOutStaff();
-
-      expect(calls).toEqual(['Bearer expired-access-token', 'Bearer rotated-access']);
-      expect(useAuthStore.getState().user).toBeNull();
+    afterEach(() => {
+      if (originalLocks) Object.defineProperty(navigator, 'locks', originalLocks);
+      else Object.defineProperty(navigator, 'locks', { configurable: true, value: undefined });
     });
 
-    it('does not call the server when there is no session', async () => {
-      const calls = trackLogoutCalls();
+    const toBase64Url = (value: object) =>
+      btoa(JSON.stringify(value)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const jwtExpiringIn = (ms: number) =>
+      `${toBase64Url({ alg: 'HS256' })}.${toBase64Url({ sub: 'cashier-1', exp: Math.floor((Date.now() + ms) / 1000) })}.sig`;
+    const lockRequestSpy = () => {
+      const lockRequest = vi.fn((_name: string, _options: unknown, callback: () => Promise<unknown>) => callback());
+      Object.defineProperty(navigator, 'locks', { configurable: true, value: { request: lockRequest } });
+      return lockRequest;
+    };
+
+    it('refreshes an expiring access token before the handover, so the PIN is sent once', async () => {
+      const lockRequest = lockRequestSpy();
+      useAuthStore.getState().setAuth({ id: 'cashier-1', name: 'Kasir', role: 'CASHIER' }, jwtExpiringIn(5_000));
+      let handoverCalls = 0;
+      server.use(
+        http.post(`${API_BASE}/auth/handover`, ({ request }) => {
+          handoverCalls++;
+          return request.headers.get('Authorization') === 'Bearer renewed-access-token-789'
+            ? HttpResponse.json({
+                statusCode: 200,
+                data: { accessToken: 'incoming-access', user: { id: 'staff-2', name: 'Siti', role: 'KITCHEN' } },
+              })
+            : HttpResponse.json({ statusCode: 401, message: 'Token expired' }, { status: 401 });
+        })
+      );
+
+      const result = await handoverShift({ incomingStaffId: 'staff-2', pinCode: '1234' });
+
+      expect(result.isRight()).toBe(true);
+      expect(handoverCalls).toBe(1);
+      // silent refresh (locked) first, then the handover (locked), never nested
+      expect(lockRequest).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not resend onboarding after a 401 (wrong temporary password)', async () => {
+      lockRequestSpy();
+      useAuthStore.getState().setAuth({ id: 'u1', name: 'Baru', role: 'CASHIER' }, jwtExpiringIn(10 * 60_000));
+      let onboardCalls = 0;
+      let refreshCalls = 0;
+      server.use(
+        http.post(`${API_BASE}/auth/onboard`, () => {
+          onboardCalls++;
+          return HttpResponse.json({ statusCode: 401, message: 'Password sementara saat ini tidak sesuai.' }, { status: 401 });
+        }),
+        http.post(`${API_BASE}/auth/refresh`, () => {
+          refreshCalls++;
+          return HttpResponse.json({ statusCode: 200, data: { accessToken: 'x' } });
+        })
+      );
+
+      const result = await onboardStaff({ currentPassword: 'salah', newPassword: 'Baru12345!', pinCode: '1234' });
+
+      expect(result.isLeft()).toBe(true);
+      expect(onboardCalls).toBe(1);
+      expect(refreshCalls).toBe(0);
+    });
+
+    it('runs login inside the cookie lock', async () => {
+      const lockRequest = lockRequestSpy();
+
+      await loginStaff({ usernameOrEmail: 'admin', password: 'password123' });
+
+      expect(lockRequest).toHaveBeenCalledWith('menuscan-refresh', {}, expect.any(Function));
+    });
+
+    it('runs logout inside the cookie lock with the timeout signal', async () => {
+      const lockRequest = vi.fn((_name: string, _options: unknown, callback: () => Promise<unknown>) => callback());
+      Object.defineProperty(navigator, 'locks', { configurable: true, value: { request: lockRequest } });
+      useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'access');
 
       await signOutStaff();
 
-      expect(calls).toEqual([]);
+      expect(lockRequest).toHaveBeenCalledWith(
+        'menuscan-refresh',
+        { signal: expect.any(AbortSignal) },
+        expect.any(Function)
+      );
       expect(useAuthStore.getState().user).toBeNull();
     });
   });

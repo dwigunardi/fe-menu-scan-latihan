@@ -76,7 +76,9 @@ Daftar lengkap endpoint ada di [api-endpoints.md](../integration/api-endpoints.m
 | `retryOnHandshakeExpired` | `true` | Saat backend membalas error handshake, lakukan handshake ulang lalu ulangi request sekali. |
 | `retryOnTokenExpired` | `true` | Saat backend membalas 401, coba refresh token lalu ulangi request sekali. |
 
-> Tidak ada opsi `skipAuth`. Header `Authorization` selalu ditambahkan jika ada token, kecuali pemanggil sudah mengisinya sendiri (seperti `refreshTokenApi`).
+> Tidak ada opsi `skipAuth`. Header `Authorization` selalu ditambahkan jika ada token, kecuali pemanggil sudah mengisinya sendiri. Ini termasuk `/auth/refresh` dan `/auth/logout`: keduanya `@Public()` dan membaca cookie, jadi backend mengabaikan Bearer (yang mungkin sudah kedaluwarsa).
+>
+> `credentials: 'include'` (opsi standar `fetch`, diteruskan oleh `pipeline-runner.ts`) dipakai endpoint yang menerima atau memakai cookie refresh: login, onboard, handover, refresh, logout. Kelima request itu juga berjalan di dalam Web Lock `menuscan-refresh` (`src/lib/api/auth-cookie-lock.ts`), sehingga di semua tab hanya satu yang mengubah cookie pada satu waktu.
 
 ---
 
@@ -157,6 +159,8 @@ sequenceDiagram
     Note over ReqA,ReqB: Request asli diulang dengan token baru
 ```
 
+Refresh memakai cookie HttpOnly `menuscan_rt` (`POST /auth/refresh` dengan body `{}` dan `credentials: 'include'`). JavaScript tidak bisa melihat cookie itu, jadi refresh hanya dicoba jika ada `user` di store. Karena semua tab berbagi satu cookie dan setiap refresh merotasinya, refresh dijalankan di dalam Web Lock `menuscan-refresh` (`navigator.locks`), sehingga tab kedua memakai cookie yang baru diterima tab pertama. Tanpa Web Locks, refresh yang `401` dicoba ulang sekali setelah 300 ms. Hasil refresh dibuang jika `user` di store berganti selama refresh (mis. serah terima shift).
+
 Jika refresh gagal:
 - Masih ada `user` di store → buka **modal login ulang** (`SessionExpiredModal`) supaya pekerjaan di halaman tidak hilang.
 - Tidak ada `user` → `logout()` lalu redirect ke `/login`.
@@ -202,7 +206,7 @@ Modul staf dan shift (`admin-staff-api.ts`, `admin-shifts-api.ts`) punya data ti
 
 - Enkripsi payload melindungi isi request dari inspeksi biasa, tetapi **bukan pengganti TLS**: `NEXT_PUBLIC_APP_SECRET` (salt HKDF) ikut terkirim ke browser, dan public key server tidak diautentikasi. Perlindungan utama tetap HTTPS.
 - Login, refresh, dan onboarding memakai `skipHandshakeToken`, jadi password dan PIN di endpoint tersebut hanya dilindungi TLS.
-- Access token dan refresh token disimpan di `localStorage` (bisa dibaca jika ada XSS). Rencana pindah ke cookie HttpOnly tercatat di roadmap (4C.15).
+- Refresh token ada di cookie HttpOnly `menuscan_rt` dan tidak bisa dibaca JavaScript. Access token (berlaku ~15 menit) dan profil user masih di `localStorage`, jadi XSS tetap bisa memakai access token selama masa berlakunya; menyimpannya hanya di memori ada di luar cakupan migrasi ini.
 
 ---
 

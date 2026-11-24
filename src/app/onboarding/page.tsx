@@ -144,8 +144,8 @@ function OnboardingContent() {
       // Store the new tokens right away (the old password-based session may be revoked),
       // but keep needsOnboarding until the user finishes Step 3 — otherwise AuthGuard
       // redirects away from /onboarding before the briefing is shown.
-      const { user: onboarded, accessToken, refreshToken } = res.value;
-      updateTokens(accessToken, refreshToken);
+      const { user: onboarded, accessToken } = res.value;
+      updateTokens(accessToken);
       setOnboardedUser(onboarded);
 
       toast.success('Aktivasi akun berhasil! Selamat datang di Kumpul Cafe');

@@ -56,8 +56,7 @@ const INCOMING = {
 function signInAs(role: UserRole) {
   useAuthStore.getState().setAuth(
     { id: 'staff-1', name: 'Dendi Kasir', email: 'dendi@kumpulcafe.com', role },
-    'old-access-token',
-    'old-refresh-token'
+    'old-access-token'
   );
 }
 
@@ -123,7 +122,6 @@ describe('ShiftHandoverModal', () => {
       right({
         user: { id: INCOMING.id, name: INCOMING.name, role: ROLE.KITCHEN },
         accessToken: 'new-access-token',
-        refreshToken: 'new-refresh-token',
       })
     );
     const { onClose } = renderModal();
@@ -140,7 +138,6 @@ describe('ShiftHandoverModal', () => {
     const state = useAuthStore.getState();
     expect(state.user?.id).toBe(INCOMING.id);
     expect(state.accessToken).toBe('new-access-token');
-    expect(state.refreshToken).toBe('new-refresh-token');
     expect(mockReplace).toHaveBeenCalledWith('/kitchen/orders');
   });
 
