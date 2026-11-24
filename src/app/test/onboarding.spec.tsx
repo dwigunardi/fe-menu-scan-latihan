@@ -109,7 +109,6 @@ describe('OnboardingPage Flow', () => {
     vi.spyOn(authApi, 'onboardStaff').mockResolvedValue(
       new Right({
         accessToken: 'new-token-secure',
-        refreshToken: 'new-refresh-secure',
         user: {
           id: 'staff-new-1',
           employeeId: 'KC-001',
@@ -161,7 +160,6 @@ describe('OnboardingPage Flow', () => {
     // role to /admin/dashboard here).
     const midState = useAuthStore.getState();
     expect(midState.accessToken).toBe('new-token-secure');
-    expect(midState.refreshToken).toBe('new-refresh-secure');
     expect(midState.user?.needsOnboarding).toBe(true);
     expect(mockReplace).not.toHaveBeenCalled();
 

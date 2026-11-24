@@ -149,7 +149,7 @@ describe('SessionExpiredModal Component', () => {
     });
   });
 
-  it('logs out and redirects to /login when Ganti Akun is clicked', () => {
+  it('logs out and redirects to /login when Ganti Akun is clicked', async () => {
     useAuthStore.getState().openReauthModal();
 
     const wrapper = createQueryWrapper();
@@ -158,12 +158,12 @@ describe('SessionExpiredModal Component', () => {
     const logoutBtn = screen.getByRole('button', { name: /Ganti Akun/i });
     fireEvent.click(logoutBtn);
 
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
     expect(useAuthStore.getState().isReauthModalOpen).toBe(false);
-    expect(mockReplace).toHaveBeenCalledWith('/login');
   });
 
-  it('triggers logout when dialog is dismissed externally', () => {
+  it('triggers logout when dialog is dismissed externally', async () => {
     useAuthStore.getState().setAuth(
       {
         id: 'u1',
@@ -181,7 +181,7 @@ describe('SessionExpiredModal Component', () => {
     const closeBtn = screen.getByRole('button', { name: 'Close' });
     fireEvent.click(closeBtn);
 
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
-    expect(mockReplace).toHaveBeenCalledWith('/login');
   });
 });

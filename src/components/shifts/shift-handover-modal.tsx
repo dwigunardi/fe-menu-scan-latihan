@@ -147,8 +147,8 @@ export function ShiftHandoverModal({
     }
 
     // Replace the whole session (profile AND tokens); the old session was revoked by the backend
-    const { user: incomingUser, accessToken, refreshToken } = result.value;
-    setAuth(incomingUser, accessToken, refreshToken);
+    const { user: incomingUser, accessToken } = result.value;
+    setAuth(incomingUser, accessToken);
 
     toast.success(`Serah terima berhasil. Selamat bertugas, ${incomingUser.name}.`, {
       duration: 4000,

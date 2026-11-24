@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
+import { signOutStaff } from '@/lib/api/auth-api';
 import { useAuthStore } from '@/store/use-auth-store';
 import { useSidebarStore } from '@/store/use-sidebar-store';
 import { Button } from '@/components/ui/button';
@@ -34,7 +35,7 @@ export function CommonHeader({
   breadcrumb,
 }: Readonly<CommonHeaderProps>) {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const { setTheme, resolvedTheme } = useTheme();
   const { isCollapsed, toggleCollapse } = useSidebarStore();
   const mounted = useIsClient();
@@ -42,9 +43,14 @@ export function CommonHeader({
   const [isClockInModalOpen, setIsClockInModalOpen] = useState(false);
   const [isHandoverModalOpen, setIsHandoverModalOpen] = useState(false);
 
-  const handleConfirmLogout = () => {
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleConfirmLogout = async () => {
+    setIsSigningOut(true);
+    // Revokes the refresh token on the server, then clears the local session
+    await signOutStaff();
+    setIsSigningOut(false);
     setIsLogoutModalOpen(false);
-    logout();
     toast.success('Berhasil keluar dari sesi akun');
     router.replace('/login');
   };
@@ -186,6 +192,7 @@ export function CommonHeader({
         isOpen={isLogoutModalOpen}
         onClose={() => setIsLogoutModalOpen(false)}
         onConfirm={handleConfirmLogout}
+        isLoading={isSigningOut}
         variant="danger"
         icon={LogOut}
         title="Konfirmasi Keluar Akun"

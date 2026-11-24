@@ -700,10 +700,10 @@ Format error (selalu plain JSON):
 }
 ```
 
-- `code` hanya ada pada error yang punya kode mesin. Saat ini: `SHIFT_NOT_OPEN` (bayar tunai tanpa shift kasir terbuka). Cek `code`, jangan teks `message`.
+- `code` hanya ada pada error yang punya kode mesin. Saat ini: `SHIFT_NOT_OPEN` (bayar tunai tanpa shift kasir terbuka) dan `SHIFT_STILL_OPEN` (serah terima saat staf yang keluar masih punya shift laci terbuka). Cek `code`, jangan teks `message`.
 - `details` hanya ada pada error validasi (`400`), berisi daftar `{ "field", "message" }` per field yang gagal.
 - `401` berarti sesi/token tidak valid (memicu refresh token). PIN salah **tidak pernah** dibalas `401`.
-- `429` berarti rate limit per IP, atau PIN staf sedang terkunci (pesan menyebut sisa menit).
+- `429` berarti rate limit per IP (pesan "Terlalu banyak permintaan. Coba lagi dalam X detik." plus header `Retry-After` dalam detik), atau PIN staf sedang terkunci (pesan menyebut sisa menit). Tampilkan `message` dari backend apa adanya.
 
 ---
 
@@ -849,11 +849,14 @@ Jika data tidak cocok dengan schema, backend tidak gagal: respons tetap dikirim 
 ### 3. Modul Auth & Staff Profile
 
 - **Key Exchange Handshake**: `POST /api/v1/auth/handshake`
-- **Staff Login**: `POST /api/v1/auth/login` (`{ "email": "admin@menuscan.com", "password": "admin123" }`)
-- **Refresh Token**: `POST /api/v1/auth/refresh`
-- **Staff Logout**: `POST /api/v1/auth/logout`
+- **Staff Login**: `POST /api/v1/auth/login` (`{ "email": "admin@menuscan.com", "password": "admin123" }`, wajib JSON) $\rightarrow$ `{ accessToken, user }` + cookie `HttpOnly` `menuscan_rt` berisi refresh token (tidak ada `refreshToken` di body)
+- **Refresh Token**: `POST /api/v1/auth/refresh` dengan `credentials: 'include'` dan body `{}` (JSON); refresh token dibaca dari cookie $\rightarrow$ `{ accessToken }` + cookie baru. `401` = login ulang; `403` = `Origin`/`Content-Type` tidak valid
+- **Staff Logout**: `POST /api/v1/auth/logout` dengan `credentials: 'include'` dan body `{}` $\rightarrow$ selalu `200`, cookie dihapus. Tidak butuh access token.
+- Detail cookie, CSRF, dan alasan desain: [refresh-token-httponly-cookie-plan.md](../security/refresh-token-httponly-cookie-plan.md) bagian 2.
 - **Staff Profile Me**: `GET /api/v1/auth/me`
 - **Onboarding Pertama Kali**: `POST /api/v1/auth/onboard` (`{ "currentPassword", "newPassword", "pinCode" }`)
+- **Kandidat Serah Terima Shift**: `GET /api/v1/auth/handover/candidates` $\rightarrow$ `[{ id, employeeId, name, role, avatarUrl }]`: staf aktif yang sudah onboarding dan punya PIN, tanpa ADMIN dan tanpa user saat ini. Bisa diakses semua role (berbeda dengan `GET /admin/staff` yang khusus ADMIN).
+- **Serah Terima Shift di Perangkat Bersama**: `POST /api/v1/auth/handover` (`{ "incomingStaffId", "pinCode", "notes"? }`) $\rightarrow$ `200` dengan bentuk sama seperti login (`{ accessToken, user }` + cookie `menuscan_rt` milik staf pengganti, kirim dengan `credentials: 'include'`); sesi staf lama dicabut. Ganti access token dan user di store dengan hasil ini. PIN salah `400` (tidak pernah `401`), PIN terkunci `429` (lockout dibagi dengan verify-pin & clock-in/out), staf yang keluar masih punya shift laci terbuka `409` `code: SHIFT_STILL_OPEN` (tutup shift dulu), penerima ADMIN/nonaktif `404`.
 - **Verifikasi PIN Keluar Kiosk**: `POST /api/v1/auth/verify-pin` (`{ "pinCode": "1234" }`) $\rightarrow$ `200 { "valid": true | false }`, tidak pernah `401`. 5x salah berturut-turut $\rightarrow$ `429` terkunci 5 menit (counter dibagi dengan clock-in/out).
 
 ---
@@ -881,6 +884,7 @@ Update order, menu, kategori, banner, dan meja menerima `PUT` maupun `PATCH` den
 - **Upload Gambar** (`ADMIN`): `POST /api/v1/admin/uploads/image` (`multipart/form-data`, field `file`)
 
 **Presensi** (detail: [Staff & Attendance Blueprint](../architecture/staff-and-attendance-blueprint.md))
+- **Daftar Staf Kiosk** (`ADMIN`, `CASHIER`): `GET /api/v1/admin/attendance/kiosk-roster` $\rightarrow$ `[{ id, employeeId, name, role, avatarUrl, hasPin, today: null | { attendanceId, clockInTime, clockOutTime, status } }]`. Staf aktif yang sudah onboarding (termasuk ADMIN), tanpa email/telepon, dengan presensi tanggal WIB hari ini. Pakai ini di kiosk, bukan `/admin/staff` + `/admin/attendance` (keduanya khusus ADMIN).
 - **Clock-In / Clock-Out (kiosk)**: `POST /api/v1/admin/attendance/clock-in` | `clock-out` (`{ "staffId", "pinCode", "latitude", "longitude", "notes"? }`). PIN salah `400`, PIN terkunci `429`.
 - **Log Presensi**: `GET /api/v1/admin/attendance?page&limit&startDate&endDate&status&role&search` $\rightarrow$ `{ items: AttendanceItem[], meta }`
 - **Ringkasan Harian**: `GET /api/v1/admin/attendance/summary?date=YYYY-MM-DD`

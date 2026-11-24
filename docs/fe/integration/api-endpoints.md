@@ -6,6 +6,19 @@
 
 Base URL: `NEXT_PUBLIC_API_BASE_URL` (default `http://localhost:5000/api/v1`).
 
+## Refresh token di cookie HttpOnly
+
+Sejak migrasi cookie (backend `feat/refresh-token-cookie`, `c10105a`), refresh token **tidak pernah** ada di body respons maupun di JavaScript. Backend menyimpannya di cookie `menuscan_rt` (`HttpOnly`, `SameSite=Strict`, `Path=/api/v1/auth`, host-only, `Secure` di production).
+
+- Request yang menerima atau memakai cookie (`login`, `onboard`, `handover`, `refresh`, `logout`) memakai `credentials: 'include'` (opsi `ApiTransportOptions.credentials`, diteruskan ke `fetch` di `pipeline-runner.ts`). Tanpa itu browser tidak menyimpan `Set-Cookie` dari API yang beda origin.
+- `useAuthStore` hanya menyimpan `user` dan `accessToken`. Versi persist `1` menghapus `refreshToken` lama dari `localStorage`.
+- Semua tab berbagi satu cookie, dan setiap refresh merotasinya. Karena itu:
+  - **Satu lock untuk semua yang mengubah cookie**: login, onboard, handover, refresh, dan logout berjalan di dalam Web Lock `menuscan-refresh` (`src/lib/api/auth-cookie-lock.ts`), satu per satu di semua tab. Request yang memegang lock dibatasi 15 detik lalu dibatalkan, supaya koneksi macet tidak memblokir tab lain. Tanpa Web Locks, refresh yang `401` dicoba ulang sekali setelah 300 ms.
+  - **Onboard & handover** tidak bisa memakai silent refresh pipeline di dalam lock (deadlock), jadi access token yang kedaluwarsa dalam 30 detik di-refresh **sebelum** request (dari klaim `exp`). Tidak ada retry setelah `401`, sehingga PIN/password tidak pernah terkirim dua kali.
+  - **Tab tetap sinkron**: store memuat ulang dirinya saat tab lain mengubah `kumpul_cafe_auth` (event `storage`), dan modal sesi habis ditutup jika sesi baru masuk. Setelah refresh, `sub` access token dicocokkan dengan user di tab; token milik staf lain tidak pernah disimpan di bawah profil tab ini.
+- **Development**: buka FE lewat `http://localhost:3000`, **bukan** `127.0.0.1`. `127.0.0.1` tidak ada di allowlist CSRF backend, dan dianggap *site* berbeda dari `localhost`, sehingga cookie `Strict` tidak terkirim.
+- **Production**: FE dan API harus berada di satu domain (mis. `app.x.id` → `api.x.id`). Lihat `docs/be/security/refresh-token-httponly-cookie-plan.md`.
+
 ## Legenda kolom "Transport"
 
 Semua request lewat `apiTransport` → `executePipeline` (lihat [interceptor-pipeline-architecture.md](../architecture/interceptor-pipeline-architecture.md)).
@@ -21,9 +34,10 @@ Semua request lewat `apiTransport` → `executePipeline` (lihat [interceptor-pip
 | Method | Endpoint | Fungsi | Transport | Catatan |
 | :--- | :--- | :--- | :--- | :--- |
 | POST | `/auth/handshake` | `performHandshake` | `fetch` langsung | Pertukaran kunci ECDH. Body `{ clientPublicKey, nonce }` (hex). Response `{ serverPublicKey, handshakeToken, expiresIn }`. |
-| POST | `/auth/login` | `loginStaff` | Plain | Body `{ email, password }`. |
-| POST | `/auth/refresh` | `refreshTokenApi` | Plain | Header `Authorization: Bearer <refreshToken>` + body `{ refreshToken }`. |
-| POST | `/auth/onboard` | `onboardStaff` | Plain | Body `{ currentPassword, newPassword, pinCode }`. Response sama dengan login. |
+| POST | `/auth/login` | `loginStaff` | Plain + cookie | Body JSON `{ email, password }` (selain JSON → `415`). Respons `{ accessToken, user }` + `Set-Cookie: menuscan_rt`. |
+| POST | `/auth/refresh` | `refreshTokenApi` | Plain + cookie | Body `{}` (JSON wajib), **tanpa token**: backend membaca cookie. Respons `{ accessToken }` + cookie baru (rotasi). `401` → modal login ulang; `403` jika `Origin`/`Content-Type` ditolak guard CSRF. |
+| POST | `/auth/onboard` | `onboardStaff` | Plain + cookie | Body `{ currentPassword, newPassword, pinCode }`. Respons `{ accessToken, user }` + `Set-Cookie`. |
+| POST | `/auth/logout` | `logoutApi` (dipakai `signOutStaff`) | Plain + cookie | Body `{}`. Tidak butuh access token, selalu `200`, selalu menghapus cookie; sesi hanya dicabut jika cookie milik sesi aktif. Semua tombol logout memanggil `signOutStaff()`: satu panggilan, maksimal 3 detik (lalu di-abort), kemudian sesi lokal **selalu** dihapus. |
 | POST | `/auth/verify-pin` | `verifyStaffPin` | E2E | ✅ Ada di `main` backend (commit `c2b72cc`). Body `{ pinCode }` → `200 { valid }`. Lihat [kontrak](#kontrak-post-authverify-pin). |
 
 ## Menu & Kategori

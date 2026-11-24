@@ -15,11 +15,13 @@ import {
 } from '@/hooks/queries/use-admin-attendance';
 import { KioskRosterItem } from '@/lib/validations/kiosk.schema';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import { ATTENDANCE_TYPE, AttendanceType } from '@/lib/constants/attendance';
 import { checkGeofence, GeofenceCheckResult } from '@/lib/utils/haversine';
 import { useAuthStore, ROLE } from '@/store/use-auth-store';
 import { useKioskLockStore } from '@/store/use-kiosk-lock-store';
 import { toast } from 'sonner';
+import { signOutStaff } from '@/lib/api/auth-api';
 import { ApiError } from '@/lib/api/api-error';
 import { useWibToday } from '@/hooks/use-wib-today';
 import { getRateLimitMessage } from '@/lib/api/error-translator';
@@ -38,7 +40,7 @@ function describeClockError(err: unknown): string {
 
 export function CashierKioskView() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const lockKiosk = useKioskLockStore((state) => state.lock);
   const unlockKiosk = useKioskLockStore((state) => state.unlock);
 
@@ -222,9 +224,16 @@ export function CashierKioskView() {
 
   // Escape hatch when the PIN cannot be verified (forgotten PIN, server unavailable). Logging out
   // releases the lock; getting back into the POS still requires signing in with a password.
-  const handleLogoutFromKiosk = () => {
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleLogoutFromKiosk = async () => {
+    if (isSigningOut) return;
+    // Blocks the kiosk (overlay below) until the session is gone, so nobody clocks in on it meanwhile
+    setIsSigningOut(true);
     setIsExitDialogOpen(false);
-    logout();
+    // Revokes the refresh token on the server, then clears the local session (which also
+    // releases the kiosk lock via the auth store subscription)
+    await signOutStaff();
     toast.success('Berhasil keluar dari sesi akun');
     router.replace('/login');
   };
@@ -306,6 +315,19 @@ export function CashierKioskView() {
         onConfirmExit={handleConfirmExit}
         onLogout={handleLogoutFromKiosk}
       />
+
+      {/* Signing out: blocks the kiosk until the session has been ended */}
+      {isSigningOut && (
+        <div
+          role="status"
+          className="fixed inset-0 z-100 flex items-center justify-center bg-stone-950/60 backdrop-blur-sm"
+        >
+          <div className="px-6 py-4 rounded-2xl bg-white dark:bg-zinc-900 text-sm font-bold text-stone-800 dark:text-zinc-100 flex items-center gap-2 shadow-xl">
+            <Loader2 className="h-4 w-4 animate-spin text-amber-600" />
+            Mengakhiri sesi...
+          </div>
+        </div>
+      )}
 
       {/* Celebration Success Overlay */}
       <KioskSuccessOverlay

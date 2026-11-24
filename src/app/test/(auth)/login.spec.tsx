@@ -76,7 +76,6 @@ describe('StaffLoginPage Component', () => {
           role: 'ADMIN' as const,
         },
         accessToken: 'token-abc',
-        refreshToken: 'refresh-xyz',
       })
     );
 
@@ -128,7 +127,6 @@ describe('StaffLoginPage Component', () => {
           role: 'ADMIN' as const,
         },
         accessToken: 'token-abc',
-        refreshToken: 'refresh-xyz',
       })
     );
 
@@ -153,7 +151,6 @@ describe('StaffLoginPage Component', () => {
           role: 'KITCHEN' as const,
         },
         accessToken: 'token-abc',
-        refreshToken: 'refresh-xyz',
       })
     );
 
@@ -178,7 +175,6 @@ describe('StaffLoginPage Component', () => {
           role: 'CASHIER' as const,
         },
         accessToken: 'token-abc',
-        refreshToken: 'refresh-xyz',
       })
     );
 
@@ -203,7 +199,6 @@ describe('StaffLoginPage Component', () => {
           role: 'WAITER' as const,
         },
         accessToken: 'token-abc',
-        refreshToken: 'refresh-xyz',
       })
     );
 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore, ROLE, UserRole, StaffUser } from '@/store/use-auth-store';
 import { getRoleHomePath } from '@/lib/constants/roles';
 import { AuthGuard } from '@/components/common/auth-guard';
-import { onboardStaff } from '@/lib/api/auth-api';
+import { onboardStaff, signOutStaff } from '@/lib/api/auth-api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,7 +44,7 @@ export default function OnboardingPage() {
 
 function OnboardingContent() {
   const router = useRouter();
-  const { user, logout, updateTokens, completeOnboarding } = useAuthStore();
+  const { user, updateTokens, completeOnboarding } = useAuthStore();
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [onboardedUser, setOnboardedUser] = useState<StaffUser | null>(null);
@@ -144,8 +144,8 @@ function OnboardingContent() {
       // Store the new tokens right away (the old password-based session may be revoked),
       // but keep needsOnboarding until the user finishes Step 3 — otherwise AuthGuard
       // redirects away from /onboarding before the briefing is shown.
-      const { user: onboarded, accessToken, refreshToken } = res.value;
-      updateTokens(accessToken, refreshToken);
+      const { user: onboarded, accessToken } = res.value;
+      updateTokens(accessToken);
       setOnboardedUser(onboarded);
 
       toast.success('Aktivasi akun berhasil! Selamat datang di Kumpul Cafe');
@@ -163,8 +163,13 @@ function OnboardingContent() {
     router.replace(getRoleHomePath(role));
   };
 
-  const handleLogout = () => {
-    logout();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleLogout = async () => {
+    if (isSigningOut) return;
+    setIsSigningOut(true);
+    // Revokes the refresh token on the server (allowed during onboarding), then clears locally
+    await signOutStaff();
     router.replace('/login');
   };
 
@@ -206,6 +211,7 @@ function OnboardingContent() {
             variant="ghost"
             size="sm"
             onClick={handleLogout}
+            disabled={isSigningOut}
             className="text-xs text-stone-500 hover:text-stone-900 dark:text-zinc-400 dark:hover:text-zinc-100 gap-1.5 rounded-xl cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />

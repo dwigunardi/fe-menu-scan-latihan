@@ -8,7 +8,9 @@ import { loggerMiddleware } from './logger-middleware';
 import { authMiddleware } from './auth-middleware';
 import { handshakeMiddleware } from './handshake-middleware';
 import { encryptionMiddleware } from './encryption-middleware';
-import { refreshTokenApi } from '../auth-api';
+import { refreshTokenApi, RefreshTokenResponse } from '../auth-api';
+import { AUTH_COOKIE_LOCK, withAuthCookieLock } from '../auth-cookie-lock';
+import { getJwtSubject } from '@/lib/utils/jwt';
 import { useAuthStore } from '@/store/use-auth-store';
 
 const API_BASE_URL =
@@ -27,19 +29,69 @@ const defaultMiddlewares: Middleware[] = [
 // Single-Flight Mutex Promise to prevent duplicate refresh calls during concurrent 401s
 let refreshPromise: Promise<boolean> | null = null;
 
-async function attemptSilentTokenRefresh(): Promise<boolean> {
+/** Web Lock shared by every tab and every cookie-changing auth request (see auth-cookie-lock). */
+export const REFRESH_LOCK_NAME = AUTH_COOKIE_LOCK;
+/** Pause before retrying a refresh that lost a cross-tab race (no Web Locks available). */
+export const REFRESH_RETRY_DELAY_MS = 300;
+
+/**
+ * Refreshes with the HttpOnly cookie. All tabs share that one cookie and every refresh rotates
+ * it, so two tabs refreshing at once would make the slower one fail with 401. The cookie lock
+ * serializes refreshes (and login/handover/logout) across tabs: the second tab then refreshes
+ * with the cookie the first one just received. Without Web Locks, a 401 is retried once, since
+ * the winner's Set-Cookie has already stored the new cookie in the browser.
+ */
+async function refreshWithCookie(): Promise<Either<ApiError, RefreshTokenResponse>> {
+  const hasLocks = typeof navigator !== 'undefined' && Boolean(navigator.locks?.request);
+  if (hasLocks) {
+    return withAuthCookieLock((signal) => refreshTokenApi(signal));
+  }
+
+  const first = await refreshTokenApi();
+  if (first.isRight() || first.value.statusCode !== 401) return first;
+  await new Promise((resolve) => setTimeout(resolve, REFRESH_RETRY_DELAY_MS));
+  return refreshTokenApi();
+}
+
+/**
+ * The refresh cookie belongs to whoever last logged in, onboarded or took over a shift in this
+ * browser, in any tab. If the new access token is for a different user than this tab shows,
+ * this tab is stale: reload the session that tab stored, and only accept the token if they now
+ * match. Never put another staff member's token under this tab's profile.
+ */
+async function adoptRefreshedToken(accessToken: string, sessionUserId: string): Promise<boolean> {
+  const tokenUserId = getJwtSubject(accessToken);
+  if (!tokenUserId || tokenUserId === sessionUserId) {
+    useAuthStore.getState().updateTokens(accessToken);
+    return true;
+  }
+
+  await useAuthStore.persist.rehydrate();
+  if (useAuthStore.getState().user?.id === tokenUserId) {
+    useAuthStore.getState().updateTokens(accessToken);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Renews the access token with the refresh cookie (single-flight per tab). Exported so that
+ * cookie-locked auth calls (handover, onboard) can refresh outside their own lock after a 401.
+ */
+export async function attemptSilentTokenRefresh(): Promise<boolean> {
   if (refreshPromise) {
     return refreshPromise;
   }
 
   refreshPromise = (async () => {
     try {
-      const { refreshToken, user } = useAuthStore.getState();
+      const { user } = useAuthStore.getState();
       const sessionUserId = user?.id;
 
-      // 1. If refreshToken exists, attempt silent background rotation
-      if (refreshToken) {
-        const res = await refreshTokenApi(refreshToken);
+      // 1. Logged in: renew the access token with the refresh cookie (invisible to JS, so the
+      //    stored user is the only sign that a session should exist)
+      if (user) {
+        const res = await refreshWithCookie();
 
         // The session changed while refreshing (shift handover, logout, another login). The result
         // belongs to the previous user: never store it under the new profile. Let the caller retry
@@ -48,16 +100,15 @@ async function attemptSilentTokenRefresh(): Promise<boolean> {
           return Boolean(useAuthStore.getState().accessToken);
         }
 
-        if (res.isRight()) {
-          const { accessToken, refreshToken: newRefreshToken } = res.value;
-          useAuthStore.getState().updateTokens(accessToken, newRefreshToken);
+        if (res.isRight() && sessionUserId && (await adoptRefreshedToken(res.value.accessToken, sessionUserId))) {
           return true;
         }
-      }
 
-      // 2. If refresh token is expired/missing but user is logged in -> Open Re-Auth Modal (preserve page & work)
-      if (user) {
-        useAuthStore.getState().openReauthModal();
+        // 2. The refresh cookie is gone, expired, revoked, or now belongs to another staff member
+        //    -> Re-Auth Modal (preserve page & work)
+        if (useAuthStore.getState().user) {
+          useAuthStore.getState().openReauthModal();
+        }
         return false;
       }
 
@@ -118,6 +169,11 @@ export async function executePipeline<T = unknown>(
       method: context.method,
       headers: context.headers,
       body: context.body as BodyInit,
+      // Lets callers cancel a request (e.g. a logout that outlived its timeout)
+      signal: context.options.signal ?? undefined,
+      // 'include' on auth endpoints so the browser sends and stores the HttpOnly refresh cookie
+      // (the API is cross-origin from the FE, e.g. localhost:3000 → localhost:5000)
+      credentials: context.options.credentials,
     });
 
     context.rawResponse = response;

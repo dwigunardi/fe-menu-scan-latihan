@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { CommonHeader } from '@/components/common/common-header';
 import { useAuthStore } from '@/store/use-auth-store';
 import { useSidebarStore } from '@/store/use-sidebar-store';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { server } from '@/test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
 const mockReplace = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -125,10 +127,17 @@ describe('CommonHeader Component', () => {
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
-  it('confirms logout and redirects to /login when Ya, Keluar Akun is clicked', () => {
+  it('confirms logout, revokes the session on the server, and redirects to /login', async () => {
     useAuthStore.getState().setAuth(
       { id: '1', username: 'admin', name: 'Chef Gordon', role: 'ADMIN' },
       'test-token'
+    );
+    let logoutAuthHeader: string | null = null;
+    server.use(
+      http.post('http://localhost:5000/api/v1/auth/logout', ({ request }) => {
+        logoutAuthHeader = request.headers.get('Authorization');
+        return HttpResponse.json({ statusCode: 200, data: { success: true } });
+      })
     );
 
     render(
@@ -143,7 +152,8 @@ describe('CommonHeader Component', () => {
     const confirmBtn = screen.getByRole('button', { name: /Ya, Keluar Akun/i });
     fireEvent.click(confirmBtn);
 
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/login'));
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
-    expect(mockReplace).toHaveBeenCalledWith('/login');
+    expect(logoutAuthHeader).toBe('Bearer test-token');
   });
 });

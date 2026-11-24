@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuthStore } from '@/store/use-auth-store';
-import { reloginStaff } from '@/lib/api/auth-api';
+import { reloginStaff, signOutStaff } from '@/lib/api/auth-api';
 import { notifyApiError } from '@/lib/api/notify-error';
 import { useQueryClient } from '@tanstack/react-query';
 import { adminQueryKeys } from '@/lib/query-keys';
@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 export function SessionExpiredModal() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user, isReauthModalOpen, closeReauthModal, logout } = useAuthStore();
+  const { user, isReauthModalOpen, closeReauthModal } = useAuthStore();
 
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -52,14 +52,18 @@ export function SessionExpiredModal() {
     queryClient.invalidateQueries({ queryKey: adminQueryKeys.all });
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    if (isLoading) return;
+    setIsLoading(true);
+    // Best effort: also revokes the refresh token on the server if it is still valid
+    await signOutStaff();
+    setIsLoading(false);
     closeReauthModal();
     router.replace('/login');
   };
 
   return (
-    <Dialog open={isReauthModalOpen} onOpenChange={(open) => !open && handleLogout()}>
+    <Dialog open={isReauthModalOpen} onOpenChange={(open) => !open && void handleLogout()}>
       <DialogContent
         className="sm:max-w-md rounded-3xl p-6 bg-white dark:bg-zinc-900 border-2 border-amber-600/30 shadow-2xl"
         onPointerDownOutside={(e) => e.preventDefault()}
