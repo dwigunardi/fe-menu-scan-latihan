@@ -68,6 +68,32 @@ describe('Error Translator', () => {
     expect(translateErrorToFriendlyMessage(forbiddenErr).title).toBe('Tidak Memiliki Izin');
   });
 
+  it('translates the backend 401 codes', () => {
+    // The real backend message is English; the UI must stay Indonesian
+    const wrongLogin = new ApiError(401, 'Unauthorized', 'Invalid email or password', {
+      code: ErrorCode.INVALID_CREDENTIALS,
+    });
+    // Before: every 401 read "Akses Ditolak / Silakan login terlebih dahulu", even a wrong password
+    expect(translateErrorToFriendlyMessage(wrongLogin)).toMatchObject({
+      title: 'Login Gagal',
+      description: 'Email atau password salah.',
+    });
+
+    const wrongTemp = new ApiError(401, 'Unauthorized', 'Password sementara saat ini tidak sesuai.', {
+      code: ErrorCode.INVALID_TEMP_PASSWORD,
+    });
+    expect(translateErrorToFriendlyMessage(wrongTemp).title).toBe('Password Sementara Salah');
+
+    const disabled = new ApiError(401, 'Unauthorized', 'x', { code: ErrorCode.ACCOUNT_DISABLED });
+    expect(translateErrorToFriendlyMessage(disabled).title).toBe('Akun Dinonaktifkan');
+
+    for (const code of [ErrorCode.TOKEN_EXPIRED, ErrorCode.TOKEN_MISSING, ErrorCode.TOKEN_INVALID]) {
+      expect(translateErrorToFriendlyMessage(new ApiError(401, 'Unauthorized', 'x', { code })).title).toBe(
+        'Sesi Berakhir'
+      );
+    }
+  });
+
   it('translates NOT_FOUND, RATE_LIMITED, and CONTRACT_VIOLATION', () => {
     const notFound = new ApiError(404, 'Not Found', 'NF', { code: ErrorCode.NOT_FOUND });
     expect(translateErrorToFriendlyMessage(notFound).title).toBe('Data Tidak Ditemukan');

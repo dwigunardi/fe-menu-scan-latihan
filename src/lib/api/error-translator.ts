@@ -107,6 +107,35 @@ export function translateErrorToFriendlyMessage(
         actionLabel: 'Login',
       };
 
+    // Backend 401 codes. The login message comes from the backend in English
+    // ("Invalid email or password"), so this one uses fixed Indonesian text.
+    case ErrorCode.INVALID_CREDENTIALS:
+      return {
+        title: 'Login Gagal',
+        description: 'Email atau password salah.',
+      };
+
+    case ErrorCode.INVALID_TEMP_PASSWORD:
+      return {
+        title: 'Password Sementara Salah',
+        description: error.message || 'Password sementara yang Anda masukkan tidak sesuai.',
+      };
+
+    case ErrorCode.ACCOUNT_DISABLED:
+      return {
+        title: 'Akun Dinonaktifkan',
+        description: 'Akun ini sudah tidak aktif. Hubungi admin cabang untuk mengaktifkannya kembali.',
+      };
+
+    case ErrorCode.TOKEN_EXPIRED:
+    case ErrorCode.TOKEN_MISSING:
+    case ErrorCode.TOKEN_INVALID:
+      return {
+        title: 'Sesi Berakhir',
+        description: 'Silakan login kembali untuk melanjutkan.',
+        actionLabel: 'Login',
+      };
+
     case ErrorCode.FORBIDDEN:
       return {
         title: 'Tidak Memiliki Izin',

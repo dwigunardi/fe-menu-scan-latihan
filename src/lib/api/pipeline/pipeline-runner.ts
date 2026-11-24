@@ -1,6 +1,7 @@
 import { Either, left, right } from '../either';
 import { ApiError } from '../api-error';
-import { isErrorCode } from '../error-codes';
+import { isErrorCode, ErrorCode } from '../error-codes';
+import { setLogoutReason } from '@/lib/auth/logout-reason';
 import { ApiTransportOptions } from '../types';
 import { performHandshake } from '../handshake-session';
 import { PipelineContext, Middleware } from './types';
@@ -8,7 +9,7 @@ import { loggerMiddleware } from './logger-middleware';
 import { authMiddleware } from './auth-middleware';
 import { handshakeMiddleware } from './handshake-middleware';
 import { encryptionMiddleware } from './encryption-middleware';
-import { refreshTokenApi, RefreshTokenResponse } from '../auth-api';
+import { refreshTokenApi, RefreshTokenResponse, logoutApi } from '../auth-api';
 import { AUTH_COOKIE_LOCK, withAuthCookieLock } from '../auth-cookie-lock';
 import { getJwtSubject } from '@/lib/utils/jwt';
 import { useAuthStore } from '@/store/use-auth-store';
@@ -28,6 +29,51 @@ const defaultMiddlewares: Middleware[] = [
 
 // Single-Flight Mutex Promise to prevent duplicate refresh calls during concurrent 401s
 let refreshPromise: Promise<boolean> | null = null;
+
+/**
+ * Whether a 401 can be fixed by refreshing the access token. The backend sends a `code`:
+ * TOKEN_EXPIRED (and TOKEN_MISSING, recoverable through the refresh cookie) can; TOKEN_INVALID,
+ * ACCOUNT_DISABLED, INVALID_CREDENTIALS and INVALID_TEMP_PASSWORD cannot. A 401 without a code
+ * (older backend) keeps the previous refresh-on-any-401 behavior.
+ */
+function isRefreshable401(code: unknown): boolean {
+  return (
+    code === undefined ||
+    code === null ||
+    code === ErrorCode.TOKEN_EXPIRED ||
+    code === ErrorCode.TOKEN_MISSING
+  );
+}
+
+function redirectToLogin(): void {
+  if (typeof window !== 'undefined' && window.location?.pathname !== '/login') {
+    window.location.href = '/login';
+  }
+}
+
+/**
+ * The account was deactivated or deleted (effective immediately): signing in again will fail, so
+ * end the session here and explain why on /login instead of showing the re-login modal.
+ */
+function endSessionForDisabledAccount(): void {
+  const hadSession = Boolean(useAuthStore.getState().user || useAuthStore.getState().accessToken);
+  setLogoutReason('account-disabled');
+  useAuthStore.getState().logout();
+  // Also clear the refresh cookie (once, even when several requests fail together). Not awaited:
+  // the failing request may itself hold the cookie lock (e.g. a handover), and logoutApi waits for it.
+  if (hadSession) void logoutApi();
+  redirectToLogin();
+}
+
+/** The access token is unusable (TOKEN_INVALID): a refresh will not help, sign in again. */
+function requireSignInAgain(): void {
+  if (useAuthStore.getState().user) {
+    useAuthStore.getState().openReauthModal();
+    return;
+  }
+  useAuthStore.getState().logout();
+  redirectToLogin();
+}
 
 /** Web Lock shared by every tab and every cookie-changing auth request (see auth-cookie-lock). */
 export const REFRESH_LOCK_NAME = AUTH_COOKIE_LOCK;
@@ -114,9 +160,7 @@ export async function attemptSilentTokenRefresh(): Promise<boolean> {
 
       // 3. If no user session at all -> Clean logout and redirect to login
       useAuthStore.getState().logout();
-      if (typeof window !== 'undefined' && window.location?.pathname !== '/login') {
-        window.location.href = '/login';
-      }
+      redirectToLogin();
       return false;
     } catch {
       if (useAuthStore.getState().user) {
@@ -205,10 +249,20 @@ export async function executePipeline<T = unknown>(
     // 2. Auto-retry on JWT Access Token Expired (401 on protected routes)
     const isAuthRoute =
       endpoint.includes('/auth/login') || endpoint.includes('/auth/refresh');
+    const authErrorCode: unknown = response.status === 401 ? json?.code : undefined;
+
+    if (response.status === 401 && !isAuthRoute) {
+      if (authErrorCode === ErrorCode.ACCOUNT_DISABLED) {
+        endSessionForDisabledAccount();
+      } else if (authErrorCode === ErrorCode.TOKEN_INVALID) {
+        requireSignInAgain();
+      }
+    }
 
     if (
       response.status === 401 &&
       !isAuthRoute &&
+      isRefreshable401(authErrorCode) &&
       context.options.retryOnTokenExpired !== false
     ) {
       const refreshSuccess = await attemptSilentTokenRefresh();

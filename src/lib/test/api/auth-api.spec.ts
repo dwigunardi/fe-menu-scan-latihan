@@ -63,7 +63,8 @@ describe('auth-api', () => {
       expect(result.isLeft()).toBe(true);
       if (result.isLeft()) {
         expect(result.value.statusCode).toBe(401);
-        expect(result.value.message).toContain('Email atau password salah');
+        // The machine code decides the UI text, not the backend message
+        expect(result.value.code).toBe(ErrorCode.INVALID_CREDENTIALS);
       }
     });
   });
@@ -339,7 +340,7 @@ describe('auth-api', () => {
       server.use(
         http.post(`${API_BASE}/auth/onboard`, () => {
           onboardCalls++;
-          return HttpResponse.json({ statusCode: 401, message: 'Password sementara saat ini tidak sesuai.' }, { status: 401 });
+          return HttpResponse.json({ statusCode: 401, code: 'INVALID_TEMP_PASSWORD', message: 'Password sementara saat ini tidak sesuai.' }, { status: 401 });
         }),
         http.post(`${API_BASE}/auth/refresh`, () => {
           refreshCalls++;
@@ -352,6 +353,29 @@ describe('auth-api', () => {
       expect(result.isLeft()).toBe(true);
       expect(onboardCalls).toBe(1);
       expect(refreshCalls).toBe(0);
+    });
+
+    it('refreshes and resends onboarding once when the backend says TOKEN_EXPIRED', async () => {
+      lockRequestSpy();
+      // Looks fresh locally (clock skew), but the backend already considers it expired
+      useAuthStore.getState().setAuth({ id: 'u1', name: 'Baru', role: 'CASHIER' }, jwtExpiringIn(10 * 60_000));
+      let onboardCalls = 0;
+      server.use(
+        http.post(`${API_BASE}/auth/onboard`, ({ request }) => {
+          onboardCalls++;
+          return request.headers.get('Authorization') === 'Bearer renewed-access-token-789'
+            ? HttpResponse.json({
+                statusCode: 200,
+                data: { accessToken: 'onboarded-access', user: { id: 'u1', name: 'Baru', role: 'CASHIER' } },
+              })
+            : HttpResponse.json({ statusCode: 401, code: 'TOKEN_EXPIRED', message: 'Token expired' }, { status: 401 });
+        })
+      );
+
+      const result = await onboardStaff({ currentPassword: 'Sementara1', newPassword: 'Baru12345!', pinCode: '1234' });
+
+      expect(result.isRight()).toBe(true);
+      expect(onboardCalls).toBe(2);
     });
 
     it('runs login inside the cookie lock', async () => {

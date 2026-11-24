@@ -21,6 +21,7 @@ import { loginStaff } from '@/lib/api/auth-api';
 import { useAuthStore } from '@/store/use-auth-store';
 import { getRoleHomePath } from '@/lib/constants/roles';
 import { notifyApiError } from '@/lib/api/notify-error';
+import { consumeLogoutReason } from '@/lib/auth/logout-reason';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -65,6 +66,17 @@ export default function StaffLoginPage() {
       router.replace(getRoleHomePath(user.role));
     }
   }, [_hasHydrated, isAuthenticated, user, router]);
+
+  // Explain a forced sign-out (the backend answered ACCOUNT_DISABLED for a request)
+  useEffect(() => {
+    if (consumeLogoutReason() === 'account-disabled') {
+      toast.error('Akun Dinonaktifkan', {
+        id: 'account-disabled',
+        description: 'Akun Anda sudah tidak aktif. Hubungi admin cabang untuk mengaktifkannya kembali.',
+        duration: 8000,
+      });
+    }
+  }, []);
 
   const executeLogin = async (u: string, p: string, presetType: LoginPresetType) => {
     setLoadingPreset(presetType);

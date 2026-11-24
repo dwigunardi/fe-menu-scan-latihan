@@ -42,6 +42,20 @@ export enum ErrorCode {
   SHIFT_NOT_OPEN = 'SHIFT_NOT_OPEN',
   SHIFT_STILL_OPEN = 'SHIFT_STILL_OPEN',
 
+  // Auth 401 codes from the backend (`code` in the error body; the status stays 401)
+  /** Access token expired: the only 401 worth a refresh + one retry. */
+  TOKEN_EXPIRED = 'TOKEN_EXPIRED',
+  /** Protected endpoint called without a Bearer token. */
+  TOKEN_MISSING = 'TOKEN_MISSING',
+  /** Malformed token or bad signature: sign in again, refreshing will not help. */
+  TOKEN_INVALID = 'TOKEN_INVALID',
+  /** Account deactivated or deleted, effective immediately; signing in again will fail too. */
+  ACCOUNT_DISABLED = 'ACCOUNT_DISABLED',
+  /** Login: wrong email or password. */
+  INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
+  /** Onboarding: wrong temporary password. */
+  INVALID_TEMP_PASSWORD = 'INVALID_TEMP_PASSWORD',
+
   // File & Media Errors
   FILE_TOO_LARGE = 'FILE_TOO_LARGE',
 }
