@@ -19,6 +19,22 @@ Sejak migrasi cookie (backend `feat/refresh-token-cookie`, `c10105a`), refresh t
 - **Development**: buka FE lewat `http://localhost:3000`, **bukan** `127.0.0.1`. `127.0.0.1` tidak ada di allowlist CSRF backend, dan dianggap *site* berbeda dari `localhost`, sehingga cookie `Strict` tidak terkirim.
 - **Production**: FE dan API harus berada di satu domain (mis. `app.x.id` → `api.x.id`). Lihat `docs/be/security/refresh-token-httponly-cookie-plan.md`.
 
+## Kode error 401 dari backend
+
+Backend menambahkan field `code` pada body error `401` (status tetap `401`; backend PR #10, `674a805`). Pipeline meneruskan `code` yang dikenal ke `ApiError.code`, dan perilaku FE dipilih berdasarkan kode, bukan teks `message`:
+
+| `code` | Perilaku FE |
+| :--- | :--- |
+| `TOKEN_EXPIRED` | Silent refresh lewat cookie, lalu request diulang **sekali**. |
+| `TOKEN_MISSING` | Sama seperti `TOKEN_EXPIRED` jika masih ada `user` di store (cookie mungkin masih berlaku). |
+| `TOKEN_INVALID` | Tanpa refresh: modal login ulang (atau `/login` jika tidak ada user). |
+| `ACCOUNT_DISABLED` | Tanpa refresh: sesi lokal dihapus, `POST /auth/logout` dikirim untuk menghapus cookie, lalu ke `/login`, yang menampilkan "Akun Dinonaktifkan". Berlaku seketika, juga untuk access token yang masih berlaku. |
+| `INVALID_CREDENTIALS` | Login: toast "Login Gagal" dengan pesan backend. Tanpa refresh/retry. |
+| `INVALID_TEMP_PASSWORD` | Onboarding: toast "Password Sementara Salah". Tidak pernah dikirim ulang. |
+| tanpa `code` (backend lama) | Perilaku lama: refresh lalu ulangi sekali. |
+
+Onboard & handover hanya dikirim ulang untuk `TOKEN_EXPIRED` (kode itu berasal dari guard JWT, sebelum PIN/password diperiksa). `/auth/refresh` dan `/auth/logout` tidak memakai kode-kode ini; `401` dari refresh berarti login ulang.
+
 ## Legenda kolom "Transport"
 
 Semua request lewat `apiTransport` → `executePipeline` (lihat [interceptor-pipeline-architecture.md](../architecture/interceptor-pipeline-architecture.md)).

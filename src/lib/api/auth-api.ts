@@ -90,8 +90,7 @@ const ACCESS_TOKEN_REFRESH_MARGIN_MS = 30_000;
  * Bearer-authenticated requests that also replace the refresh cookie (onboard, handover) run
  * inside the cookie lock with the pipeline's silent refresh turned off: that refresh takes the
  * same lock and would wait forever. So an access token that is expired or about to expire is
- * refreshed BEFORE taking the lock. Retrying after a 401 instead would resend the PIN or
- * password, and onboard also answers 401 for a wrong temporary password.
+ * refreshed BEFORE taking the lock.
  */
 async function ensureFreshAccessToken(): Promise<void> {
   const { accessToken } = useAuthStore.getState();
@@ -100,6 +99,21 @@ async function ensureFreshAccessToken(): Promise<void> {
   if (expiresAt !== null && expiresAt - Date.now() < ACCESS_TOKEN_REFRESH_MARGIN_MS) {
     await attemptSilentTokenRefresh();
   }
+}
+
+/**
+ * Runs a locked onboard/handover request and, if the backend still says TOKEN_EXPIRED (e.g. clock
+ * skew), refreshes outside the lock and sends it once more. That 401 comes from the JWT guard
+ * before the PIN or password is checked, so resending is safe. Any other 401 (a wrong temporary
+ * password is INVALID_TEMP_PASSWORD) is returned as is: never resend credentials.
+ */
+async function sendWithFreshToken<T>(
+  send: () => Promise<Either<ApiError, T>>
+): Promise<Either<ApiError, T>> {
+  await ensureFreshAccessToken();
+  const first = await send();
+  if (first.isRight() || first.value.code !== ErrorCode.TOKEN_EXPIRED) return first;
+  return (await attemptSilentTokenRefresh()) ? send() : first;
 }
 
 /**
@@ -219,18 +233,19 @@ export async function onboardStaff(payload: {
   newPassword: string;
   pinCode: string;
 }): Promise<Either<ApiError, LoginResponse>> {
-  await ensureFreshAccessToken();
-  return lockedAuthRequest((signal) =>
-    apiTransport('/auth/onboard', LoginResponseSchema, {
-      method: 'POST',
-      body: payload,
-      skipEncryption: true,
-      skipHandshakeToken: true,
-      // Onboarding issues a new session: the refresh cookie arrives via Set-Cookie
-      credentials: 'include',
-      retryOnTokenExpired: false,
-      signal,
-    })
+  return sendWithFreshToken(() =>
+    lockedAuthRequest((signal) =>
+      apiTransport('/auth/onboard', LoginResponseSchema, {
+        method: 'POST',
+        body: payload,
+        skipEncryption: true,
+        skipHandshakeToken: true,
+        // Onboarding issues a new session: the refresh cookie arrives via Set-Cookie
+        credentials: 'include',
+        retryOnTokenExpired: false,
+        signal,
+      })
+    )
   );
 }
 
@@ -238,15 +253,6 @@ const VerifyPinResponseSchema = z.object({
   valid: z.boolean(),
 });
 
-/**
- * Verifies the 4-digit PIN of the currently logged-in staff member via POST /auth/verify-pin.
- * Used by the POS kiosk exit guard. Sent through the full pipeline (handshake + encryption)
- * because the PIN is a credential.
- *
- * Backend contract: 200 `{ valid: boolean }`. A wrong PIN should be answered with
- * `{ valid: false }` (or 400), NOT 401 — a 401 means the cashier session itself expired
- * and goes through the normal silent-refresh / re-auth flow.
- */
 /**
  * Staff who can take over this device in a shift handover: active, onboarded, with a PIN,
  * not ADMIN and not the current user. Open to every logged-in staff role.
@@ -266,19 +272,29 @@ export async function getHandoverCandidates(): Promise<Either<ApiError, Handover
 export async function handoverShift(
   input: HandoverInput
 ): Promise<Either<ApiError, LoginResponse>> {
-  await ensureFreshAccessToken();
-  return lockedAuthRequest((signal) =>
-    apiTransport('/auth/handover', LoginResponseSchema, {
-      method: 'POST',
-      body: input,
-      // The response sets the incoming staff's refresh cookie (Set-Cookie)
-      credentials: 'include',
-      retryOnTokenExpired: false,
-      signal,
-    })
+  return sendWithFreshToken(() =>
+    lockedAuthRequest((signal) =>
+      apiTransport('/auth/handover', LoginResponseSchema, {
+        method: 'POST',
+        body: input,
+        // The response sets the incoming staff's refresh cookie (Set-Cookie)
+        credentials: 'include',
+        retryOnTokenExpired: false,
+        signal,
+      })
+    )
   );
 }
 
+/**
+ * Verifies the 4-digit PIN of the currently logged-in staff member via POST /auth/verify-pin.
+ * Used by the POS kiosk exit guard. Sent through the full pipeline (handshake + encryption)
+ * because the PIN is a credential.
+ *
+ * Backend contract: 200 `{ valid: boolean }`. A wrong PIN is answered with `{ valid: false }`
+ * (or 400), never 401: a 401 means the cashier session itself is unusable and goes through the
+ * normal refresh / re-auth flow.
+ */
 export async function verifyStaffPin(
   pinCode: string
 ): Promise<Either<ApiError, { valid: boolean }>> {

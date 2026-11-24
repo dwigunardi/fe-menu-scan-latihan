@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/use-auth-store';
 import * as authApi from '@/lib/api/auth-api';
 import { Right, Left } from '@/lib/api/either';
 import { ApiError } from '@/lib/api/api-error';
+import { setLogoutReason, consumeLogoutReason } from '@/lib/auth/logout-reason';
 
 const mockReplace = vi.fn();
 vi.mock('next/navigation', () => ({
@@ -39,6 +40,17 @@ describe('StaffLoginPage Component', () => {
     expect(screen.getByText('Kasir Front POS')).toBeInTheDocument();
     expect(screen.getByText('Kitchen & Bar')).toBeInTheDocument();
     expect(screen.getByText('Pelayan (Floor)')).toBeInTheDocument();
+  });
+
+  it('explains a sign-out forced by a deactivated account, once', async () => {
+    const { toast } = await import('sonner');
+    setLogoutReason('account-disabled');
+
+    render(<StaffLoginPage />);
+
+    expect(toast.error).toHaveBeenCalledWith('Akun Dinonaktifkan', expect.objectContaining({ id: 'account-disabled' }));
+    // Consumed: a later visit to /login shows nothing
+    expect(consumeLogoutReason()).toBeNull();
   });
 
   it('redirects on mount if user is already authenticated', () => {

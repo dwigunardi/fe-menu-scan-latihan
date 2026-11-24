@@ -248,7 +248,9 @@ export const handlers = [
       {
         statusCode: 401,
         error: 'Unauthorized',
-        message: 'Email atau password salah',
+        code: 'INVALID_CREDENTIALS',
+        // Same (English) text as the real backend
+        message: 'Invalid email or password',
       },
       { status: 401 }
     );

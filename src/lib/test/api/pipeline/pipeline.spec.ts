@@ -11,6 +11,8 @@ import { server } from '@/test/mocks/server';
 import { http, HttpResponse } from 'msw';
 import * as authApiModule from '@/lib/api/auth-api';
 import { right } from '@/lib/api/either';
+import { ErrorCode } from '@/lib/api/error-codes';
+import { consumeLogoutReason } from '@/lib/auth/logout-reason';
 
 const API_BASE = 'http://localhost:5000/api/v1';
 
@@ -381,6 +383,77 @@ describe('Interceptor Middleware Pipeline', () => {
         expect(result.isRight()).toBe(true);
         expect(refreshCalls).toBe(2);
         expect(useAuthStore.getState().isReauthModalOpen).toBe(false);
+      });
+    });
+
+    describe('401 codes from the backend', () => {
+      function trackRefreshCalls() {
+        const counter = { calls: 0 };
+        server.events.on('request:start', ({ request }) => {
+          if (request.url.endsWith('/auth/refresh')) counter.calls++;
+        });
+        return counter;
+      }
+
+      function respond401(path: string, code: string) {
+        server.use(
+          http.get(`${API_BASE}${path}`, ({ request }) =>
+            request.headers.get('Authorization') === 'Bearer renewed-access-token-789'
+              ? HttpResponse.json({ statusCode: 200, data: { ok: true } })
+              : HttpResponse.json({ statusCode: 401, error: 'Unauthorized', code, message: code }, { status: 401 })
+          )
+        );
+      }
+
+      afterEach(() => {
+        server.events.removeAllListeners('request:start');
+      });
+
+      it('refreshes and retries once on TOKEN_EXPIRED', async () => {
+        useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'expired-access-token');
+        const refresh = trackRefreshCalls();
+        respond401('/admin/code-expired', 'TOKEN_EXPIRED');
+
+        const result = await executePipeline('/admin/code-expired');
+
+        expect(result.isRight()).toBe(true);
+        expect(refresh.calls).toBe(1);
+      });
+
+      it('asks to sign in again without refreshing on TOKEN_INVALID', async () => {
+        useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'tampered-token');
+        const refresh = trackRefreshCalls();
+        respond401('/admin/code-invalid', 'TOKEN_INVALID');
+
+        const result = await executePipeline('/admin/code-invalid');
+
+        expect(result.isLeft()).toBe(true);
+        if (result.isLeft()) expect(result.value.code).toBe(ErrorCode.TOKEN_INVALID);
+        expect(refresh.calls).toBe(0);
+        expect(useAuthStore.getState().isReauthModalOpen).toBe(true);
+      });
+
+      it('ends the session, clears the cookie and explains it on ACCOUNT_DISABLED', async () => {
+        // Already on /login, so the redirect does not navigate the test window
+        const previousPath = window.location.pathname;
+        window.history.replaceState({}, '', '/login');
+        useAuthStore.getState().setAuth({ id: 'u1', name: 'Kasir', role: 'CASHIER' }, 'valid-access');
+        const refresh = trackRefreshCalls();
+        let logoutCalls = 0;
+        server.events.on('request:start', ({ request }) => {
+          if (request.url.endsWith('/auth/logout')) logoutCalls++;
+        });
+        respond401('/admin/code-disabled', 'ACCOUNT_DISABLED');
+
+        const result = await executePipeline('/admin/code-disabled');
+
+        expect(result.isLeft()).toBe(true);
+        expect(refresh.calls).toBe(0);
+        expect(useAuthStore.getState().user).toBeNull();
+        expect(useAuthStore.getState().isReauthModalOpen).toBe(false);
+        await vi.waitFor(() => expect(logoutCalls).toBe(1));
+        expect(consumeLogoutReason()).toBe('account-disabled');
+        window.history.replaceState({}, '', previousPath);
       });
     });
 
